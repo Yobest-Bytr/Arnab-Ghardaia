@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Chrome } from 'lucide-react';
+import { Sparkles, Loader2, Chrome, ShieldCheck, Mail, ArrowRight } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
 
@@ -18,7 +18,7 @@ const Login = () => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      showSuccess('Welcome back.');
+      showSuccess('Neural link established.');
       navigate('/dashboard');
     } catch (error: any) {
       showError(error.message || 'Failed to log in');
@@ -45,62 +45,80 @@ const Login = () => {
     <div className="min-h-screen bg-[#020408] text-white flex items-center justify-center px-6 relative overflow-hidden">
       <div className="absolute inset-0 auron-radial pointer-events-none" />
       
+      {/* Cognitive Scan Effect */}
+      <motion.div 
+        initial={{ top: '-100%' }}
+        animate={{ top: '100%' }}
+        transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+        className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#99f6ff]/30 to-transparent z-0 pointer-events-none"
+      />
+
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Sparkles className="text-[#99f6ff]" size={32} />
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Welcome Back</h1>
+          <motion.div 
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            className="w-20 h-20 bg-white/5 border border-white/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(153,246,255,0.1)]"
+          >
+            <Sparkles className="text-[#99f6ff]" size={40} />
+          </motion.div>
+          <h1 className="text-5xl font-black tracking-tighter mb-2 dopamine-text">Welcome Back</h1>
           <p className="text-white/40 font-medium">Access your cognitive workspace</p>
         </div>
 
         <div className="space-y-4">
           <button 
             onClick={handleGoogleLogin}
-            className="pill-nav w-full h-14 flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 transition-all font-bold border-white/10"
+            className="pill-nav w-full h-16 flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 transition-all font-bold border-white/10 group"
           >
-            <Chrome size={20} className="text-[#99f6ff]" />
+            <Chrome size={20} className="text-[#99f6ff] group-hover:scale-110 transition-transform" />
             Continue with Google
           </button>
 
-          <div className="relative py-4">
+          <div className="relative py-6">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#020408] px-2 text-white/20 font-bold">Or continue with email</span></div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-[0.2em]"><span className="bg-[#020408] px-4 text-white/20 font-black">Neural Authentication</span></div>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10">
+            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all group">
+              <Mail className="text-white/20 group-focus-within:text-[#99f6ff] transition-colors" size={20} />
               <Input 
                 type="email" 
                 placeholder="Email Address" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required 
-                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0"
+                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium"
               />
             </div>
-            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10">
+            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all group">
+              <ShieldCheck className="text-white/20 group-focus-within:text-[#99f6ff] transition-colors" size={20} />
               <Input 
                 type="password" 
                 placeholder="Password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required 
-                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0"
+                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium"
               />
             </div>
-            <button type="submit" className="auron-button w-full h-14 text-lg mt-4" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mx-auto" /> : "Log In"}
+            <button type="submit" className="auron-button w-full h-16 text-xl mt-6 flex items-center justify-center gap-3" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin" /> : (
+                <>
+                  Initialize Link
+                  <ArrowRight size={20} />
+                </>
+              )}
             </button>
           </form>
         </div>
 
-        <p className="text-center mt-8 text-white/40 font-medium">
-          New here? <Link to="/signup" className="text-[#99f6ff] hover:underline">Create Account</Link>
+        <p className="text-center mt-10 text-white/40 font-medium">
+          New here? <Link to="/signup" className="text-[#99f6ff] font-bold hover:underline">Create Account</Link>
         </p>
       </motion.div>
     </div>
