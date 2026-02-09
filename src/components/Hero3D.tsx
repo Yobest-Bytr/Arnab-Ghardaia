@@ -1,31 +1,25 @@
 import React, { useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { MeshDistortMaterial, Float } from '@react-three/drei';
-import * as THREE from 'three';
 
 const TaskGlobe = () => {
-  const meshRef = useRef<THREE.Mesh>(null!);
+  const meshRef = useRef<any>(null);
 
   useFrame((state) => {
     if (!meshRef.current) return;
-    
     const t = state.clock.getElapsedTime();
-    meshRef.current.rotation.x = Math.cos(t / 4) / 2;
-    meshRef.current.rotation.y = Math.sin(t / 4) / 2;
+    meshRef.current.rotation.x = t * 0.2;
+    meshRef.current.rotation.y = t * 0.3;
   });
 
   return (
-    <mesh 
-      ref={meshRef} 
-      scale={2.4} 
-      raycast={() => null} // Disable raycasting to prevent event resolution errors
-    >
+    <mesh ref={meshRef} scale={2.5}>
       <sphereGeometry args={[1, 64, 64]} />
       <MeshDistortMaterial
-        color="#4F46E5"
-        distort={0.4}
+        color="#6366f1"
         speed={2}
-        roughness={0.1}
+        distort={0.4}
+        radius={1}
       />
     </mesh>
   );
@@ -33,12 +27,17 @@ const TaskGlobe = () => {
 
 const Hero3D = () => {
   return (
-    <div className="w-full h-[500px]">
-      <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
-        <ambientLight intensity={0.8} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
+    <div className="w-full h-[500px] pointer-events-none">
+      <Canvas 
+        camera={{ position: [0, 0, 5], fov: 75 }}
+        // Disable the event system to prevent raycasting errors
+        events={() => ({ enabled: false })}
+        style={{ pointerEvents: 'none' }}
+      >
+        <ambientLight intensity={1} />
+        <pointLight position={[10, 10, 10]} intensity={1.5} />
         <Suspense fallback={null}>
-          <Float speed={2} rotationIntensity={1} floatIntensity={2}>
+          <Float speed={1.5} rotationIntensity={0.5} floatIntensity={1}>
             <TaskGlobe />
           </Float>
         </Suspense>
