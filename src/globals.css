@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -25,7 +25,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 243 75% 59%;
-    --radius: 1rem;
+    --radius: 1.25rem;
   }
 
   .dark {
@@ -62,23 +62,26 @@
 }
 
 .ai-gradient {
-  @apply bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600;
+  @apply bg-gradient-to-r from-[#4F46E5] via-[#A855F7] to-[#EC4899];
 }
 
 .ai-glow {
-  box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
 }
 
 .glass-card {
-  @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-800/50;
+  @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl border border-white/20 dark:border-gray-800/50;
 }
 
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+.yobest-score-ring {
+  background: conic-gradient(#4F46E5 var(--score), #e5e7eb 0);
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
 }

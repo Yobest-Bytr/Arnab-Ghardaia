@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import AIInsights from "./pages/AIInsights";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,10 +52,15 @@ const App = () => (
               </ProtectedRoute>
             } />
 
+            <Route path="/ai-insights" element={
+              <ProtectedRoute>
+                <AIInsights />
+              </ProtectedRoute>
+            } />
+
             {/* Placeholder routes for sidebar links */}
-            <Route path="/ai-insights" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/shared" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><AIInsights /></ProtectedRoute>} />
             <Route path="/archive" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             
