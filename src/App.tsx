@@ -13,6 +13,8 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import AIInsights from "./pages/AIInsights";
 import About from "./pages/About";
+import Collaborators from "./pages/Collaborators";
+import NeuralLab from "./pages/NeuralLab";
 import NotFound from "./pages/NotFound";
 import AIEntryModal from "./components/AIEntryModal";
 import SpaceBackground from "./components/SpaceBackground";
@@ -68,7 +70,18 @@ const App = () => (
                   </ProtectedRoute>
                 } />
 
-                <Route path="/shared" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/shared" element={
+                  <ProtectedRoute>
+                    <Collaborators />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/neural-lab" element={
+                  <ProtectedRoute>
+                    <NeuralLab />
+                  </ProtectedRoute>
+                } />
+
                 <Route path="/analytics" element={<ProtectedRoute><AIInsights /></ProtectedRoute>} />
                 <Route path="/archive" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
