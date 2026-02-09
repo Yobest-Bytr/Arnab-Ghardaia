@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield, Globe, Settings, Sparkles, Loader2, LogOut, Check, Palette } from 'lucide-react';
+import { User, Shield, Globe, Settings, Sparkles, Loader2, LogOut, Check, Palette, Server, Zap } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
 import AvatarDecoration, { avatarDecorationEffects } from '@/components/AvatarDecoration';
@@ -20,7 +20,6 @@ const Profile = () => {
   const [domain, setDomain] = useState('yobest.ai');
 
   useEffect(() => {
-    // Load user preferences (mocked for now, would come from a 'profiles' table)
     const savedEffect = localStorage.getItem(`avatar_effect_${user?.id}`);
     if (savedEffect) setSelectedEffect(savedEffect);
   }, [user]);
@@ -70,17 +69,17 @@ const Profile = () => {
           </div>
 
           <Tabs defaultValue="account" className="space-y-12">
-            <TabsList className="bg-white/5 border border-white/10 p-1 rounded-full h-14">
-              <TabsTrigger value="account" className="rounded-full px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold">
+            <TabsList className="bg-white/5 border border-white/10 p-1 rounded-full h-14 overflow-x-auto flex-nowrap">
+              <TabsTrigger value="account" className="rounded-full px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold whitespace-nowrap">
                 <User size={16} className="mr-2" /> Account
               </TabsTrigger>
-              <TabsTrigger value="appearance" className="rounded-full px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold">
+              <TabsTrigger value="appearance" className="rounded-full px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold whitespace-nowrap">
                 <Palette size={16} className="mr-2" /> Appearance
               </TabsTrigger>
-              <TabsTrigger value="project" className="rounded-full px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold">
+              <TabsTrigger value="project" className="rounded-full px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold whitespace-nowrap">
                 <Globe size={16} className="mr-2" /> Project
               </TabsTrigger>
-              <TabsTrigger value="security" className="rounded-full px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold">
+              <TabsTrigger value="security" className="rounded-full px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-bold whitespace-nowrap">
                 <Shield size={16} className="mr-2" /> Security
               </TabsTrigger>
             </TabsList>
@@ -96,6 +95,9 @@ const Profile = () => {
                   />
                   <h3 className="text-xl font-bold">{user?.email?.split('@')[0]}</h3>
                   <p className="text-white/40 text-sm font-medium">{user?.email}</p>
+                  <div className="mt-6 px-4 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                    Pro Member
+                  </div>
                 </div>
                 <div className="md:col-span-2 p-10 pill-nav bg-white/5 border-white/10 space-y-6">
                   <div className="space-y-2">
@@ -146,26 +148,58 @@ const Profile = () => {
             </TabsContent>
 
             <TabsContent value="project" className="space-y-8">
-              <div className="p-10 pill-nav bg-white/5 border-white/10 space-y-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-2xl font-black">Project Domains</h3>
-                    <p className="text-white/40 font-medium">Manage the domains connected to your workspace.</p>
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="p-10 pill-nav bg-white/5 border-white/10 space-y-8">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-2xl font-black">Domains</h3>
+                      <p className="text-white/40 font-medium">Connected workspace domains.</p>
+                    </div>
+                    <Button className="bg-white/10 hover:bg-white/20 text-white rounded-full px-6 font-bold">Add</Button>
                   </div>
-                  <Button className="bg-white/10 hover:bg-white/20 text-white rounded-full px-6 font-bold">Add Domain</Button>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/10">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                        <Globe size={20} />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/10">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                          <Globe size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold">{domain}</p>
+                          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Active</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold">{domain}</p>
-                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Active</p>
+                      <Button variant="ghost" className="text-white/20 hover:text-white">Manage</Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-10 pill-nav bg-white/5 border-white/10 space-y-8">
+                  <h3 className="text-2xl font-black">Project Settings</h3>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Server className="text-indigo-400" size={20} />
+                        <div>
+                          <p className="font-bold">Edge Computing</p>
+                          <p className="text-xs text-white/40">Optimize latency globally</p>
+                        </div>
+                      </div>
+                      <div className="w-12 h-6 bg-indigo-600 rounded-full relative">
+                        <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
                       </div>
                     </div>
-                    <Button variant="ghost" className="text-white/20 hover:text-white">Manage</Button>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Zap className="text-amber-400" size={20} />
+                        <div>
+                          <p className="font-bold">Auto-Optimization</p>
+                          <p className="text-xs text-white/40">AI-driven task sorting</p>
+                        </div>
+                      </div>
+                      <div className="w-12 h-6 bg-white/10 rounded-full relative">
+                        <div className="absolute left-1 top-1 w-4 h-4 bg-white/40 rounded-full" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

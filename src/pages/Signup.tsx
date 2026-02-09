@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Users, Brain, Mail, ShieldCheck, ArrowRight, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, Users, Brain, Mail, ShieldCheck, ArrowRight, AlertCircle, Info } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactConfetti from 'react-confetti';
@@ -17,11 +17,13 @@ const Signup = () => {
   const [success, setSuccess] = useState(false);
   const [welcomeMsg, setWelcomeMsg] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setAuthError(null);
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
@@ -29,19 +31,22 @@ const Signup = () => {
       if (data.user) {
         setUserId(data.user.id);
         try {
-          // Attempt to call the Edge Function
           const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
             body: { email, userId: data.user.id },
           });
           
-          if (funcError) throw funcError;
+          if (funcError) {
+            if (funcError.status === 401) {
+              setAuthError("The Edge Function is protected. Please disable 'Enforce JWT' in the Supabase Dashboard for this function.");
+            }
+            throw funcError;
+          }
           showSuccess('Verification code sent to your email.');
-        } catch (fErr) {
-          console.warn("Edge Function not reachable. Ensure it is deployed.", fErr);
-          showError('Verification service offline. Please ensure the Edge Function is deployed.');
-          // For development/demo purposes, we'll let them see the verify screen
+        } catch (fErr: any) {
+          console.error("Edge Function Error:", fErr);
+          // We don't block the user here in dev mode, but we show the warning
+          setStep('verify');
         }
-        setStep('verify');
       }
     } catch (error: any) {
       showError(error.message || 'Failed to create account');
@@ -91,18 +96,18 @@ const Signup = () => {
       >
         <div className="text-center mb-12">
           <motion.div 
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-indigo-400 mb-8 uppercase tracking-widest"
+            animate={{ y: [0, -5, 0] }}
+            transition={{ repeat: Infinity, duration: 3 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black text-indigo-400 mb-8 uppercase tracking-widest"
           >
-            <Users size={12} />
-            <span>Join 640,000+ Users</span>
+            <Sparkles size={12} />
+            <span>Neural Network Integration</span>
           </motion.div>
           <h1 className="text-5xl font-black tracking-tighter mb-2 dopamine-text">
             {step === 'signup' ? 'Create Account' : 'Verify Email'}
           </h1>
           <p className="text-white/40 font-medium">
-            {step === 'signup' ? 'Start your cognitive journey' : `Enter the code sent to ${email}`}
+            {step === 'signup' ? 'Join the elite 1% of cognitive builders' : `Enter the code sent to ${email}`}
           </p>
         </div>
 
@@ -190,10 +195,20 @@ const Signup = () => {
                 >
                   Back to Signup
                 </button>
+                
+                {authError && (
+                  <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-3">
+                    <AlertCircle size={16} className="text-rose-500 mt-0.5 shrink-0" />
+                    <p className="text-[10px] text-rose-200/60 leading-relaxed">
+                      {authError}
+                    </p>
+                  </div>
+                )}
+
                 <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
-                  <AlertCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
+                  <Info size={16} className="text-amber-500 mt-0.5 shrink-0" />
                   <p className="text-[10px] text-amber-200/60 leading-relaxed">
-                    If you didn't receive a code, ensure the Supabase Edge Function is deployed and your SMTP credentials are correct.
+                    If you are in development, you can check the <code className="text-amber-400">auth_codes</code> table in Supabase for the code.
                   </p>
                 </div>
               </div>
