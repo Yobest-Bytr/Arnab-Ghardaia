@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import AIInsights from "./pages/AIInsights";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import AIEntryModal from "./components/AIEntryModal";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner position="top-center" expand={true} richColors />
+          <AIEntryModal />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />

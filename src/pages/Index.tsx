@@ -1,16 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Brain, Zap, Shield, Globe, Cpu, Target, MessageSquare, Layers } from 'lucide-react';
+import { Sparkles, Brain, Zap, Shield, Globe, Cpu, Target, MessageSquare, Layers, ArrowRight, Play } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { motion } from 'framer-motion';
+import { grokChat } from '@/lib/puter';
 
 const Index = () => {
+  const [aiDemoText, setAiDemoText] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const runDemo = async () => {
+    setIsGenerating(true);
+    setAiDemoText("");
+    await grokChat("Suggest a high-impact productivity task for a software engineer today.", (chunk) => {
+      setAiDemoText(prev => prev + chunk);
+    });
+    setIsGenerating(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
-      {/* Radial Background Effect */}
       <div className="absolute inset-0 auron-radial pointer-events-none" />
-      
       <Navbar />
       
       {/* --- HERO SECTION --- */}
@@ -18,69 +29,99 @@ const Index = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
           className="flex flex-col items-center"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-medium text-white/40 mb-12 uppercase tracking-widest">
+          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-white/40 mb-12 uppercase tracking-widest">
             <Sparkles size={12} className="text-[#99f6ff]" />
-            <span>#1 performance benchmarks</span>
+            <span>Powered by Grok 4.1 Fast</span>
           </div>
           
-          <h1 className="text-6xl md:text-8xl font-medium mb-8 tracking-tight leading-[1.1] max-w-4xl dopamine-text">
-            The #1 AI agent <br /> for customer service
+          <h1 className="text-6xl md:text-9xl font-black mb-8 tracking-tighter leading-[0.9] max-w-5xl dopamine-text">
+            Cognitive <br /> Intelligence.
           </h1>
           
-          <p className="text-lg md:text-xl text-white/40 mb-12 max-w-xl leading-relaxed font-medium">
-            Streamline your business with our intuitive, <br /> scalable AI platform.
+          <p className="text-lg md:text-2xl text-white/40 mb-12 max-w-2xl leading-relaxed font-medium">
+            Yobest AI anticipates your workflow, optimizes your focus, and automates the mundane.
           </p>
           
-          <Link to="/signup">
-            <button className="auron-button flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#020408]" />
-              Start free trial
+          <div className="flex flex-col sm:flex-row gap-6">
+            <Link to="/signup">
+              <button className="auron-button flex items-center gap-3 h-16 px-10 text-xl shadow-[0_0_30px_rgba(153,246,255,0.3)]">
+                Get Started Free
+                <ArrowRight size={20} />
+              </button>
+            </Link>
+            <button onClick={runDemo} className="pill-nav px-10 h-16 flex items-center gap-3 hover:bg-white/10 transition-all font-bold">
+              <Play size={20} className="fill-current" />
+              Watch Grok Demo
             </button>
-          </Link>
+          </div>
         </motion.div>
 
-        {/* Bottom Icon Row */}
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 1 }}
-          className="mt-32 flex items-center justify-center gap-4 md:gap-8"
-        >
-          <div className="icon-pill"><Globe size={20} /></div>
-          <div className="icon-pill"><Layers size={20} /></div>
-          <div className="icon-pill"><MessageSquare size={20} /></div>
-          <div className="icon-pill"><Target size={20} /></div>
-          
-          <div className="icon-pill-active">
-            <Sparkles size={32} className="fill-current" />
-          </div>
-          
-          <div className="icon-pill"><Brain size={20} /></div>
-          <div className="icon-pill"><Shield size={20} /></div>
-          <div className="icon-pill"><Cpu size={20} /></div>
-          <div className="icon-pill"><Zap size={20} /></div>
-        </motion.div>
+        {/* AI Demo Output */}
+        {aiDemoText && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-12 max-w-2xl w-full pill-nav p-8 bg-indigo-500/5 border-indigo-500/20 text-left"
+          >
+            <div className="flex items-center gap-2 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-4">
+              <Brain size={14} />
+              <span>Grok 4.1 Suggestion</span>
+            </div>
+            <p className="text-gray-300 font-medium leading-relaxed italic">"{aiDemoText}"</p>
+          </motion.div>
+        )}
+
+        {/* Viral Stats */}
+        <div className="mt-32 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16">
+          {[
+            { label: "Active Users", val: "640K+" },
+            { label: "Tasks Optimized", val: "12M+" },
+            { label: "Latency", val: "0.02ms" },
+            { label: "AI Accuracy", val: "99.9%" },
+          ].map((stat, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className="text-center"
+            >
+              <h3 className="text-4xl md:text-5xl font-black mb-2 tracking-tighter">{stat.val}</h3>
+              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
       </section>
 
-      {/* --- SUBTLE CONTENT SECTION --- */}
+      {/* --- PROBLEM/SOLUTION --- */}
       <section className="py-40 px-6 relative z-10 border-t border-white/5">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-16">
-          {[
-            { title: "Neural Engine", desc: "Advanced cognitive processing for complex queries.", icon: Brain },
-            { title: "Global Scale", desc: "Deploy across 40+ regions with zero latency.", icon: Globe },
-            { title: "Quantum Security", desc: "End-to-end encryption for all AI interactions.", icon: Shield }
-          ].map((feature, i) => (
-            <div key={i} className="flex flex-col items-center text-center group">
-              <div className="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:text-[#99f6ff] group-hover:bg-white/10 transition-all mb-8">
-                <feature.icon size={32} />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
-              <p className="text-white/40 font-medium leading-relaxed">{feature.desc}</p>
-            </div>
-          ))}
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-24">
+            <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">The Cognitive <span className="text-[#99f6ff]">Edge</span></h2>
+            <p className="text-xl text-white/40 font-medium">Why the elite 1% choose Yobest AI.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { title: "Workflow Anticipation", desc: "Grok 4.1 learns your rhythm and prepares your next task before you even think of it.", icon: Brain },
+              { title: "Neural Security", desc: "Your data is encrypted at the cognitive level, ensuring total privacy in the digital void.", icon: Shield },
+              { title: "Global Sync", desc: "Zero-latency synchronization across all your devices, powered by Puter's edge network.", icon: Globe }
+            ].map((card, i) => (
+              <motion.div 
+                key={i}
+                whileHover={{ y: -10 }}
+                className="pill-nav p-12 flex flex-col items-center text-center group"
+              >
+                <div className="w-20 h-20 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center text-white/20 group-hover:text-[#99f6ff] group-hover:bg-[#99f6ff]/10 transition-all mb-10">
+                  <card.icon size={40} />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">{card.title}</h3>
+                <p className="text-white/40 font-medium leading-relaxed">{card.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 

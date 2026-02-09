@@ -1,12 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-// These variables are provided by the Supabase integration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Hardcoded credentials as requested for the Yobest AI platform
+const supabaseUrl = 'https://kyzjxatlcfypghianon.supabase.co';
+const supabaseAnonKey = 'sb_publishable_G-9Txvs0NUn5FYDsTK7_BA_NLA0LFt4';
 
-// Fallback to prevent immediate crash if variables are missing
-// The app will still require these to be set via the 'Add Supabase' button to function
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder-url.supabase.co', 
-  supabaseAnonKey || 'placeholder-key'
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
