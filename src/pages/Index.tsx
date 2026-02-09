@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Brain, Zap, Shield, Globe, Cpu, Target, MessageSquare, Layers, ArrowRight, Play, Quote, Star, Eye, Users, TrendingUp } from 'lucide-react';
+import { Sparkles, Brain, Zap, Target, Eye, Users, Play, Quote, Star, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { motion } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Index = () => {
+  const { t, isRTL } = useLanguage();
   const [aiDemoText, setAiDemoText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [stats, setStats] = useState<any[]>([]);
@@ -48,23 +50,23 @@ const Index = () => {
           </div>
           
           <h1 className="text-6xl md:text-9xl font-black mb-8 tracking-tighter leading-[0.9] max-w-5xl dopamine-text">
-            Cognitive <br /> Intelligence.
+            {t('heroTitle')}
           </h1>
           
           <p className="text-lg md:text-2xl text-white/40 mb-12 max-w-2xl leading-relaxed font-medium">
-            Yobest AI anticipates your workflow, optimizes your focus, and automates the mundane.
+            {t('heroSubtitle')}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6">
             <Link to="/signup">
               <button className="auron-button flex items-center gap-3 h-16 px-10 text-xl shadow-[0_0_30px_rgba(153,246,255,0.3)]">
-                Get Started Free
-                <ArrowRight size={20} />
+                {t('getStarted')}
+                <ArrowRight size={20} className={isRTL ? "rotate-180" : ""} />
               </button>
             </Link>
             <button onClick={runDemo} className="pill-nav px-10 h-16 flex items-center gap-3 hover:bg-white/10 transition-all font-bold">
               <Play size={20} className="fill-current" />
-              Watch Grok Demo
+              {t('watchStory')}
             </button>
           </div>
         </motion.div>
@@ -123,7 +125,7 @@ const Index = () => {
               <span>Elite Feedback</span>
             </motion.div>
             <h2 className="text-6xl md:text-8xl font-black tracking-tighter mb-6">
-              Voices from <br /> the <span className="text-[#99f6ff]">Void</span>
+              {t('testimonialsTitle')}
             </h2>
             <p className="text-xl text-white/30 font-bold max-w-xl mx-auto">
               The world's most ambitious builders are already living in the future.
