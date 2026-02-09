@@ -1,6 +1,6 @@
 import React, { useRef, Suspense, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float } from '@react-three/drei';
+import { Float, MeshDistortMaterial, Sphere } from '@react-three/drei';
 
 const TaskGlobe = () => {
   const meshRef = useRef<any>(null);
@@ -8,26 +8,23 @@ const TaskGlobe = () => {
   useFrame((state) => {
     if (!meshRef.current) return;
     const t = state.clock.getElapsedTime();
-    meshRef.current.rotation.x = t * 0.15;
-    meshRef.current.rotation.y = t * 0.2;
+    meshRef.current.rotation.x = t * 0.1;
+    meshRef.current.rotation.y = t * 0.15;
   });
 
   return (
-    <mesh 
-      ref={meshRef} 
-      scale={2.5}
-      // Disable raycasting at the mesh level
-      raycast={() => null}
-    >
-      <sphereGeometry args={[1, 64, 64]} />
-      <meshStandardMaterial 
-        color="#6366f1" 
-        roughness={0.3} 
-        metalness={0.8}
-        emissive="#4f46e5"
-        emissiveIntensity={0.2}
-      />
-    </mesh>
+    <Float speed={2} rotationIntensity={1} floatIntensity={2}>
+      <Sphere args={[1, 64, 64]} scale={2.2}>
+        <MeshDistortMaterial
+          color="#6366f1"
+          speed={3}
+          distort={0.4}
+          radius={1}
+          metalness={0.8}
+          roughness={0.2}
+        />
+      </Sphere>
+    </Float>
   );
 };
 
@@ -38,32 +35,25 @@ const Hero3D = () => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return <div className="w-full h-[500px]" />;
+  if (!mounted) return <div className="w-full h-[600px]" />;
 
   return (
-    <div className="w-full h-[500px] pointer-events-none select-none overflow-hidden">
+    <div className="w-full h-[600px] pointer-events-none select-none relative">
       <Canvas 
-        camera={{ position: [0, 0, 5], fov: 75 }}
+        camera={{ position: [0, 0, 5], fov: 45 }}
         gl={{ antialias: true, alpha: true }}
-        // Use a null event manager to completely bypass the R3F event system
-        events={() => ({ 
-          enabled: false,
-          priority: 1,
-          compute: () => {},
-          connected: false,
-          handlers: {}
-        })}
         style={{ pointerEvents: 'none' }}
       >
-        <ambientLight intensity={1} />
-        <pointLight position={[10, 10, 10]} intensity={2} />
-        <spotLight position={[-10, 10, 10]} angle={0.15} penumbra={1} intensity={1} />
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} intensity={1} />
+        <spotLight position={[-10, 10, 10]} angle={0.15} penumbra={1} />
         <Suspense fallback={null}>
-          <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
-            <TaskGlobe />
-          </Float>
+          <TaskGlobe />
         </Suspense>
       </Canvas>
+      
+      {/* Decorative elements around the globe */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-indigo-500/20 blur-[120px] rounded-full -z-10 animate-pulse" />
     </div>
   );
 };
