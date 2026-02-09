@@ -1,5 +1,6 @@
 /**
  * Utility to interact with Puter AI (Grok 4.1 Fast)
+ * Based on: https://developer.puter.com/tutorials/free-unlimited-grok-api/
  */
 
 export const grokChat = async (prompt: string, streamCallback?: (chunk: string) => void) => {
@@ -9,10 +10,11 @@ export const grokChat = async (prompt: string, streamCallback?: (chunk: string) 
   }
 
   try {
+    // Using the exact signature from Puter documentation
     const response = await (window as any).puter.ai.chat(
+      prompt,
       {
         model: 'x-ai/grok-4.1-fast',
-        messages: [{ role: 'user', content: prompt }],
         stream: !!streamCallback,
       }
     );
@@ -20,25 +22,34 @@ export const grokChat = async (prompt: string, streamCallback?: (chunk: string) 
     if (!response) return "No response from engine.";
 
     if (streamCallback) {
-      // Ensure response is iterable before attempting to loop
-      if (typeof response[Symbol.asyncIterator] === 'function') {
+      // Handle streaming response as an async iterator
+      try {
         for await (const part of response) {
-          streamCallback(part?.text || "");
+          if (part?.text) {
+            streamCallback(part.text);
+          }
         }
         return "";
-      } else if (response.message?.content) {
-        streamCallback(response.message.content);
-        return response.message.content;
+      } catch (streamError) {
+        // Fallback if response is not an iterator but contains content
+        if (response.message?.content) {
+          streamCallback(response.message.content);
+          return response.message.content;
+        }
+        throw streamError;
       }
     }
 
+    // Handle non-streaming response
     return response?.message?.content || "No suggestion available.";
   } catch (error: any) {
     console.error("Grok Error:", error);
-    // Handle the specific 'map' error which often comes from malformed SDK calls
-    if (error.message?.includes('map')) {
-      return "The cognitive engine is recalibrating its neural pathways. Please try again.";
+    
+    // Specific handling for the 'map' error or recalibration
+    if (error.message?.includes('map') || error.message?.includes('undefined')) {
+      return "The cognitive engine is recalibrating. Please try again in a moment.";
     }
+    
     return "The cognitive engine is currently offline.";
   }
 };

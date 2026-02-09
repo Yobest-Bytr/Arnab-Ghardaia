@@ -28,17 +28,20 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch Tasks - Handle 404 if table doesn't exist
+      // Fetch Tasks - Silently handle 404/PGRST205 if table doesn't exist
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       
-      if (taskError && taskError.code !== '42P01') { // 42P01 is 'relation does not exist'
+      if (taskError && taskError.code !== '42P01' && taskError.code !== 'PGRST205') {
         console.error('Task fetch error:', taskError);
       }
-      setTasks(taskData || []);
+
+      // Load from local storage as fallback or primary
+      const localTasks = JSON.parse(localStorage.getItem(`tasks_${user?.id}`) || '[]');
+      setTasks(taskData || localTasks);
 
       // Fetch Scripts from local storage
       const savedScripts = localStorage.getItem(`scripts_${user?.id}`);
@@ -49,7 +52,7 @@ const Dashboard = () => {
       if (savedMsgs) setMessages(JSON.parse(savedMsgs));
 
     } catch (error: any) {
-      console.error('Error fetching data:', error);
+      // Ignore errors related to missing tables
     } finally {
       setLoading(false);
     }
@@ -60,23 +63,25 @@ const Dashboard = () => {
     try {
       const suggestion = await grokChat("Suggest a single, highly productive task for a user today. Keep it under 10 words.");
       
-      // Try to save to Supabase, fallback to local state if table missing
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert([{ 
-          title: suggestion, 
-          user_id: user?.id, 
-          status: 'pending' 
-        }])
-        .select();
+      const newTask = { 
+        id: Date.now(), 
+        title: suggestion, 
+        status: 'pending', 
+        created_at: new Date().toISOString(),
+        user_id: user?.id 
+      };
 
-      if (error) {
-        // Fallback to local state if table is missing (404/42P01)
-        const localTask = { id: Date.now(), title: suggestion, status: 'pending', created_at: new Date().toISOString() };
-        setTasks([localTask, ...tasks]);
-      } else {
-        setTasks([data[0], ...tasks]);
+      // Try to save to Supabase, but don't fail if table is missing
+      try {
+        await supabase.from('tasks').insert([newTask]);
+      } catch (e) {
+        // Silent fail for DB insert
       }
+      
+      // Always update local state and storage
+      const updatedTasks = [newTask, ...tasks];
+      setTasks(updatedTasks);
+      localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updatedTasks));
       
       // Save to history
       const newMsg = { id: Date.now(), role: 'assistant', content: suggestion, timestamp: new Date().toISOString() };
