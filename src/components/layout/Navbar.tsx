@@ -17,17 +17,18 @@ const Navbar = () => {
 
   return (
     <div className="fixed top-8 left-0 right-0 z-50 flex justify-center px-6">
-      <nav className="pill-nav flex items-center gap-8 max-w-5xl w-full justify-between">
+      <nav className="pill-nav flex items-center gap-8 max-w-6xl w-full justify-between">
         <Link to="/" className="flex items-center gap-2 group">
           <Sparkles className="w-5 h-5 text-[#99f6ff]" />
           <span className="font-bold text-lg tracking-tight text-white">Yobest</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-8">
           <Link to="/" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Home</Link>
+          <Link to="/showcase" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Showcase</Link>
+          <Link to="/pricing" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Pricing</Link>
           <Link to="/about" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">About</Link>
           <Link to="/dashboard" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Workspace</Link>
-          <Link to="/ai-insights" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Insights</Link>
         </div>
 
         <div className="flex items-center gap-4">

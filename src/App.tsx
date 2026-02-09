@@ -18,6 +18,8 @@ import NeuralLab from "./pages/NeuralLab";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Changelog from "./pages/Changelog";
+import Pricing from "./pages/Pricing";
+import Showcase from "./pages/Showcase";
 import NotFound from "./pages/NotFound";
 import AIEntryModal from "./components/AIEntryModal";
 import SpaceBackground from "./components/SpaceBackground";
@@ -42,6 +44,7 @@ const App = () => (
       <LanguageProvider>
         <TooltipProvider>
           <Toaster />
+          <Toaster />
           <Sonner position="top-center" expand={true} richColors />
           <AIEntryModal />
           <div className="relative min-h-screen overflow-hidden">
@@ -57,6 +60,8 @@ const App = () => (
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/changelog" element={<Changelog />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/showcase" element={<Showcase />} />
                 
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
