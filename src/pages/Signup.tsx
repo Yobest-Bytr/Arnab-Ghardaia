@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Users, Brain, Mail, ShieldCheck, ArrowRight, AlertCircle, Info } from 'lucide-react';
+import { Sparkles, Loader2, Users, Brain, Mail, ShieldCheck, ArrowRight, AlertCircle, Info, Eye, EyeOff, Check, X } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactConfetti from 'react-confetti';
@@ -12,6 +12,7 @@ import AvatarDecoration from '@/components/AvatarDecoration';
 const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'signup' | 'verify'>('signup');
@@ -21,8 +22,20 @@ const Signup = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const passwordRequirements = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    { label: "Contains a number", met: /\d/.test(password) },
+    { label: "Contains a special character", met: /[^A-Za-z0-9]/.test(password) },
+  ];
+
+  const strength = passwordRequirements.filter(r => r.met).length;
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (strength < 3) {
+      showError('Please use a stronger password.');
+      return;
+    }
     setLoading(true);
     setAuthError(null);
     try {
@@ -30,7 +43,7 @@ const Signup = () => {
       
       if (error) {
         if (error.status === 429) {
-          throw new Error("Too many signup attempts. Please wait a few minutes before trying again.");
+          throw new Error("Too many signup attempts. Please wait a few minutes.");
         }
         throw error;
       }
@@ -38,17 +51,10 @@ const Signup = () => {
       if (data.user) {
         setUserId(data.user.id);
         try {
-          const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
+          await supabase.functions.invoke('send-verification-code', {
             body: { email, userId: data.user.id },
           });
-          
-          if (funcError) {
-            if (funcError.status === 401) {
-              setAuthError("The Edge Function is protected. Please disable 'Enforce JWT' in the Supabase Dashboard for this function.");
-            }
-            throw funcError;
-          }
-          showSuccess('Verification code sent to your email.');
+          showSuccess('Verification code sent.');
         } catch (fErr: any) {
           console.error("Edge Function Error:", fErr);
           setStep('verify');
@@ -74,17 +80,17 @@ const Signup = () => {
         .gt('expires_at', new Date().toISOString())
         .single();
 
-      if (error || !data) throw new Error('Invalid or expired verification code.');
+      if (error || !data) throw new Error('Invalid or expired code.');
 
       setSuccess(true);
-      showSuccess('Email verified successfully.');
+      showSuccess('Email verified.');
       
       const msg = await grokChat(`Write a 1-sentence welcome message for a new user named ${email.split('@')[0]} who just joined Yobest AI.`);
       setWelcomeMsg(msg);
 
       setTimeout(() => navigate('/dashboard'), 4000);
     } catch (error: any) {
-      showError(error.message || 'Verification failed. Check your code.');
+      showError(error.message || 'Verification failed.');
     } finally {
       setLoading(false);
     }
@@ -149,17 +155,47 @@ const Signup = () => {
                   className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium"
                 />
               </div>
-              <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all group">
+              <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all group relative">
                 <ShieldCheck className="text-white/20 group-focus-within:text-[#99f6ff] transition-colors" size={20} />
                 <Input 
-                  type="password" 
-                  placeholder="Password" 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="Strong Password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required 
-                  className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium"
+                  className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium pr-12"
                 />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-6 text-white/20 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
+
+              {/* Password Strength Meter */}
+              <div className="px-6 py-4 bg-white/5 rounded-3xl border border-white/5 space-y-3">
+                <div className="flex gap-1 h-1">
+                  {[1, 2, 3].map((i) => (
+                    <div 
+                      key={i} 
+                      className={`flex-1 rounded-full transition-all duration-500 ${
+                        strength >= i ? (strength === 3 ? 'bg-emerald-500' : 'bg-amber-500') : 'bg-white/10'
+                      }`} 
+                    />
+                  ))}
+                </div>
+                <div className="space-y-1">
+                  {passwordRequirements.map((req, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+                      {req.met ? <Check size={10} className="text-emerald-500" /> : <X size={10} className="text-white/20" />}
+                      <span className={req.met ? 'text-white/60' : 'text-white/20'}>{req.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <button type="submit" className="auron-button w-full h-16 text-xl mt-6 shadow-[0_0_30px_rgba(153,246,255,0.2)] flex items-center justify-center gap-3" disabled={loading}>
                 {loading ? <Loader2 className="animate-spin" /> : (
                   <>
@@ -208,20 +244,10 @@ const Signup = () => {
                 >
                   Back to Signup
                 </button>
-                
-                {authError && (
-                  <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-3">
-                    <AlertCircle size={16} className="text-rose-500 mt-0.5 shrink-0" />
-                    <p className="text-[10px] text-rose-200/60 leading-relaxed">
-                      {authError}
-                    </p>
-                  </div>
-                )}
-
                 <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
                   <Info size={16} className="text-amber-500 mt-0.5 shrink-0" />
                   <p className="text-[10px] text-amber-200/60 leading-relaxed">
-                    If you are in development, you can check the <code className="text-amber-400">auth_codes</code> table in Supabase for the code.
+                    Check the <code className="text-amber-400">auth_codes</code> table in Supabase for the code if email fails.
                   </p>
                 </div>
               </div>

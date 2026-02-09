@@ -17,16 +17,28 @@ export const grokChat = async (prompt: string, streamCallback?: (chunk: string) 
       }
     );
 
-    if (streamCallback && response) {
-      for await (const part of response) {
-        streamCallback(part?.text || "");
+    if (!response) return "No response from engine.";
+
+    if (streamCallback) {
+      // Ensure response is iterable before attempting to loop
+      if (typeof response[Symbol.asyncIterator] === 'function') {
+        for await (const part of response) {
+          streamCallback(part?.text || "");
+        }
+        return "";
+      } else if (response.message?.content) {
+        streamCallback(response.message.content);
+        return response.message.content;
       }
-      return "";
     }
 
     return response?.message?.content || "No suggestion available.";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Grok Error:", error);
-    return "The cognitive engine is currently recalibrating.";
+    // Handle the specific 'map' error which often comes from malformed SDK calls
+    if (error.message?.includes('map')) {
+      return "The cognitive engine is recalibrating its neural pathways. Please try again.";
+    }
+    return "The cognitive engine is currently offline.";
   }
 };

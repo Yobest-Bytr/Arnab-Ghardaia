@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Chrome, ShieldCheck, Mail, ArrowRight } from 'lucide-react';
+import { Sparkles, Loader2, Chrome, ShieldCheck, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -95,22 +97,41 @@ const Login = () => {
                 className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium"
               />
             </div>
-            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all group">
+            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all group relative">
               <ShieldCheck className="text-white/20 group-focus-within:text-[#99f6ff] transition-colors" size={20} />
               <Input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 placeholder="Password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required 
-                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium"
+                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium pr-12"
               />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-6 text-white/20 hover:text-white transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
-            <div className="flex justify-end">
+            
+            <div className="flex items-center justify-between px-2">
+              <button 
+                type="button"
+                onClick={() => setRememberMe(!rememberMe)}
+                className="flex items-center gap-2 group"
+              >
+                <div className={`w-4 h-4 rounded border transition-all flex items-center justify-center ${rememberMe ? 'bg-[#99f6ff] border-[#99f6ff]' : 'border-white/10 group-hover:border-white/30'}`}>
+                  {rememberMe && <Check size={10} className="text-[#020408] stroke-[4]" />}
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/30 group-hover:text-white/50 transition-colors">Remember Me</span>
+              </button>
               <Link to="/forgot-password" size="sm" className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-[#99f6ff] transition-colors">
                 Forgot Password?
               </Link>
             </div>
+
             <button type="submit" className="auron-button w-full h-16 text-xl mt-6 flex items-center justify-center gap-3" disabled={loading}>
               {loading ? <Loader2 className="animate-spin" /> : (
                 <>
