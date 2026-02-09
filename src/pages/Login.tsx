@@ -106,6 +106,11 @@ const Login = () => {
                 className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium"
               />
             </div>
+            <div className="flex justify-end">
+              <Link to="/forgot-password" size="sm" className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-[#99f6ff] transition-colors">
+                Forgot Password?
+              </Link>
+            </div>
             <button type="submit" className="auron-button w-full h-16 text-xl mt-6 flex items-center justify-center gap-3" disabled={loading}>
               {loading ? <Loader2 className="animate-spin" /> : (
                 <>

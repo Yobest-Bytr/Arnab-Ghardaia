@@ -7,6 +7,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactConfetti from 'react-confetti';
 import { grokChat } from '@/lib/puter';
+import AvatarDecoration from '@/components/AvatarDecoration';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -26,7 +27,13 @@ const Signup = () => {
     setAuthError(null);
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
+      
+      if (error) {
+        if (error.status === 429) {
+          throw new Error("Too many signup attempts. Please wait a few minutes before trying again.");
+        }
+        throw error;
+      }
 
       if (data.user) {
         setUserId(data.user.id);
@@ -44,7 +51,6 @@ const Signup = () => {
           showSuccess('Verification code sent to your email.');
         } catch (fErr: any) {
           console.error("Edge Function Error:", fErr);
-          // We don't block the user here in dev mode, but we show the warning
           setStep('verify');
         }
       }
@@ -172,6 +178,13 @@ const Signup = () => {
               onSubmit={handleVerify} 
               className="space-y-4"
             >
+              <div className="flex justify-center mb-8">
+                <AvatarDecoration 
+                  fallbackText={email} 
+                  effect="none" 
+                  size="lg" 
+                />
+              </div>
               <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all">
                 <Input 
                   type="text" 
