@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Chrome, ShieldCheck, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, Loader2, Chrome, ShieldCheck, Mail, ArrowRight, Eye, EyeOff, Check } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
 
@@ -127,7 +127,7 @@ const Login = () => {
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/30 group-hover:text-white/50 transition-colors">Remember Me</span>
               </button>
-              <Link to="/forgot-password" size="sm" className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-[#99f6ff] transition-colors">
+              <Link to="/forgot-password" className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-[#99f6ff] transition-colors">
                 Forgot Password?
               </Link>
             </div>

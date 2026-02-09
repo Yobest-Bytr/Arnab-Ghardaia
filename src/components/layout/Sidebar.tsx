@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, Archive, Settings, BrainCircuit, Zap, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
 const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose?: () => void }) => {
   const links = [
@@ -51,13 +52,17 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose?: () => void })
                     : "text-gray-500 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-400"
                 )}
               >
-                <motion.div
-                  whileHover={{ scale: 1.2, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  <link.icon size={20} className={cn("transition-colors", isActive ? "text-white" : "group-hover:text-indigo-600")} />
-                </motion.div>
-                {link.label}
+                {({ isActive }) => (
+                  <>
+                    <motion.div
+                      whileHover={{ scale: 1.2, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      <link.icon size={20} className={cn("transition-colors", isActive ? "text-white" : "group-hover:text-indigo-600")} />
+                    </motion.div>
+                    {link.label}
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
