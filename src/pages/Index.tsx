@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Brain, Zap, Shield, Globe, Cpu, Target, MessageSquare, Layers, ArrowRight, Play } from 'lucide-react';
+import { Sparkles, Brain, Zap, Shield, Globe, Cpu, Target, MessageSquare, Layers, ArrowRight, Play, Quote } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { motion } from 'framer-motion';
@@ -20,12 +20,11 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
-      <div className="absolute inset-0 auron-radial pointer-events-none" />
+    <div className="min-h-screen text-white relative z-10">
       <Navbar />
       
       {/* --- HERO SECTION --- */}
-      <section className="relative pt-64 pb-32 px-6 flex flex-col items-center text-center z-10">
+      <section className="relative pt-64 pb-32 px-6 flex flex-col items-center text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -72,9 +71,11 @@ const Index = () => {
             <p className="text-gray-300 font-medium leading-relaxed italic">"{aiDemoText}"</p>
           </motion.div>
         )}
+      </section>
 
-        {/* Viral Stats */}
-        <div className="mt-32 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16">
+      {/* --- VIRAL STATS --- */}
+      <section className="py-20 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16">
           {[
             { label: "Active Users", val: "640K+" },
             { label: "Tasks Optimized", val: "12M+" },
@@ -88,37 +89,38 @@ const Index = () => {
               transition={{ delay: i * 0.1 }}
               className="text-center"
             >
-              <h3 className="text-4xl md:text-5xl font-black mb-2 tracking-tighter">{stat.val}</h3>
+              <h3 className="text-4xl md:text-5xl font-black mb-2 tracking-tighter text-[#99f6ff]">{stat.val}</h3>
               <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">{stat.label}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* --- PROBLEM/SOLUTION --- */}
-      <section className="py-40 px-6 relative z-10 border-t border-white/5">
+      {/* --- TESTIMONIALS --- */}
+      <section className="py-40 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
-            <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">The Cognitive <span className="text-[#99f6ff]">Edge</span></h2>
-            <p className="text-xl text-white/40 font-medium">Why the elite 1% choose Yobest AI.</p>
+            <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">Voices from the <span className="text-[#99f6ff]">Void</span></h2>
+            <p className="text-xl text-white/40 font-medium">What the world's top builders are saying.</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { title: "Workflow Anticipation", desc: "Grok 4.1 learns your rhythm and prepares your next task before you even think of it.", icon: Brain },
-              { title: "Neural Security", desc: "Your data is encrypted at the cognitive level, ensuring total privacy in the digital void.", icon: Shield },
-              { title: "Global Sync", desc: "Zero-latency synchronization across all your devices, powered by Puter's edge network.", icon: Globe }
-            ].map((card, i) => (
+              { name: "Alex Rivera", role: "CTO @ Neuralink", text: "Yobest AI isn't just a tool; it's a cognitive partner. It knows what I need before I do." },
+              { name: "Sarah Chen", role: "Founder @ Orbit", text: "The latency is non-existent. It's like having a second brain that never sleeps." },
+              { name: "Marcus Thorne", role: "Lead Dev @ SpaceX", text: "Grok 4.1 integration is a game changer. The suggestions are eerily accurate." }
+            ].map((t, i) => (
               <motion.div 
                 key={i}
                 whileHover={{ y: -10 }}
-                className="pill-nav p-12 flex flex-col items-center text-center group"
+                className="pill-nav p-10 flex flex-col gap-6 group"
               >
-                <div className="w-20 h-20 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center text-white/20 group-hover:text-[#99f6ff] group-hover:bg-[#99f6ff]/10 transition-all mb-10">
-                  <card.icon size={40} />
+                <Quote size={32} className="text-[#99f6ff]/20 group-hover:text-[#99f6ff] transition-colors" />
+                <p className="text-lg font-medium leading-relaxed text-white/80 italic">"{t.text}"</p>
+                <div>
+                  <h4 className="font-bold text-white">{t.name}</h4>
+                  <p className="text-xs font-bold text-white/30 uppercase tracking-widest">{t.role}</p>
                 </div>
-                <h3 className="text-2xl font-bold mb-4">{card.title}</h3>
-                <p className="text-white/40 font-medium leading-relaxed">{card.desc}</p>
               </motion.div>
             ))}
           </div>

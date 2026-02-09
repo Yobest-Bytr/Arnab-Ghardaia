@@ -14,6 +14,8 @@ import AIInsights from "./pages/AIInsights";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import AIEntryModal from "./components/AIEntryModal";
+import SpaceBackground from "./components/SpaceBackground";
+import MouseTrail from "./components/MouseTrail";
 
 const queryClient = new QueryClient();
 
@@ -36,39 +38,43 @@ const App = () => (
           <Toaster />
           <Sonner position="top-center" expand={true} richColors />
           <AIEntryModal />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
+          <div className="relative min-h-screen overflow-hidden">
+            <SpaceBackground />
+            <MouseTrail />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/ai-insights" element={
-                <ProtectedRoute>
-                  <AIInsights />
-                </ProtectedRoute>
-              } />
+                <Route path="/ai-insights" element={
+                  <ProtectedRoute>
+                    <AIInsights />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/shared" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><AIInsights /></ProtectedRoute>} />
-              <Route path="/archive" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+                <Route path="/shared" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><AIInsights /></ProtectedRoute>} />
+                <Route path="/archive" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </div>
         </TooltipProvider>
       </LanguageProvider>
     </AuthProvider>
