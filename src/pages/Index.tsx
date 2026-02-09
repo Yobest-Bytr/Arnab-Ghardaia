@@ -1,15 +1,33 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowRight, Play } from 'lucide-react';
+import { Sparkles, ArrowRight, Play, Quote, Star, Zap, Globe, Shield } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import SpaceBackground from '@/components/SpaceBackground';
 import MouseTrail from '@/components/MouseTrail';
+import ShowcaseCard from '@/components/ShowcaseCard';
+import PricingCard from '@/components/PricingCard';
+import Footer from '@/components/layout/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 
 const Index = () => {
   const { t, isRTL } = useLanguage();
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden selection:bg-indigo-500 selection:text-white relative">
@@ -18,12 +36,10 @@ const Index = () => {
       <Navbar />
       
       {/* --- HERO SECTION --- */}
-      <section className="relative pt-32 pb-32 px-6 min-h-screen flex items-center">
-        {/* Nebula Effects */}
+      <section className="relative pt-48 pb-32 px-6 min-h-screen flex items-center">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
           <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-indigo-600/10 blur-[180px] rounded-full animate-pulse" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] bg-purple-600/10 blur-[180px] rounded-full animate-pulse" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] h-[50%] bg-blue-500/5 blur-[150px] rounded-full" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 w-full">
@@ -62,60 +78,118 @@ const Index = () => {
                   {t('watchStory')}
                 </Button>
               </div>
-
-              <div className="mt-20 flex flex-col sm:flex-row items-center gap-8">
-                <div className="flex -space-x-4">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <motion.div 
-                      key={i} 
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="w-14 h-14 rounded-full border-4 border-gray-950 bg-gray-800 overflow-hidden shadow-xl"
-                    >
-                      <img src={`https://i.pravatar.cc/150?u=user${i}`} alt="User" />
-                    </motion.div>
-                  ))}
-                </div>
-                <div className="text-lg font-bold text-gray-400">
-                  <span className="text-white font-black">640,000+</span> {t('usersJoined')}
-                </div>
-              </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* --- SPACE FEATURES --- */}
+      {/* --- SHOWCASE SECTION --- */}
+      <section className="py-32 px-6 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
+            <div>
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-4">{t('showcaseTitle')}</h2>
+              <p className="text-xl text-gray-500 font-bold">Built with the power of Yobest AI.</p>
+            </div>
+            <Button variant="link" className="text-indigo-400 font-black text-lg p-0 h-auto hover:text-indigo-300">
+              View All Projects <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
+          
+          <motion.div 
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            className="grid md:grid-cols-3 gap-10"
+          >
+            <ShowcaseCard 
+              title="Project Nebula" 
+              category="SaaS Platform" 
+              image="https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&q=80&w=800" 
+            />
+            <ShowcaseCard 
+              title="Quantum Tasker" 
+              category="Productivity App" 
+              image="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=800" 
+            />
+            <ShowcaseCard 
+              title="Nova CRM" 
+              category="Enterprise Tool" 
+              image="https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=800" 
+            />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* --- PRICING SECTION --- */}
       <section className="py-32 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
-            <h2 className="text-5xl md:text-7xl font-black mb-6 tracking-tighter">Explore the <span className="dopamine-text">Cosmos</span></h2>
-            <p className="text-xl text-gray-400 font-medium">Productivity tools from another dimension.</p>
+            <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">{t('pricingTitle')}</h2>
+            <p className="text-xl text-gray-500 font-bold">Simple, transparent pricing for every stage of your journey.</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-10">
+            <PricingCard 
+              name="Stardust" 
+              price="$0" 
+              features={["3 AI Projects", "Basic Insights", "Community Support", "1GB Storage"]} 
+            />
+            <PricingCard 
+              name="Supernova" 
+              price="$29" 
+              isPopular 
+              features={["Unlimited Projects", "Advanced AI Engine", "Priority Support", "100GB Storage", "Custom Domains"]} 
+            />
+            <PricingCard 
+              name="Galactic" 
+              price="$99" 
+              features={["Enterprise Security", "Dedicated AI Node", "24/7 Concierge", "Unlimited Storage", "API Access"]} 
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* --- TESTIMONIALS --- */}
+      <section className="py-32 px-6 relative z-10 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-indigo-600/5 blur-[200px] rounded-full pointer-events-none" />
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-24">
+            <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">{t('testimonialsTitle')}</h2>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-10">
             {[
-              { title: "Neural Sync", desc: "Connect your thoughts directly to your workspace with zero latency.", icon: Sparkles },
-              { title: "Zero Gravity", desc: "Experience a UI that feels weightless, fast, and perfectly optimized.", icon: ArrowRight },
-              { title: "Star Insights", desc: "AI-driven analytics that reveal patterns across your digital universe.", icon: Sparkles }
-            ].map((feature, i) => (
+              { name: "Alex Rivera", role: "Founder @ Nova", text: "Yobest AI didn't just change my workflow, it changed how I think about productivity. It's like having a second brain in the cloud." },
+              { name: "Sarah Chen", role: "Lead Designer", text: "The interface is breathtaking. It's the first tool that actually feels like it was built for the future." }
+            ].map((t, i) => (
               <motion.div 
                 key={i}
-                whileHover={{ y: -15, scale: 1.02 }}
-                className="p-12 bg-white/5 border border-white/10 rounded-[3.5rem] hover:bg-white/10 transition-all backdrop-blur-xl group relative overflow-hidden"
+                whileHover={{ scale: 1.02 }}
+                className="p-12 rounded-[3.5rem] bg-white/5 border border-white/10 backdrop-blur-xl relative"
               >
-                <div className="absolute -right-10 -top-10 w-32 h-32 bg-indigo-600/10 rounded-full blur-3xl group-hover:bg-indigo-600/20 transition-colors" />
-                <div className="w-20 h-20 bg-indigo-600/20 rounded-3xl flex items-center justify-center text-indigo-400 mb-10 group-hover:rotate-12 transition-transform">
-                  <feature.icon size={40} />
+                <Quote className="absolute top-10 right-10 text-indigo-500/20 w-20 h-20" />
+                <div className="flex gap-1 mb-6">
+                  {[1, 2, 3, 4, 5].map(s => <Star key={s} size={16} className="fill-indigo-400 text-indigo-400" />)}
                 </div>
-                <h3 className="text-3xl font-black mb-6">{feature.title}</h3>
-                <p className="text-xl text-gray-400 font-medium leading-relaxed">{feature.desc}</p>
+                <p className="text-2xl font-bold text-white mb-10 leading-relaxed italic">"{t.text}"</p>
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 font-black text-xl">
+                    {t.name[0]}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-white">{t.name}</h4>
+                    <p className="text-gray-500 font-bold text-sm">{t.role}</p>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 };

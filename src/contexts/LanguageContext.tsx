@@ -33,6 +33,21 @@ const translations: Translations = {
     en: "users already joined",
     fr: "utilisateurs ont déjà rejoint",
     ar: "مستخدم انضموا بالفعل"
+  },
+  showcaseTitle: {
+    en: "Galactic Projects",
+    fr: "Projets Galactiques",
+    ar: "مشاريع مجرية"
+  },
+  pricingTitle: {
+    en: "Choose Your Orbit",
+    fr: "Choisissez votre orbite",
+    ar: "اختر مدارك"
+  },
+  testimonialsTitle: {
+    en: "Voices From The Void",
+    fr: "Voix du Néant",
+    ar: "أصوات من الفراغ"
   }
 };
 
