@@ -1,6 +1,6 @@
 import React, { useRef, Suspense, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { MeshDistortMaterial, Float } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 
 const TaskGlobe = () => {
   const meshRef = useRef<any>(null);
@@ -8,22 +8,24 @@ const TaskGlobe = () => {
   useFrame((state) => {
     if (!meshRef.current) return;
     const t = state.clock.getElapsedTime();
-    meshRef.current.rotation.x = t * 0.2;
-    meshRef.current.rotation.y = t * 0.3;
+    meshRef.current.rotation.x = t * 0.15;
+    meshRef.current.rotation.y = t * 0.2;
   });
 
   return (
     <mesh 
       ref={meshRef} 
-      scale={2.5} 
-      raycast={() => null} // Explicitly disable raycasting on this mesh
+      scale={2.5}
+      // Disable raycasting at the mesh level
+      raycast={() => null}
     >
       <sphereGeometry args={[1, 64, 64]} />
-      <MeshDistortMaterial
-        color="#6366f1"
-        speed={2}
-        distort={0.4}
-        radius={1}
+      <meshStandardMaterial 
+        color="#6366f1" 
+        roughness={0.3} 
+        metalness={0.8}
+        emissive="#4f46e5"
+        emissiveIntensity={0.2}
       />
     </mesh>
   );
@@ -33,7 +35,6 @@ const Hero3D = () => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Ensure the component is fully mounted before starting the 3D engine
     setMounted(true);
   }, []);
 
@@ -44,14 +45,21 @@ const Hero3D = () => {
       <Canvas 
         camera={{ position: [0, 0, 5], fov: 75 }}
         gl={{ antialias: true, alpha: true }}
-        // Completely disable the event system to prevent the raycaster from running
-        events={() => ({ enabled: false })}
+        // Use a null event manager to completely bypass the R3F event system
+        events={() => ({ 
+          enabled: false,
+          priority: 1,
+          compute: () => {},
+          connected: false,
+          handlers: {}
+        })}
         style={{ pointerEvents: 'none' }}
       >
         <ambientLight intensity={1} />
-        <pointLight position={[10, 10, 10]} intensity={1.5} />
+        <pointLight position={[10, 10, 10]} intensity={2} />
+        <spotLight position={[-10, 10, 10]} angle={0.15} penumbra={1} intensity={1} />
         <Suspense fallback={null}>
-          <Float speed={1.5} rotationIntensity={0.5} floatIntensity={1}>
+          <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
             <TaskGlobe />
           </Float>
         </Suspense>
