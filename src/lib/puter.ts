@@ -4,13 +4,12 @@
 
 export const grokChat = async (
   prompt: string, 
-  options: { modelId: string; image?: string; stream?: boolean } = {},
+  options: { modelId: string; userId?: string; image?: string; stream?: boolean } = {},
   streamCallback?: (chunk: string) => void
 ) => {
-  const { modelId, image, stream = true } = options;
+  const { modelId, userId, image, stream = true } = options;
   
-  // Get keys from local storage for premium models
-  const userId = localStorage.getItem('supabase.auth.token') ? JSON.parse(localStorage.getItem('supabase.auth.token') || '{}')?.currentSession?.user?.id : null;
+  // Retrieve keys using the provided userId
   const savedKeys = userId ? JSON.parse(localStorage.getItem(`ai_keys_${userId}`) || '{}') : {};
 
   // Yobest AI uses the free Puter SDK directly

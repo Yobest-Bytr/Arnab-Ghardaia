@@ -81,7 +81,11 @@ const NeuralLab = () => {
       let responseText = "";
       const result = await grokChat(
         input || "Analyze this image", 
-        { modelId: selectedModel.id, image: currentImage || undefined },
+        { 
+          modelId: selectedModel.id, 
+          userId: user?.id, // Passing the userId here
+          image: currentImage || undefined 
+        },
         (chunk) => {
           responseText += chunk;
           setMessages(prev => {
@@ -101,7 +105,6 @@ const NeuralLab = () => {
         }
       );
 
-      // If it wasn't a stream (like an error or simulated response)
       if (result && !responseText) {
         setMessages(prev => [...prev, { 
           id: Date.now() + 1, 
