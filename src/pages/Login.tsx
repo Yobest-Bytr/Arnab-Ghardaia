@@ -127,7 +127,7 @@ const Login = () => {
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/30 group-hover:text-white/50 transition-colors">Remember Me</span>
               </button>
-              <Link to="/forgot-password" className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-[#99f6ff] transition-colors">
+              <Link to="/forgot-password" title="Forgot Password" className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-[#99f6ff] transition-colors">
                 Forgot Password?
               </Link>
             </div>

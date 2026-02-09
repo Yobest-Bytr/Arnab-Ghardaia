@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Brain, Zap, Shield, Globe, Cpu, Target, MessageSquare, Layers, ArrowRight, Play, Quote, Star } from 'lucide-react';
+import { Sparkles, Brain, Zap, Shield, Globe, Cpu, Target, MessageSquare, Layers, ArrowRight, Play, Quote, Star, Eye, Users, TrendingUp } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { motion } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [aiDemoText, setAiDemoText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [stats, setStats] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data } = await supabase.from('site_stats').select('*');
+      if (data) setStats(data);
+    };
+    fetchStats();
+  }, []);
+
+  const getMetric = (name: string) => stats.find(s => s.metric_name === name)?.metric_value || '...';
 
   const runDemo = async () => {
     setIsGenerating(true);
@@ -72,7 +84,31 @@ const Index = () => {
         )}
       </section>
 
-      {/* --- TESTIMONIALS (VOICES FROM THE VOID) --- */}
+      {/* --- STATS SECTION --- */}
+      <section className="py-20 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-8">
+          {[
+            { label: "Global Visits", val: getMetric('total_visits'), icon: Eye },
+            { label: "Active Builders", val: getMetric('active_users'), icon: Users },
+            { label: "Tasks Optimized", val: getMetric('tasks_optimized'), icon: Zap },
+            { label: "AI Accuracy", val: `${getMetric('ai_accuracy')}%`, icon: Target },
+          ].map((stat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="pill-nav p-8 text-center group hover:bg-white/10 transition-all"
+            >
+              <stat.icon size={24} className="text-[#99f6ff] mx-auto mb-4 opacity-40 group-hover:opacity-100 transition-opacity" />
+              <h3 className="text-3xl font-black tracking-tighter mb-1">{stat.val.toLocaleString()}</h3>
+              <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* --- TESTIMONIALS --- */}
       <section className="py-40 px-6 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none" />
         
