@@ -19,10 +19,10 @@ const Footer = () => {
           <div>
             <h4 className="font-black uppercase tracking-widest text-xs text-white mb-8">Platform</h4>
             <ul className="space-y-4 text-gray-500 font-bold">
-              <li><Link to="#" className="hover:text-indigo-400 transition-colors">Features</Link></li>
-              <li><Link to="#" className="hover:text-indigo-400 transition-colors">Integrations</Link></li>
-              <li><Link to="#" className="hover:text-indigo-400 transition-colors">Pricing</Link></li>
-              <li><Link to="#" className="hover:text-indigo-400 transition-colors">Changelog</Link></li>
+              <li><Link to="/ai-insights" className="hover:text-indigo-400 transition-colors">Features</Link></li>
+              <li><Link to="/shared" className="hover:text-indigo-400 transition-colors">Integrations</Link></li>
+              <li><Link to="/dashboard" className="hover:text-indigo-400 transition-colors">Pricing</Link></li>
+              <li><Link to="/changelog" className="hover:text-indigo-400 transition-colors">Changelog</Link></li>
             </ul>
           </div>
           <div>
@@ -39,8 +39,8 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between pt-16 border-t border-white/5 text-gray-600 text-sm font-bold">
           <p>© 2026 Yobest AI. All rights reserved.</p>
           <div className="flex gap-8 mt-4 md:mt-0">
-            <Link to="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link to="#" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

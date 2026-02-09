@@ -15,6 +15,9 @@ import AIInsights from "./pages/AIInsights";
 import About from "./pages/About";
 import Collaborators from "./pages/Collaborators";
 import NeuralLab from "./pages/NeuralLab";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Changelog from "./pages/Changelog";
 import NotFound from "./pages/NotFound";
 import AIEntryModal from "./components/AIEntryModal";
 import SpaceBackground from "./components/SpaceBackground";
@@ -51,6 +54,9 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/changelog" element={<Changelog />} />
                 
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
