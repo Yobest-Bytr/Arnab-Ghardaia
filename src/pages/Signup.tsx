@@ -51,12 +51,14 @@ const Signup = () => {
       if (data.user) {
         setUserId(data.user.id);
         try {
+          // Attempt to send code, but don't block if the function fails (401/404)
           await supabase.functions.invoke('send-verification-code', {
             body: { email, userId: data.user.id },
           });
           showSuccess('Verification code sent.');
         } catch (fErr: any) {
           console.error("Edge Function Error:", fErr);
+          // Fallback: Still move to verify step so user can check DB
           setStep('verify');
         }
       }

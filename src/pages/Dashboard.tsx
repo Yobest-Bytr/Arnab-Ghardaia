@@ -28,19 +28,23 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch Tasks
-      const { data: taskData } = await supabase
+      // Fetch Tasks - Handle 404 if table doesn't exist
+      const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+      
+      if (taskError && taskError.code !== '42P01') { // 42P01 is 'relation does not exist'
+        console.error('Task fetch error:', taskError);
+      }
       setTasks(taskData || []);
 
-      // Fetch Scripts (Mocking for now, usually from a 'scripts' table)
+      // Fetch Scripts from local storage
       const savedScripts = localStorage.getItem(`scripts_${user?.id}`);
       if (savedScripts) setScripts(JSON.parse(savedScripts));
 
-      // Fetch Messages (Mocking for now, usually from a 'messages' table)
+      // Fetch Messages from local storage
       const savedMsgs = localStorage.getItem(`messages_${user?.id}`);
       if (savedMsgs) setMessages(JSON.parse(savedMsgs));
 
@@ -56,6 +60,7 @@ const Dashboard = () => {
     try {
       const suggestion = await grokChat("Suggest a single, highly productive task for a user today. Keep it under 10 words.");
       
+      // Try to save to Supabase, fallback to local state if table missing
       const { data, error } = await supabase
         .from('tasks')
         .insert([{ 
@@ -65,9 +70,13 @@ const Dashboard = () => {
         }])
         .select();
 
-      if (error) throw error;
-      
-      setTasks([data[0], ...tasks]);
+      if (error) {
+        // Fallback to local state if table is missing (404/42P01)
+        const localTask = { id: Date.now(), title: suggestion, status: 'pending', created_at: new Date().toISOString() };
+        setTasks([localTask, ...tasks]);
+      } else {
+        setTasks([data[0], ...tasks]);
+      }
       
       // Save to history
       const newMsg = { id: Date.now(), role: 'assistant', content: suggestion, timestamp: new Date().toISOString() };
@@ -81,14 +90,6 @@ const Dashboard = () => {
     } finally {
       setIsAiGenerating(false);
     }
-  };
-
-  const saveScript = (title: string, content: string) => {
-    const newScript = { id: Date.now(), title, content, created_at: new Date().toISOString() };
-    const updatedScripts = [newScript, ...scripts];
-    setScripts(updatedScripts);
-    localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedScripts));
-    showSuccess('Script saved to Neural Archive');
   };
 
   return (

@@ -14,6 +14,7 @@ import AvatarDecoration, { avatarDecorationEffects } from '@/components/AvatarDe
 const Profile = () => {
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedEffect, setSelectedEffect] = useState<string>('none');
@@ -26,13 +27,24 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    const savedEffect = localStorage.getItem(`avatar_effect_${user?.id}`);
-    if (savedEffect) setSelectedEffect(savedEffect);
-    
-    // Load saved keys from local storage (for demo, usually these would be in a secure vault)
-    const savedKeys = localStorage.getItem(`ai_keys_${user?.id}`);
-    if (savedKeys) setKeys(JSON.parse(savedKeys));
+    if (user) {
+      const savedEffect = localStorage.getItem(`avatar_effect_${user.id}`);
+      if (savedEffect) setSelectedEffect(savedEffect);
+      
+      const savedKeys = localStorage.getItem(`ai_keys_${user.id}`);
+      if (savedKeys) setKeys(JSON.parse(savedKeys));
+
+      const savedName = localStorage.getItem(`display_name_${user.id}`);
+      setDisplayName(savedName || user.email?.split('@')[0] || '');
+    }
   }, [user]);
+
+  const handleUpdateProfile = () => {
+    if (user) {
+      localStorage.setItem(`display_name_${user.id}`, displayName);
+      showSuccess('Profile updated successfully');
+    }
+  };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,14 +67,18 @@ const Profile = () => {
   };
 
   const saveAvatarEffect = (effect: string) => {
-    setSelectedEffect(effect);
-    localStorage.setItem(`avatar_effect_${user?.id}`, effect);
-    showSuccess(`Applied ${effect} effect`);
+    if (user) {
+      setSelectedEffect(effect);
+      localStorage.setItem(`avatar_effect_${user.id}`, effect);
+      showSuccess(`Applied ${effect} effect`);
+    }
   };
 
   const saveAiKeys = () => {
-    localStorage.setItem(`ai_keys_${user?.id}`, JSON.stringify(keys));
-    showSuccess('AI Keys updated successfully');
+    if (user) {
+      localStorage.setItem(`ai_keys_${user.id}`, JSON.stringify(keys));
+      showSuccess('AI Keys updated successfully');
+    }
   };
 
   return (
@@ -108,15 +124,19 @@ const Profile = () => {
                     size="xl" 
                     className="mb-6"
                   />
-                  <h3 className="text-xl font-bold">{user?.email?.split('@')[0]}</h3>
+                  <h3 className="text-xl font-bold">{displayName}</h3>
                   <p className="text-white/40 text-sm font-medium">{user?.email}</p>
                 </div>
                 <div className="md:col-span-2 p-10 pill-nav bg-white/5 border-white/10 space-y-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-black text-white/30 uppercase tracking-widest">Display Name</Label>
-                    <Input defaultValue={user?.email?.split('@')[0]} className="bg-white/5 border-white/10 h-12 rounded-xl font-bold" />
+                    <Input 
+                      value={displayName} 
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="bg-white/5 border-white/10 h-12 rounded-xl font-bold" 
+                    />
                   </div>
-                  <Button className="auron-button h-12 px-8">Save Changes</Button>
+                  <Button onClick={handleUpdateProfile} className="auron-button h-12 px-8">Save Changes</Button>
                 </div>
               </div>
             </TabsContent>
