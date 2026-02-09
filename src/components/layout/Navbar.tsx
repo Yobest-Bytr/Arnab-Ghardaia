@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 
 const Navbar = () => {
@@ -16,17 +15,20 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
-          {['Home', 'Capabilities', 'AI Engine', 'Research', 'Pricing'].map((item) => (
-            <Link key={item} to="#" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">
-              {item}
-            </Link>
-          ))}
+          <Link to="/" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Home</Link>
+          <Link to="/about" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">About</Link>
+          <Link to="/dashboard" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Workspace</Link>
+          <Link to="#" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Pricing</Link>
         </div>
 
         <div className="flex items-center gap-4">
-          {!user && (
+          {!user ? (
             <Link to="/login" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">
               Login
+            </Link>
+          ) : (
+            <Link to="/profile" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">
+              Profile
             </Link>
           )}
           <Link to="/signup">
