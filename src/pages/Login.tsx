@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Chrome } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
 
@@ -27,6 +27,20 @@ const Login = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dashboard'
+        }
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      showError(error.message || 'Google login failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#020408] text-white flex items-center justify-center px-6 relative overflow-hidden">
       <div className="absolute inset-0 auron-radial pointer-events-none" />
@@ -44,31 +58,46 @@ const Login = () => {
           <p className="text-white/40 font-medium">Access your cognitive workspace</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10">
-            <Input 
-              type="email" 
-              placeholder="Email Address" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required 
-              className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0"
-            />
-          </div>
-          <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10">
-            <Input 
-              type="password" 
-              placeholder="Password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-              className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0"
-            />
-          </div>
-          <button type="submit" className="auron-button w-full h-14 text-lg mt-4" disabled={loading}>
-            {loading ? <Loader2 className="animate-spin mx-auto" /> : "Log In"}
+        <div className="space-y-4">
+          <button 
+            onClick={handleGoogleLogin}
+            className="pill-nav w-full h-14 flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 transition-all font-bold border-white/10"
+          >
+            <Chrome size={20} className="text-[#99f6ff]" />
+            Continue with Google
           </button>
-        </form>
+
+          <div className="relative py-4">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#020408] px-2 text-white/20 font-bold">Or continue with email</span></div>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10">
+              <Input 
+                type="email" 
+                placeholder="Email Address" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required 
+                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0"
+              />
+            </div>
+            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10">
+              <Input 
+                type="password" 
+                placeholder="Password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required 
+                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0"
+              />
+            </div>
+            <button type="submit" className="auron-button w-full h-14 text-lg mt-4" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin mx-auto" /> : "Log In"}
+            </button>
+          </form>
+        </div>
 
         <p className="text-center mt-8 text-white/40 font-medium">
           New here? <Link to="/signup" className="text-[#99f6ff] hover:underline">Create Account</Link>
