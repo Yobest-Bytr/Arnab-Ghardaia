@@ -1,4 +1,4 @@
-import React, { useRef, Suspense } from 'react';
+import React, { useRef, Suspense, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { MeshDistortMaterial, Float } from '@react-three/drei';
 
@@ -13,7 +13,11 @@ const TaskGlobe = () => {
   });
 
   return (
-    <mesh ref={meshRef} scale={2.5}>
+    <mesh 
+      ref={meshRef} 
+      scale={2.5} 
+      raycast={() => null} // Explicitly disable raycasting on this mesh
+    >
       <sphereGeometry args={[1, 64, 64]} />
       <MeshDistortMaterial
         color="#6366f1"
@@ -26,11 +30,21 @@ const TaskGlobe = () => {
 };
 
 const Hero3D = () => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Ensure the component is fully mounted before starting the 3D engine
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return <div className="w-full h-[500px]" />;
+
   return (
-    <div className="w-full h-[500px] pointer-events-none">
+    <div className="w-full h-[500px] pointer-events-none select-none overflow-hidden">
       <Canvas 
         camera={{ position: [0, 0, 5], fov: 75 }}
-        // Disable the event system to prevent raycasting errors
+        gl={{ antialias: true, alpha: true }}
+        // Completely disable the event system to prevent the raycaster from running
         events={() => ({ enabled: false })}
         style={{ pointerEvents: 'none' }}
       >
