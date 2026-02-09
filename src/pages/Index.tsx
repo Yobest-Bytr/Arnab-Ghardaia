@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowRight, Play, Zap, BrainCircuit, Rocket, Shield, Globe, Cpu } from 'lucide-react';
+import { Sparkles, ArrowRight, Play, Zap, BrainCircuit, Rocket, Shield, Globe, Cpu, Command } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import SpaceBackground from '@/components/SpaceBackground';
 import MouseTrail from '@/components/MouseTrail';
@@ -59,6 +59,20 @@ const Index = () => {
         </div>
       </section>
 
+      {/* --- LOGO CLOUD --- */}
+      <section className="py-20 relative z-10 border-y border-white/5 bg-white/[0.02] backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6">
+          <p className="text-center text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 mb-12">Trusted by the world's most innovative teams</p>
+          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
+            {['SpaceX', 'Neuralink', 'OpenAI', 'Stripe', 'Apple'].map((logo) => (
+              <span key={logo} className="text-2xl md:text-4xl font-black tracking-tighter text-white hover:text-indigo-400 cursor-default transition-colors">
+                {logo}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* --- MOVING SITES SECTION --- */}
       <section className="py-32 relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 mb-16">
@@ -76,7 +90,6 @@ const Index = () => {
       <section className="py-32 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="bento-grid">
-            {/* Large Feature */}
             <motion.div 
               whileHover={{ scale: 1.02 }}
               className="col-span-1 md:col-span-2 row-span-2 p-12 rounded-[3.5rem] glass-card relative overflow-hidden group"
@@ -89,7 +102,6 @@ const Index = () => {
               </p>
             </motion.div>
 
-            {/* Medium Feature */}
             <motion.div 
               whileHover={{ scale: 1.02 }}
               className="col-span-1 md:col-span-2 p-10 rounded-[3.5rem] bg-indigo-600 text-white relative overflow-hidden group"
@@ -102,7 +114,6 @@ const Index = () => {
               </div>
             </motion.div>
 
-            {/* Small Features */}
             <motion.div whileHover={{ scale: 1.02 }} className="p-10 rounded-[3.5rem] glass-card flex flex-col justify-between">
               <Shield size={32} className="text-emerald-400" />
               <h4 className="text-xl font-black">Quantum Security</h4>

@@ -11,34 +11,50 @@ const AIInsights = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-950 text-white">
       <Navbar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      <main className="md:ml-[280px] pt-16 p-6 md:p-10">
-        <div className="max-w-7xl mx-auto">
+      <main className="md:ml-[280px] pt-24 p-6 md:p-12 relative overflow-hidden">
+        {/* Background Glows */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <motion.header 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-16"
           >
-            <h1 className="text-5xl font-black text-gray-900 dark:text-white tracking-tighter flex items-center gap-4">
-              <BrainCircuit className="text-indigo-600" size={56} />
-              AI Insights <span className="dopamine-text">2026</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black mb-6 uppercase tracking-[0.2em]">
+              <BrainCircuit size={14} />
+              <span>Neural Analysis Active</span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4">
+              Cognitive <span className="dopamine-text">Insights</span>
             </h1>
-            <p className="text-xl text-gray-500 dark:text-gray-400 font-bold mt-3">Deep-dive analysis of your productivity patterns.</p>
+            <p className="text-xl text-gray-500 font-bold">Deep-dive analysis of your productivity patterns across the digital void.</p>
           </motion.header>
 
           <div className="grid lg:grid-cols-3 gap-10 mb-16">
-            <Card className="lg:col-span-2 border-none shadow-2xl rounded-[3.5rem] bg-white dark:bg-gray-900 p-12">
-              <CardHeader className="p-0 mb-12">
-                <CardTitle className="text-3xl font-black dark:text-white flex items-center gap-3">
-                  <TrendingUp className="text-emerald-500" size={32} />
+            {/* Main Chart Card */}
+            <Card className="lg:col-span-2 border-none shadow-2xl rounded-[3.5rem] bg-white/5 backdrop-blur-2xl border border-white/10 p-12 overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-50" />
+              <CardHeader className="p-0 mb-12 flex flex-row items-center justify-between">
+                <CardTitle className="text-3xl font-black flex items-center gap-3">
+                  <TrendingUp className="text-indigo-400" size={32} />
                   Productivity Velocity
                 </CardTitle>
+                <div className="flex gap-2">
+                  {['24H', '7D', '30D'].map(t => (
+                    <button key={t} className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black transition-all">
+                      {t}
+                    </button>
+                  ))}
+                </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="h-[400px] w-full bg-gray-50 dark:bg-gray-800/50 rounded-[2.5rem] flex items-center justify-center relative overflow-hidden">
+                <div className="h-[400px] w-full bg-white/[0.02] rounded-[2.5rem] flex items-center justify-center relative overflow-hidden border border-white/5">
                   <div className="absolute inset-0 flex items-end justify-around px-12 pb-12">
                     {[40, 70, 45, 90, 65, 85, 100].map((h, i) => (
                       <motion.div 
@@ -46,23 +62,28 @@ const AIInsights = () => {
                         initial={{ height: 0 }}
                         animate={{ height: `${h}%` }}
                         transition={{ delay: i * 0.1, duration: 1.5, ease: "easeOut" }}
-                        className="w-12 bg-indigo-600 rounded-t-[1rem] relative group shadow-xl shadow-indigo-500/20"
+                        className="w-12 bg-indigo-600/40 rounded-t-[1rem] relative group hover:bg-indigo-500 transition-all"
                       >
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-black px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                           {h}%
                         </div>
                         <motion.div 
-                          className="absolute inset-0 bg-white/20"
-                          animate={{ opacity: [0.2, 0.5, 0.2] }}
+                          className="absolute inset-0 bg-white/10"
+                          animate={{ opacity: [0.1, 0.3, 0.1] }}
                           transition={{ repeat: Infinity, duration: 2 }}
                         />
                       </motion.div>
                     ))}
                   </div>
+                  {/* Grid Lines */}
+                  <div className="absolute inset-0 flex flex-col justify-between p-12 pointer-events-none opacity-10">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="w-full h-px bg-white" />)}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Score Card */}
             <Card className="border-none shadow-2xl rounded-[3.5rem] bg-indigo-600 text-white p-12 relative overflow-hidden group">
               <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-[100px] group-hover:scale-150 transition-transform duration-1000" />
               <CardHeader className="p-0 mb-12">
@@ -85,23 +106,24 @@ const AIInsights = () => {
             </Card>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-10">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { title: "Focus Peak", val: "10:00 AM", desc: "Your efficiency is 45% higher during this window.", icon: Zap, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20" },
-              { title: "Task Completion", val: "92%", desc: "You've completed 24 tasks ahead of schedule.", icon: Target, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+              { title: "Focus Peak", val: "10:00 AM", icon: Zap, color: "text-amber-400" },
+              { title: "Task Completion", val: "92%", icon: Target, color: "text-emerald-400" },
+              { title: "AI Efficiency", val: "+45%", icon: BrainCircuit, color: "text-indigo-400" },
+              { title: "Global Rank", val: "#124", icon: BarChart3, color: "text-purple-400" },
             ].map((insight, i) => (
-              <Card key={i} className="border-none shadow-xl rounded-[3.5rem] bg-white dark:bg-gray-900 p-12 hover:scale-[1.02] transition-transform">
-                <div className="flex items-start gap-10">
-                  <div className={`w-20 h-20 ${insight.bg} rounded-[2rem] flex items-center justify-center ${insight.color} shadow-inner`}>
-                    <insight.icon size={40} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black dark:text-white mb-2">{insight.title}</h3>
-                    <p className="text-5xl font-black text-indigo-600 mb-4 tracking-tighter">{insight.val}</p>
-                    <p className="text-lg text-gray-500 dark:text-gray-400 font-bold leading-relaxed">{insight.desc}</p>
-                  </div>
+              <motion.div
+                key={i}
+                whileHover={{ y: -10 }}
+                className="p-10 rounded-[3rem] bg-white/5 border border-white/10 backdrop-blur-xl group"
+              >
+                <div className={`w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center ${insight.color} mb-8 group-hover:scale-110 transition-transform`}>
+                  <insight.icon size={32} />
                 </div>
-              </Card>
+                <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest mb-2">{insight.title}</h3>
+                <p className="text-4xl font-black tracking-tighter">{insight.val}</p>
+              </motion.div>
             ))}
           </div>
         </div>
