@@ -1,59 +1,61 @@
-import React, { useRef, Suspense, useState, useEffect } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, MeshDistortMaterial, Sphere } from '@react-three/drei';
+import * as THREE from 'three';
 
-const TaskGlobe = () => {
-  const meshRef = useRef<any>(null);
+const Starfield = () => {
+  const points = useRef<THREE.Points>(null!);
+  
+  const particlesCount = 5000;
+  const positions = useMemo(() => {
+    const pos = new Float32Array(particlesCount * 3);
+    for (let i = 0; i < particlesCount; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 10;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 10;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 10;
+    }
+    return pos;
+  }, []);
 
   useFrame((state) => {
-    if (!meshRef.current) return;
-    const t = state.clock.getElapsedTime();
-    meshRef.current.rotation.x = t * 0.1;
-    meshRef.current.rotation.y = t * 0.15;
+    const time = state.clock.getElapsedTime();
+    points.current.rotation.y = time * 0.05;
+    points.current.rotation.x = time * 0.02;
   });
 
   return (
-    <Float speed={2} rotationIntensity={1} floatIntensity={2}>
-      <Sphere args={[1, 64, 64]} scale={2.2}>
-        <MeshDistortMaterial
-          color="#6366f1"
-          speed={3}
-          distort={0.4}
-          radius={1}
-          metalness={0.8}
-          roughness={0.2}
+    <points ref={points}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={particlesCount}
+          array={positions}
+          itemSize={3}
         />
-      </Sphere>
-    </Float>
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.015}
+        color="#ffffff"
+        transparent
+        opacity={0.8}
+        sizeAttenuation
+      />
+    </points>
   );
 };
 
 const Hero3D = () => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return <div className="w-full h-[600px]" />;
-
   return (
-    <div className="w-full h-[600px] pointer-events-none select-none relative">
+    <div className="w-full h-[600px] relative">
       <Canvas 
-        camera={{ position: [0, 0, 5], fov: 45 }}
-        gl={{ antialias: true, alpha: true }}
-        style={{ pointerEvents: 'none' }}
+        camera={{ position: [0, 0, 5] }}
+        // Disable raycasting completely to prevent the 'material' error
+        events={() => ({ enabled: false })}
       >
+        <color attach="background" args={['#030712']} />
+        <Starfield />
         <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
-        <spotLight position={[-10, 10, 10]} angle={0.15} penumbra={1} />
-        <Suspense fallback={null}>
-          <TaskGlobe />
-        </Suspense>
       </Canvas>
-      
-      {/* Decorative elements around the globe */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-indigo-500/20 blur-[120px] rounded-full -z-10 animate-pulse" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-950" />
     </div>
   );
 };
