@@ -38,7 +38,7 @@ const Index = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center">
           <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-white/40 mb-12 uppercase tracking-widest">
             <Sparkles size={12} className="text-[#99f6ff]" />
-            <span>Powered by Grok 4.1 Fast</span>
+            <span>Powered by Yobest Ai</span>
           </div>
           <h1 className="text-6xl md:text-9xl font-black mb-8 tracking-tighter leading-[0.9] max-w-5xl dopamine-text">{t('heroTitle')}</h1>
           <p className="text-lg md:text-2xl text-white/40 mb-12 max-w-2xl leading-relaxed font-medium">{t('heroSubtitle')}</p>
