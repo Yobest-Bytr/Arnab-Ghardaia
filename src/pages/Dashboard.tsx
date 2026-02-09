@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
-import { Plus, MoreVertical, Calendar, CheckCircle2, Clock, BrainCircuit, Sparkles, TrendingUp, Loader2 } from 'lucide-react';
+import { Plus, MoreVertical, Calendar, CheckCircle2, Clock, BrainCircuit, Sparkles, TrendingUp, Loader2, Code, MessageSquare, Save, History } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactConfetti from 'react-confetti';
@@ -12,33 +12,40 @@ import { grokChat } from '@/lib/puter';
 const Dashboard = () => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
+  const [scripts, setScripts] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0, score: 88 });
+  const [activeTab, setActiveTab] = useState<'tasks' | 'scripts' | 'history'>('tasks');
 
   useEffect(() => {
     if (user) {
-      fetchTasks();
+      fetchData();
     }
   }, [user]);
 
-  const fetchTasks = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch Tasks
+      const { data: taskData } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+      setTasks(taskData || []);
 
-      if (error) throw error;
+      // Fetch Scripts (Mocking for now, usually from a 'scripts' table)
+      const savedScripts = localStorage.getItem(`scripts_${user?.id}`);
+      if (savedScripts) setScripts(JSON.parse(savedScripts));
 
-      setTasks(data || []);
-      const total = data?.length || 0;
-      const completed = data?.filter(t => t.status === 'completed').length || 0;
-      setStats(prev => ({ ...prev, total, pending: total - completed, completed }));
+      // Fetch Messages (Mocking for now, usually from a 'messages' table)
+      const savedMsgs = localStorage.getItem(`messages_${user?.id}`);
+      if (savedMsgs) setMessages(JSON.parse(savedMsgs));
+
     } catch (error: any) {
-      console.error('Error fetching tasks:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -61,6 +68,13 @@ const Dashboard = () => {
       if (error) throw error;
       
       setTasks([data[0], ...tasks]);
+      
+      // Save to history
+      const newMsg = { id: Date.now(), role: 'assistant', content: suggestion, timestamp: new Date().toISOString() };
+      const updatedMsgs = [newMsg, ...messages];
+      setMessages(updatedMsgs);
+      localStorage.setItem(`messages_${user?.id}`, JSON.stringify(updatedMsgs));
+
       showSuccess('Grok suggested a new task.');
     } catch (error) {
       showError('AI Engine failed to suggest.');
@@ -69,27 +83,12 @@ const Dashboard = () => {
     }
   };
 
-  const toggleTaskStatus = async (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({ status: newStatus })
-        .eq('id', taskId);
-
-      if (error) throw error;
-      
-      if (newStatus === 'completed') {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3000);
-      }
-
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-      showSuccess(`Task marked as ${newStatus}`);
-      fetchTasks();
-    } catch (error: any) {
-      showError('Failed to update task');
-    }
+  const saveScript = (title: string, content: string) => {
+    const newScript = { id: Date.now(), title, content, created_at: new Date().toISOString() };
+    const updatedScripts = [newScript, ...scripts];
+    setScripts(updatedScripts);
+    localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedScripts));
+    showSuccess('Script saved to Neural Archive');
   };
 
   return (
@@ -102,7 +101,7 @@ const Dashboard = () => {
         <motion.header 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20"
+          className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12"
         >
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/40 mb-4 uppercase tracking-widest">
@@ -110,7 +109,7 @@ const Dashboard = () => {
               <span>Cognitive Workspace</span>
             </div>
             <h1 className="text-5xl font-black tracking-tighter dopamine-text">
-              Hello, {user?.email?.split('@')[0]}
+              Neural Archive
             </h1>
           </div>
           <div className="flex gap-4">
@@ -122,82 +121,110 @@ const Dashboard = () => {
               {isAiGenerating ? <Loader2 className="animate-spin" size={20} /> : <BrainCircuit size={20} />}
               AI Suggest
             </button>
-            <button className="auron-button flex items-center gap-3 h-14 px-8 shadow-[0_0_20px_rgba(153,246,255,0.2)]">
-              <Plus size={20} />
-              New Task
-            </button>
           </div>
         </motion.header>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-20">
+        {/* Workspace Tabs */}
+        <div className="flex gap-4 mb-12 border-b border-white/5 pb-4">
           {[
-            { label: "Total", val: stats.total, icon: Clock },
-            { label: "Pending", val: stats.pending, icon: Sparkles },
-            { label: "Done", val: stats.completed, icon: CheckCircle2 },
-            { label: "Score", val: `${stats.score}%`, icon: TrendingUp },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="pill-nav p-6 flex items-center justify-between group hover:bg-white/10 transition-all"
+            { id: 'tasks', label: 'Tasks', icon: CheckCircle2 },
+            { id: 'scripts', label: 'Scripts', icon: Code },
+            { id: 'history', label: 'AI History', icon: History },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all ${
+                activeTab === tab.id ? 'bg-indigo-600 text-white' : 'text-white/40 hover:text-white'
+              }`}
             >
-              <div>
-                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">{stat.label}</p>
-                <h3 className="text-2xl font-bold">{stat.val}</h3>
-              </div>
-              <stat.icon size={20} className="text-white/20 group-hover:text-[#99f6ff] transition-colors" />
-            </motion.div>
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
           ))}
         </div>
 
-        {/* Task List */}
+        {/* Content Area */}
         <div className="space-y-4">
           {loading ? (
             <div className="py-20 text-center text-white/20 font-medium">Synchronizing neural data...</div>
-          ) : tasks.length === 0 ? (
-            <div className="py-32 text-center pill-nav border-dashed border-white/10">
-              <p className="text-white/40 font-medium">Your workspace is clear. Use AI Suggest to begin.</p>
-            </div>
           ) : (
-            tasks.map((task, i) => (
-              <motion.div 
-                key={task.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="pill-nav p-6 flex items-center justify-between group hover:bg-white/10 transition-all"
-              >
-                <div className="flex items-center gap-6">
-                  <button 
-                    onClick={() => toggleTaskStatus(task.id, task.status)}
-                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                      task.status === 'completed' 
-                        ? 'bg-[#99f6ff] border-[#99f6ff] text-[#020408]' 
-                        : 'border-white/10 hover:border-[#99f6ff]'
-                    }`}
-                  >
-                    {task.status === 'completed' && <CheckCircle2 size={14} />}
-                  </button>
-                  <div>
-                    <h4 className={`text-lg font-bold transition-all ${task.status === 'completed' ? 'text-white/20 line-through' : 'text-white'}`}>
-                      {task.title}
-                    </h4>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest flex items-center gap-2">
-                        <Calendar size={12} />
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}
-                      </span>
+            <AnimatePresence mode="wait">
+              {activeTab === 'tasks' && (
+                <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  {tasks.length === 0 ? (
+                    <div className="py-32 text-center pill-nav border-dashed border-white/10">
+                      <p className="text-white/40 font-medium">No active tasks. Use AI Suggest to begin.</p>
                     </div>
+                  ) : (
+                    tasks.map((task, i) => (
+                      <div key={task.id} className="pill-nav p-6 flex items-center justify-between mb-4 group hover:bg-white/10 transition-all">
+                        <div className="flex items-center gap-6">
+                          <div className={`w-6 h-6 rounded-full border-2 ${task.status === 'completed' ? 'bg-[#99f6ff] border-[#99f6ff]' : 'border-white/10'}`} />
+                          <h4 className={`text-lg font-bold ${task.status === 'completed' ? 'text-white/20 line-through' : 'text-white'}`}>{task.title}</h4>
+                        </div>
+                        <Button variant="ghost" size="icon" className="text-white/20 hover:text-white"><MoreVertical size={20} /></Button>
+                      </div>
+                    ))
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === 'scripts' && (
+                <motion.div key="scripts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {scripts.length === 0 ? (
+                      <div className="col-span-2 py-32 text-center pill-nav border-dashed border-white/10">
+                        <p className="text-white/40 font-medium">No saved scripts found.</p>
+                      </div>
+                    ) : (
+                      scripts.map((script) => (
+                        <div key={script.id} className="pill-nav p-8 bg-white/5 border-white/10 group">
+                          <div className="flex items-center justify-between mb-6">
+                            <h4 className="text-xl font-black">{script.title}</h4>
+                            <Code size={20} className="text-[#99f6ff]" />
+                          </div>
+                          <pre className="bg-black/40 p-4 rounded-xl text-xs font-mono text-indigo-300 overflow-x-auto mb-6">
+                            {script.content}
+                          </pre>
+                          <div className="flex items-center justify-between text-[10px] font-black text-white/20 uppercase tracking-widest">
+                            <span>{new Date(script.created_at).toLocaleDateString()}</span>
+                            <button className="hover:text-white transition-colors">Open Editor</button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                </div>
-                <Button variant="ghost" size="icon" className="text-white/20 hover:text-white">
-                  <MoreVertical size={20} />
-                </Button>
-              </motion.div>
-            ))
+                </motion.div>
+              )}
+
+              {activeTab === 'history' && (
+                <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="space-y-4">
+                    {messages.length === 0 ? (
+                      <div className="py-32 text-center pill-nav border-dashed border-white/10">
+                        <p className="text-white/40 font-medium">No AI conversation history.</p>
+                      </div>
+                    ) : (
+                      messages.map((msg) => (
+                        <div key={msg.id} className="pill-nav p-6 bg-white/5 border-white/10">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                              <BrainCircuit size={16} />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Grok 4.1 Fast</span>
+                          </div>
+                          <p className="text-gray-300 font-medium leading-relaxed italic">"{msg.content}"</p>
+                          <div className="mt-4 text-[10px] font-black text-white/10 uppercase tracking-widest">
+                            {new Date(msg.timestamp).toLocaleString()}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           )}
         </div>
       </main>
