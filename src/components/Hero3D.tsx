@@ -1,27 +1,29 @@
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Sphere, MeshDistortMaterial, Float } from '@react-three/drei';
+import { MeshDistortMaterial, Float } from '@react-three/drei';
 
 const TaskGlobe = () => {
-  const mesh = useRef<any>();
+  const meshRef = useRef<any>(null);
 
   useFrame((state) => {
+    if (!meshRef.current) return;
+    
     const t = state.clock.getElapsedTime();
-    mesh.current.rotation.x = Math.cos(t / 4) / 2;
-    mesh.current.rotation.y = Math.sin(t / 4) / 2;
-    mesh.current.rotation.z = Math.sin(t / 4) / 2;
+    meshRef.current.rotation.x = Math.cos(t / 4) / 2;
+    meshRef.current.rotation.y = Math.sin(t / 4) / 2;
+    meshRef.current.rotation.z = Math.sin(t / 4) / 2;
   });
 
   return (
-    <Sphere ref={mesh} args={[1, 100, 200]} scale={2.4}>
+    <mesh ref={meshRef} scale={2.4}>
+      <sphereGeometry args={[1, 100, 100]} />
       <MeshDistortMaterial
         color="#4F46E5"
-        attach="material"
         distort={0.4}
         speed={2}
         roughness={0}
       />
-    </Sphere>
+    </mesh>
   );
 };
 
