@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +31,9 @@ const ProjectModal = ({ isOpen, onClose, onSave }: ProjectModalProps) => {
             <FolderPlus className="text-[#99f6ff]" />
             New Project
           </DialogTitle>
+          <DialogDescription className="text-white/40 font-medium">
+            Initialize a new cognitive workspace for your neural scripts.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-2">

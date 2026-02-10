@@ -52,36 +52,61 @@ const NeuralLab = () => {
   }, [messages]);
 
   const fetchProjects = async () => {
-    const { data, error } = await supabase
-      .from('scripts')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setProjects(data);
-      if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
+    try {
+      const { data, error } = await supabase
+        .from('scripts')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setProjects(data);
+        if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
+      } else {
+        // Fallback to LocalStorage if Supabase table is missing (404)
+        const localProjects = JSON.parse(localStorage.getItem(`scripts_${user?.id}`) || '[]');
+        setProjects(localProjects);
+        if (localProjects.length > 0 && !selectedProject) setSelectedProject(localProjects[0]);
+      }
+    } catch (err) {
+      const localProjects = JSON.parse(localStorage.getItem(`scripts_${user?.id}`) || '[]');
+      setProjects(localProjects);
     }
   };
 
   const handleCreateProject = async (project: { title: string; description: string }) => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from('scripts')
-      .insert([{
-        user_id: user.id,
-        title: project.title,
-        content: `// Project: ${project.title}\n// Objective: ${project.description}\n\n// Initialize neural link...`
-      }])
-      .select()
-      .single();
+    
+    const newProject = {
+      user_id: user.id,
+      title: project.title,
+      content: `// Project: ${project.title}\n// Objective: ${project.description}\n\n// Initialize neural link...`,
+      created_at: new Date().toISOString()
+    };
 
-    if (!error && data) {
-      setProjects([data, ...projects]);
-      setSelectedProject(data);
-      showSuccess(`Project "${project.title}" initialized.`);
-    } else {
-      showError("Failed to initialize project.");
+    try {
+      const { data, error } = await supabase
+        .from('scripts')
+        .insert([newProject])
+        .select()
+        .single();
+
+      if (!error && data) {
+        setProjects([data, ...projects]);
+        setSelectedProject(data);
+        showSuccess(`Project "${project.title}" initialized in cloud.`);
+      } else {
+        throw new Error("Supabase insert failed");
+      }
+    } catch (err) {
+      // Fallback to LocalStorage
+      const localId = Date.now();
+      const localProject = { ...newProject, id: localId };
+      const updatedProjects = [localProject, ...projects];
+      setProjects(updatedProjects);
+      setSelectedProject(localProject);
+      localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedProjects));
+      showSuccess(`Project "${project.title}" initialized locally.`);
     }
   };
 
@@ -100,22 +125,35 @@ const NeuralLab = () => {
   const handleSaveAsScript = async (content: string) => {
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('scripts')
-      .insert([{
-        user_id: user.id,
-        title: `Lab Script ${new Date().toLocaleTimeString()}`,
-        content: content
-      }])
-      .select()
-      .single();
+    const newScript = {
+      user_id: user.id,
+      title: `Lab Script ${new Date().toLocaleTimeString()}`,
+      content: content,
+      created_at: new Date().toISOString()
+    };
 
-    if (!error && data) {
-      setProjects([data, ...projects]);
-      setSelectedProject(data);
-      showSuccess("Archived to Cloud Scripts");
-    } else {
-      showError("Failed to save to cloud.");
+    try {
+      const { data, error } = await supabase
+        .from('scripts')
+        .insert([newScript])
+        .select()
+        .single();
+
+      if (!error && data) {
+        setProjects([data, ...projects]);
+        setSelectedProject(data);
+        showSuccess("Archived to Cloud Scripts");
+      } else {
+        throw new Error("Supabase insert failed");
+      }
+    } catch (err) {
+      const localId = Date.now();
+      const localScript = { ...newScript, id: localId };
+      const updatedProjects = [localScript, ...projects];
+      setProjects(updatedProjects);
+      setSelectedProject(localScript);
+      localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedProjects));
+      showSuccess("Archived to Local Scripts");
     }
   };
 

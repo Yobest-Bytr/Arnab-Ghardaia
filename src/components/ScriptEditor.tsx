@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,6 +29,9 @@ const ScriptEditor = ({ script, isOpen, onClose, onSave }: ScriptEditorProps) =>
             <Code className="text-[#99f6ff]" />
             Edit Script
           </DialogTitle>
+          <DialogDescription className="text-white/40 font-medium">
+            Modify the neural logic of your archived script.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-2">
