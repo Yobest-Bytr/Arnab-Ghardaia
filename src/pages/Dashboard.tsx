@@ -36,11 +36,23 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const localTasks = JSON.parse(localStorage.getItem(`tasks_${user?.id}`) || '[]');
-      setTasks(localTasks);
+      // Fetch Scripts from Supabase
+      const { data: scriptData } = await supabase
+        .from('scripts')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      
+      if (scriptData) setScripts(scriptData);
 
-      const savedScripts = localStorage.getItem(`scripts_${user?.id}`);
-      if (savedScripts) setScripts(JSON.parse(savedScripts));
+      // Fetch Tasks from Supabase (assuming tasks table exists)
+      const { data: taskData } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+      
+      if (taskData) setTasks(taskData);
 
       const savedMsgs = localStorage.getItem(`messages_${user?.id}`);
       if (savedMsgs) setMessages(JSON.parse(savedMsgs));
@@ -56,24 +68,20 @@ const Dashboard = () => {
     try {
       const suggestion = await grokChat("Suggest a single, highly productive task for a user today. Keep it under 10 words.", { modelId: 'yobest-ai', userId: user?.id });
       
-      const newTask = { 
-        id: Date.now(), 
-        title: suggestion, 
-        status: 'pending', 
-        created_at: new Date().toISOString(),
-        user_id: user?.id 
-      };
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([{
+          user_id: user?.id,
+          title: suggestion,
+          status: 'pending'
+        }])
+        .select()
+        .single();
 
-      const updatedTasks = [newTask, ...tasks];
-      setTasks(updatedTasks);
-      localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updatedTasks));
-      
-      const newMsg = { id: Date.now(), role: 'assistant', content: suggestion, timestamp: new Date().toISOString() };
-      const updatedMsgs = [newMsg, ...messages];
-      setMessages(updatedMsgs);
-      localStorage.setItem(`messages_${user?.id}`, JSON.stringify(updatedMsgs));
-
-      showSuccess('Grok suggested a new task.');
+      if (!error && data) {
+        setTasks([data, ...tasks]);
+        showSuccess('Grok suggested a new task.');
+      }
     } catch (error) {
       showError('AI Engine failed to suggest.');
     } finally {
@@ -81,18 +89,32 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteScript = (id: number) => {
-    const updated = scripts.filter(s => s.id !== id);
-    setScripts(updated);
-    localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updated));
-    showSuccess('Script purged from archive.');
+  const handleDeleteScript = async (id: number) => {
+    const { error } = await supabase
+      .from('scripts')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setScripts(scripts.filter(s => s.id !== id));
+      showSuccess('Script purged from cloud archive.');
+    } else {
+      showError("Failed to delete script.");
+    }
   };
 
-  const handleSaveScript = (updatedScript: any) => {
-    const updated = scripts.map(s => s.id === updatedScript.id ? updatedScript : s);
-    setScripts(updated);
-    localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updated));
-    showSuccess('Script updated successfully.');
+  const handleSaveScript = async (updatedScript: any) => {
+    const { error } = await supabase
+      .from('scripts')
+      .update({ title: updatedScript.title, content: updatedScript.content })
+      .eq('id', updatedScript.id);
+
+    if (!error) {
+      setScripts(scripts.map(s => s.id === updatedScript.id ? updatedScript : s));
+      showSuccess('Script updated in cloud.');
+    } else {
+      showError("Failed to update script.");
+    }
   };
 
   return (
@@ -232,7 +254,7 @@ const Dashboard = () => {
                             <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                               <BrainCircuit size={16} />
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Grok 4.1 Fast</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Grok 3 Fast</span>
                           </div>
                           <p className="text-gray-300 font-medium leading-relaxed italic">"{msg.content}"</p>
                           <div className="mt-4 text-[10px] font-black text-white/10 uppercase tracking-widest">

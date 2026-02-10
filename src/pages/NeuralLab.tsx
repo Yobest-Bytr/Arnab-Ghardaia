@@ -1,18 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Image as ImageIcon, Trash2, Loader2, 
   FileCode, Terminal, Layers, Info, X,
-  Download, Key
+  Download, Key, ChevronDown, FolderOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
 import { showSuccess, showError } from '@/utils/toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const MODELS = [
-  { id: 'yobest-ai', name: 'Yobest AI', icon: Sparkles, type: 'Free', desc: 'Unlimited Grok 4.1 Fast' },
+  { id: 'yobest-ai', name: 'Yobest AI', icon: Sparkles, type: 'Free', desc: 'Unlimited Grok 3 Fast' },
   { id: 'grok-premium', name: 'Grok Premium', icon: Zap, type: 'Key Required', desc: 'xAI Official Integration' },
   { id: 'chatgpt', name: 'ChatGPT', icon: Cpu, type: 'Key Required', desc: 'OpenAI GPT-4o Vision' },
   { id: 'gemini', name: 'Gemini', icon: Layers, type: 'Key Required', desc: 'Google Pro Multimodal' },
@@ -25,14 +32,35 @@ const NeuralLab = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchProjects();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const fetchProjects = async () => {
+    const { data, error } = await supabase
+      .from('scripts')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setProjects(data);
+      if (data.length > 0) setSelectedProject(data[0]);
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,17 +74,26 @@ const NeuralLab = () => {
     }
   };
 
-  const handleSaveAsScript = (content: string) => {
+  const handleSaveAsScript = async (content: string) => {
     if (!user) return;
-    const savedScripts = JSON.parse(localStorage.getItem(`scripts_${user.id}`) || '[]');
-    const newScript = {
-      id: Date.now(),
-      title: `Lab Script ${new Date().toLocaleTimeString()}`,
-      content: content,
-      created_at: new Date().toISOString()
-    };
-    localStorage.setItem(`scripts_${user.id}`, JSON.stringify([newScript, ...savedScripts]));
-    showSuccess("Archived to Scripts");
+    
+    const { data, error } = await supabase
+      .from('scripts')
+      .insert([{
+        user_id: user.id,
+        title: `Lab Script ${new Date().toLocaleTimeString()}`,
+        content: content
+      }])
+      .select()
+      .single();
+
+    if (!error && data) {
+      setProjects([data, ...projects]);
+      setSelectedProject(data);
+      showSuccess("Archived to Cloud Scripts");
+    } else {
+      showError("Failed to save to cloud.");
+    }
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -83,7 +120,7 @@ const NeuralLab = () => {
         input || "Analyze this image", 
         { 
           modelId: selectedModel.id, 
-          userId: user?.id, // Passing the userId here
+          userId: user?.id,
           image: currentImage || undefined 
         },
         (chunk) => {
@@ -128,6 +165,29 @@ const NeuralLab = () => {
       
       <main className="flex-1 pt-32 pb-10 px-6 max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-8 relative z-10">
         <aside className="lg:w-80 flex flex-col gap-6">
+          {/* Project Selector */}
+          <div className="pill-nav p-6 bg-white/5 border-white/10">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-6 flex items-center gap-2">
+              <FolderOpen size={14} /> Active Project
+            </h2>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between hover:bg-white/10 transition-all outline-none">
+                <span className="font-bold text-sm truncate">
+                  {selectedProject ? selectedProject.title : "Select Project"}
+                </span>
+                <ChevronDown size={16} className="text-white/40" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 max-h-64 overflow-y-auto">
+                {projects.map((p) => (
+                  <DropdownMenuItem key={p.id} onClick={() => setSelectedProject(p)} className="cursor-pointer font-medium">
+                    {p.title}
+                  </DropdownMenuItem>
+                ))}
+                {projects.length === 0 && <DropdownMenuItem disabled>No projects found</DropdownMenuItem>}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <div className="pill-nav p-6 bg-white/5 border-white/10">
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-6 flex items-center gap-2">
               <Terminal size={14} /> Cognitive Models
@@ -161,22 +221,6 @@ const NeuralLab = () => {
               ))}
             </div>
           </div>
-
-          <div className="pill-nav p-6 bg-white/5 border-white/10">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-6 flex items-center gap-2">
-              <Info size={14} /> Lab Status
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                <span className="text-white/20">Neural Link</span>
-                <span className="text-emerald-400">Active</span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                <span className="text-white/20">Buffer Load</span>
-                <span className="text-indigo-400">2.4ms</span>
-              </div>
-            </div>
-          </div>
         </aside>
 
         <div className="flex-1 flex flex-col min-h-[600px]">
@@ -185,7 +229,7 @@ const NeuralLab = () => {
               <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
                 <BrainCircuit size={48} className="mb-6 text-indigo-400" />
                 <h3 className="text-2xl font-black mb-2">Neural Lab Initialized</h3>
-                <p className="text-sm font-medium">Select a model to begin research.</p>
+                <p className="text-sm font-medium">Select a model and project to begin research.</p>
               </div>
             ) : (
               messages.map((msg) => (

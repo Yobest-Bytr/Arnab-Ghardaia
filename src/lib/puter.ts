@@ -11,12 +11,12 @@ export const grokChat = async (
   
   const savedKeys = userId ? JSON.parse(localStorage.getItem(`ai_keys_${userId}`) || '{}') : {};
 
-  // Model Mapping for Puter SDK
+  // Updated Model Mapping based on valid Puter registry
   const modelMapping: Record<string, string> = {
-    'yobest-ai': 'x-ai/grok-4.1-fast',
-    'grok-premium': 'x-ai/grok-4.1-fast',
+    'yobest-ai': 'x-ai/grok-3-fast',
+    'grok-premium': 'x-ai/grok-3-fast',
     'chatgpt': 'openai/gpt-4o',
-    'gemini': 'google/gemini-1.5-pro'
+    'gemini': 'google/gemini-2.0-flash'
   };
 
   const targetModel = modelMapping[modelId] || modelMapping['yobest-ai'];
@@ -43,7 +43,6 @@ export const grokChat = async (
       ];
     }
 
-    // We pass the key if available, otherwise use the default session
     const response = await (window as any).puter.ai.chat(
       content,
       {
@@ -63,6 +62,12 @@ export const grokChat = async (
     return response?.message?.content || "No response available.";
   } catch (error: any) {
     console.error("AI Error:", error);
-    return "The cognitive engine encountered an error processing your request.";
+    
+    // Handle specific Puter errors
+    if (error.status === 402 || error.code === 'insufficient_funds') {
+      return "Neural Link Error: Insufficient credits in the Puter AI account. Please check your balance or use a custom API key.";
+    }
+    
+    return "The cognitive engine encountered an error processing your request. Please verify your API keys.";
   }
 };
