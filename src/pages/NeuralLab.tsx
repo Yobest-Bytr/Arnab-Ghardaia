@@ -6,11 +6,12 @@ import {
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Image as ImageIcon, Trash2, Loader2, 
   FileCode, Terminal, Layers, Info, X,
-  Download, Key, ChevronDown, FolderOpen
+  Download, Key, ChevronDown, FolderOpen, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
 import { showSuccess, showError } from '@/utils/toast';
+import ProjectModal from '@/components/ProjectModal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ const NeuralLab = () => {
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,7 +60,28 @@ const NeuralLab = () => {
     
     if (!error && data) {
       setProjects(data);
-      if (data.length > 0) setSelectedProject(data[0]);
+      if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
+    }
+  };
+
+  const handleCreateProject = async (project: { title: string; description: string }) => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('scripts')
+      .insert([{
+        user_id: user.id,
+        title: project.title,
+        content: `// Project: ${project.title}\n// Objective: ${project.description}\n\n// Initialize neural link...`
+      }])
+      .select()
+      .single();
+
+    if (!error && data) {
+      setProjects([data, ...projects]);
+      setSelectedProject(data);
+      showSuccess(`Project "${project.title}" initialized.`);
+    } else {
+      showError("Failed to initialize project.");
     }
   };
 
@@ -151,6 +174,20 @@ const NeuralLab = () => {
           timestamp: new Date().toISOString() 
         }]);
       }
+      
+      // After AI finishes, add a summary message if it created scripts
+      if (responseText.includes('```')) {
+        const scriptCount = (responseText.match(/```/g) || []).length / 2;
+        if (scriptCount > 0) {
+          setMessages(prev => [...prev, {
+            id: Date.now() + 2,
+            role: 'system',
+            content: `Neural Engine: I have generated ${Math.floor(scriptCount)} scripts. Would you like to add them to your active project?`,
+            timestamp: new Date().toISOString()
+          }]);
+        }
+      }
+
     } catch (error) {
       showError("Neural link interrupted.");
     } finally {
@@ -167,9 +204,17 @@ const NeuralLab = () => {
         <aside className="lg:w-80 flex flex-col gap-6">
           {/* Project Selector */}
           <div className="pill-nav p-6 bg-white/5 border-white/10">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-6 flex items-center gap-2">
-              <FolderOpen size={14} /> Active Project
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-2">
+                <FolderOpen size={14} /> Active Project
+              </h2>
+              <button 
+                onClick={() => setIsProjectModalOpen(true)}
+                className="p-1.5 rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between hover:bg-white/10 transition-all outline-none">
                 <span className="font-bold text-sm truncate">
@@ -233,21 +278,27 @@ const NeuralLab = () => {
               </div>
             ) : (
               messages.map((msg) => (
-                <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-6 rounded-[2.5rem] relative group ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'}`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2 opacity-40 text-[10px] font-black uppercase tracking-widest">
-                        {msg.role === 'user' ? <Zap size={12} /> : <Cpu size={12} />}
-                        {msg.role === 'user' ? 'Researcher' : msg.model}
+                <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : msg.role === 'system' ? 'justify-center' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-6 rounded-[2.5rem] relative group ${
+                    msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 
+                    msg.role === 'system' ? 'bg-white/5 border border-indigo-500/30 text-indigo-400 text-xs font-black uppercase tracking-widest rounded-full py-3 px-8' :
+                    'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
+                  }`}>
+                    {msg.role !== 'system' && (
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2 opacity-40 text-[10px] font-black uppercase tracking-widest">
+                          {msg.role === 'user' ? <Zap size={12} /> : <Cpu size={12} />}
+                          {msg.role === 'user' ? 'Researcher' : msg.model}
+                        </div>
+                        {msg.role === 'assistant' && (
+                          <button onClick={() => handleSaveAsScript(msg.content)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#99f6ff] hover:text-white">
+                            <FileCode size={16} />
+                          </button>
+                        )}
                       </div>
-                      {msg.role === 'assistant' && (
-                        <button onClick={() => handleSaveAsScript(msg.content)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#99f6ff] hover:text-white">
-                          <FileCode size={16} />
-                        </button>
-                      )}
-                    </div>
+                    )}
                     {msg.image && <img src={msg.image} className="mb-4 rounded-2xl max-h-64 w-full object-cover border border-white/10" alt="Uploaded" />}
-                    <p className="font-medium leading-relaxed whitespace-pre-wrap text-sm md:text-base">{msg.content}</p>
+                    <p className={`font-medium leading-relaxed whitespace-pre-wrap ${msg.role === 'system' ? 'text-center' : 'text-sm md:text-base'}`}>{msg.content}</p>
                   </div>
                 </motion.div>
               ))
@@ -284,6 +335,12 @@ const NeuralLab = () => {
           </div>
         </div>
       </main>
+
+      <ProjectModal 
+        isOpen={isProjectModalOpen} 
+        onClose={() => setIsProjectModalOpen(false)} 
+        onSave={handleCreateProject} 
+      />
     </div>
   );
 };
