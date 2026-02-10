@@ -6,23 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield, Globe, Settings, Sparkles, Loader2, LogOut, Check, Palette, Server, Zap, Key, Database, MessageSquare, Code } from 'lucide-react';
+import { User, Shield, Globe, Settings, Sparkles, Loader2, LogOut, Check, Palette, Server, Zap, Key, Database, MessageSquare, Code, RefreshCw } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
 import AvatarDecoration, { avatarDecorationEffects } from '@/components/AvatarDecoration';
+import { validateKey } from '@/lib/puter';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedEffect, setSelectedEffect] = useState<string>('none');
   
-  // AI Keys State
   const [keys, setKeys] = useState({
     openai: '',
     gemini: '',
+    anthropic: '',
     grok: ''
   });
 
@@ -39,30 +39,25 @@ const Profile = () => {
     }
   }, [user]);
 
+  const handleCheckKey = async (provider: string, key: string, modelId: string) => {
+    if (!key) {
+      showError(`Please enter a key for ${provider}`);
+      return;
+    }
+    setValidating(provider);
+    const result = await validateKey(modelId, key);
+    if (result.success) {
+      showSuccess(`${provider} link established!`);
+    } else {
+      showError(`${provider} error: ${result.message}`);
+    }
+    setValidating(null);
+  };
+
   const handleUpdateProfile = () => {
     if (user) {
       localStorage.setItem(`display_name_${user.id}`, displayName);
       showSuccess('Profile updated successfully');
-    }
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      showError('Passwords do not match');
-      return;
-    }
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      showSuccess('Password updated successfully');
-      setPassword('');
-      setConfirmPassword('');
-    } catch (error: any) {
-      showError(error.message || 'Failed to update password');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -149,38 +144,35 @@ const Profile = () => {
                 </h3>
                 <p className="text-white/40 mb-8 font-medium">Add your own API keys to use specific models within Yobest AI.</p>
                 
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-black text-white/30 uppercase tracking-widest">OpenAI API Key</Label>
-                    <Input 
-                      type="password" 
-                      placeholder="sk-..." 
-                      value={keys.openai}
-                      onChange={(e) => setKeys({...keys, openai: e.target.value})}
-                      className="bg-white/5 border-white/10 h-12 rounded-xl font-mono" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-black text-white/30 uppercase tracking-widest">Google Gemini Key</Label>
-                    <Input 
-                      type="password" 
-                      placeholder="AIza..." 
-                      value={keys.gemini}
-                      onChange={(e) => setKeys({...keys, gemini: e.target.value})}
-                      className="bg-white/5 border-white/10 h-12 rounded-xl font-mono" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-black text-white/30 uppercase tracking-widest">xAI Grok Key</Label>
-                    <Input 
-                      type="password" 
-                      placeholder="xai-..." 
-                      value={keys.grok}
-                      onChange={(e) => setKeys({...keys, grok: e.target.value})}
-                      className="bg-white/5 border-white/10 h-12 rounded-xl font-mono" 
-                    />
-                  </div>
-                  <Button onClick={saveAiKeys} className="auron-button h-12 px-8 mt-4">Update AI Keys</Button>
+                <div className="space-y-8">
+                  {[
+                    { id: 'openai', label: 'OpenAI (GPT-4o)', model: 'gpt-4o', key: keys.openai },
+                    { id: 'anthropic', label: 'Anthropic (Claude 3.5)', model: 'claude-3-5-sonnet', key: keys.anthropic },
+                    { id: 'gemini', label: 'Google (Gemini 2.0)', model: 'gemini-2.0-flash', key: keys.gemini },
+                    { id: 'grok', label: 'xAI (Grok 3)', model: 'yobest-ai', key: keys.grok },
+                  ].map((provider) => (
+                    <div key={provider.id} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-black text-white/30 uppercase tracking-widest">{provider.label}</Label>
+                        <button 
+                          onClick={() => handleCheckKey(provider.label, provider.key, provider.model)}
+                          disabled={validating === provider.label}
+                          className="text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors flex items-center gap-2"
+                        >
+                          {validating === provider.label ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                          Check Link
+                        </button>
+                      </div>
+                      <Input 
+                        type="password" 
+                        placeholder="Enter API Key..." 
+                        value={provider.key}
+                        onChange={(e) => setKeys({...keys, [provider.id]: e.target.value})}
+                        className="bg-white/5 border-white/10 h-12 rounded-xl font-mono" 
+                      />
+                    </div>
+                  ))}
+                  <Button onClick={saveAiKeys} className="auron-button h-12 px-8 mt-4">Update All Keys</Button>
                 </div>
               </div>
             </TabsContent>

@@ -21,9 +21,10 @@ import {
 
 const MODELS = [
   { id: 'yobest-ai', name: 'Yobest AI', icon: Sparkles, type: 'Free', desc: 'Unlimited Grok 3 Fast' },
-  { id: 'grok-premium', name: 'Grok Premium', icon: Zap, type: 'Key Required', desc: 'xAI Official Integration' },
-  { id: 'chatgpt', name: 'ChatGPT', icon: Cpu, type: 'Key Required', desc: 'OpenAI GPT-4o Vision' },
-  { id: 'gemini', name: 'Gemini', icon: Layers, type: 'Key Required', desc: 'Google Pro Multimodal' },
+  { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, type: 'Key Required', desc: 'Anthropic Sonnet' },
+  { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, type: 'Key Required', desc: 'OpenAI Multimodal' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, type: 'Key Required', desc: 'Google Flash Pro' },
+  { id: 'deepseek-chat', name: 'DeepSeek', icon: Terminal, type: 'Key Required', desc: 'DeepSeek V3 Chat' },
 ];
 
 const NeuralLab = () => {
@@ -63,7 +64,6 @@ const NeuralLab = () => {
         setProjects(data);
         if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
       } else {
-        // Fallback to LocalStorage if Supabase table is missing (404)
         const localProjects = JSON.parse(localStorage.getItem(`scripts_${user?.id}`) || '[]');
         setProjects(localProjects);
         if (localProjects.length > 0 && !selectedProject) setSelectedProject(localProjects[0]);
@@ -99,7 +99,6 @@ const NeuralLab = () => {
         throw new Error("Supabase insert failed");
       }
     } catch (err) {
-      // Fallback to LocalStorage
       const localId = Date.now();
       const localProject = { ...newProject, id: localId };
       const updatedProjects = [localProject, ...projects];
@@ -212,20 +211,6 @@ const NeuralLab = () => {
           timestamp: new Date().toISOString() 
         }]);
       }
-      
-      // After AI finishes, add a summary message if it created scripts
-      if (responseText.includes('```')) {
-        const scriptCount = (responseText.match(/```/g) || []).length / 2;
-        if (scriptCount > 0) {
-          setMessages(prev => [...prev, {
-            id: Date.now() + 2,
-            role: 'system',
-            content: `Neural Engine: I have generated ${Math.floor(scriptCount)} scripts. Would you like to add them to your active project?`,
-            timestamp: new Date().toISOString()
-          }]);
-        }
-      }
-
     } catch (error) {
       showError("Neural link interrupted.");
     } finally {
@@ -316,27 +301,24 @@ const NeuralLab = () => {
               </div>
             ) : (
               messages.map((msg) => (
-                <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : msg.role === 'system' ? 'justify-center' : 'justify-start'}`}>
+                <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] p-6 rounded-[2.5rem] relative group ${
                     msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 
-                    msg.role === 'system' ? 'bg-white/5 border border-indigo-500/30 text-indigo-400 text-xs font-black uppercase tracking-widest rounded-full py-3 px-8' :
                     'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
                   }`}>
-                    {msg.role !== 'system' && (
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2 opacity-40 text-[10px] font-black uppercase tracking-widest">
-                          {msg.role === 'user' ? <Zap size={12} /> : <Cpu size={12} />}
-                          {msg.role === 'user' ? 'Researcher' : msg.model}
-                        </div>
-                        {msg.role === 'assistant' && (
-                          <button onClick={() => handleSaveAsScript(msg.content)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#99f6ff] hover:text-white">
-                            <FileCode size={16} />
-                          </button>
-                        )}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 opacity-40 text-[10px] font-black uppercase tracking-widest">
+                        {msg.role === 'user' ? <Zap size={12} /> : <Cpu size={12} />}
+                        {msg.role === 'user' ? 'Researcher' : msg.model}
                       </div>
-                    )}
+                      {msg.role === 'assistant' && (
+                        <button onClick={() => handleSaveAsScript(msg.content)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#99f6ff] hover:text-white">
+                          <FileCode size={16} />
+                        </button>
+                      )}
+                    </div>
                     {msg.image && <img src={msg.image} className="mb-4 rounded-2xl max-h-64 w-full object-cover border border-white/10" alt="Uploaded" />}
-                    <p className={`font-medium leading-relaxed whitespace-pre-wrap ${msg.role === 'system' ? 'text-center' : 'text-sm md:text-base'}`}>{msg.content}</p>
+                    <p className="font-medium leading-relaxed whitespace-pre-wrap text-sm md:text-base">{msg.content}</p>
                   </div>
                 </motion.div>
               ))

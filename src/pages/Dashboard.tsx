@@ -36,23 +36,33 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch Scripts from Supabase
-      const { data: scriptData } = await supabase
+      // Fetch Scripts
+      const { data: scriptData, error: scriptError } = await supabase
         .from('scripts')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       
-      if (scriptData) setScripts(scriptData);
+      if (!scriptError && scriptData) {
+        setScripts(scriptData);
+      } else {
+        const localScripts = JSON.parse(localStorage.getItem(`scripts_${user?.id}`) || '[]');
+        setScripts(localScripts);
+      }
 
-      // Fetch Tasks from Supabase (assuming tasks table exists)
-      const { data: taskData } = await supabase
+      // Fetch Tasks
+      const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       
-      if (taskData) setTasks(taskData);
+      if (!taskError && taskData) {
+        setTasks(taskData);
+      } else {
+        const localTasks = JSON.parse(localStorage.getItem(`tasks_${user?.id}`) || '[]');
+        setTasks(localTasks);
+      }
 
       const savedMsgs = localStorage.getItem(`messages_${user?.id}`);
       if (savedMsgs) setMessages(JSON.parse(savedMsgs));
@@ -68,19 +78,33 @@ const Dashboard = () => {
     try {
       const suggestion = await grokChat("Suggest a single, highly productive task for a user today. Keep it under 10 words.", { modelId: 'yobest-ai', userId: user?.id });
       
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert([{
-          user_id: user?.id,
-          title: suggestion,
-          status: 'pending'
-        }])
-        .select()
-        .single();
+      const newTask = {
+        user_id: user?.id,
+        title: suggestion,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      };
 
-      if (!error && data) {
-        setTasks([data, ...tasks]);
-        showSuccess('Grok suggested a new task.');
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .insert([newTask])
+          .select()
+          .single();
+
+        if (!error && data) {
+          setTasks([data, ...tasks]);
+          showSuccess('Grok suggested a new task.');
+        } else {
+          throw new Error("Supabase failed");
+        }
+      } catch (err) {
+        const localId = Date.now();
+        const localTask = { ...newTask, id: localId };
+        const updatedTasks = [localTask, ...tasks];
+        setTasks(updatedTasks);
+        localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updatedTasks));
+        showSuccess('Grok suggested a local task.');
       }
     } catch (error) {
       showError('AI Engine failed to suggest.');
@@ -89,31 +113,45 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteScript = async (id: number) => {
-    const { error } = await supabase
-      .from('scripts')
-      .delete()
-      .eq('id', id);
+  const handleDeleteScript = async (id: any) => {
+    try {
+      const { error } = await supabase
+        .from('scripts')
+        .delete()
+        .eq('id', id);
 
-    if (!error) {
-      setScripts(scripts.filter(s => s.id !== id));
-      showSuccess('Script purged from cloud archive.');
-    } else {
-      showError("Failed to delete script.");
+      if (!error) {
+        setScripts(scripts.filter(s => s.id !== id));
+        showSuccess('Script purged from cloud.');
+      } else {
+        throw new Error("Supabase failed");
+      }
+    } catch (err) {
+      const updatedScripts = scripts.filter(s => s.id !== id);
+      setScripts(updatedScripts);
+      localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedScripts));
+      showSuccess('Script purged from local archive.');
     }
   };
 
   const handleSaveScript = async (updatedScript: any) => {
-    const { error } = await supabase
-      .from('scripts')
-      .update({ title: updatedScript.title, content: updatedScript.content })
-      .eq('id', updatedScript.id);
+    try {
+      const { error } = await supabase
+        .from('scripts')
+        .update({ title: updatedScript.title, content: updatedScript.content })
+        .eq('id', updatedScript.id);
 
-    if (!error) {
-      setScripts(scripts.map(s => s.id === updatedScript.id ? updatedScript : s));
-      showSuccess('Script updated in cloud.');
-    } else {
-      showError("Failed to update script.");
+      if (!error) {
+        setScripts(scripts.map(s => s.id === updatedScript.id ? updatedScript : s));
+        showSuccess('Script updated in cloud.');
+      } else {
+        throw new Error("Supabase failed");
+      }
+    } catch (err) {
+      const updatedScripts = scripts.map(s => s.id === updatedScript.id ? updatedScript : s);
+      setScripts(updatedScripts);
+      localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedScripts));
+      showSuccess('Script updated locally.');
     }
   };
 

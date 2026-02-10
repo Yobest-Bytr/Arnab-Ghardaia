@@ -2,6 +2,35 @@
  * Utility to interact with Puter AI or Custom Providers
  */
 
+export const modelMapping: Record<string, string> = {
+  'yobest-ai': 'x-ai/grok-3-fast',
+  'claude-3-5-sonnet': 'anthropic/claude-3-5-sonnet',
+  'gpt-4o': 'openai/gpt-4o',
+  'gemini-2.0-flash': 'google/gemini-2.0-flash',
+  'deepseek-chat': 'deepseek/deepseek-chat'
+};
+
+export const validateKey = async (modelId: string, key: string) => {
+  if (!(window as any).puter) return { success: false, message: "Puter.js not loaded" };
+  
+  try {
+    // Perform a minimal "handshake" request to verify the key
+    const response = await (window as any).puter.ai.chat(
+      "Respond with 'OK' if you can hear me.",
+      {
+        model: modelMapping[modelId] || modelMapping['yobest-ai'],
+        stream: false,
+      }
+    );
+    return { success: true, message: "Neural link verified." };
+  } catch (error: any) {
+    return { 
+      success: false, 
+      message: error.message || "Invalid API key or insufficient funds." 
+    };
+  }
+};
+
 export const grokChat = async (
   prompt: string, 
   options: { modelId: string; userId?: string; image?: string; stream?: boolean } = {},
@@ -10,23 +39,18 @@ export const grokChat = async (
   const { modelId, userId, image, stream = true } = options;
   
   const savedKeys = userId ? JSON.parse(localStorage.getItem(`ai_keys_${userId}`) || '{}') : {};
-
-  // Updated Model Mapping based on valid Puter registry
-  const modelMapping: Record<string, string> = {
-    'yobest-ai': 'x-ai/grok-3-fast',
-    'grok-premium': 'x-ai/grok-3-fast',
-    'chatgpt': 'openai/gpt-4o',
-    'gemini': 'google/gemini-2.0-flash'
-  };
-
   const targetModel = modelMapping[modelId] || modelMapping['yobest-ai'];
-  const userKey = modelId !== 'yobest-ai' ? (
-    modelId === 'chatgpt' ? savedKeys.openai :
-    modelId === 'gemini' ? savedKeys.gemini :
+  
+  // Check if the model requires a key and if it exists
+  const requiresKey = modelId !== 'yobest-ai';
+  const userKey = requiresKey ? (
+    modelId.includes('gpt') ? savedKeys.openai :
+    modelId.includes('gemini') ? savedKeys.gemini :
+    modelId.includes('claude') ? savedKeys.anthropic :
     savedKeys.grok
   ) : null;
 
-  if (modelId !== 'yobest-ai' && !userKey) {
+  if (requiresKey && !userKey) {
     return `Error: No API key found for ${modelId}. Please add it in your Profile settings.`;
   }
 
@@ -61,13 +85,9 @@ export const grokChat = async (
     }
     return response?.message?.content || "No response available.";
   } catch (error: any) {
-    console.error("AI Error:", error);
-    
-    // Handle specific Puter errors
     if (error.status === 402 || error.code === 'insufficient_funds') {
-      return "Neural Link Error: Insufficient credits in the Puter AI account. Please check your balance or use a custom API key.";
+      return "Neural Link Error: Insufficient credits. Please check your provider balance.";
     }
-    
-    return "The cognitive engine encountered an error processing your request. Please verify your API keys.";
+    return `The cognitive engine encountered an error: ${error.message || 'Unknown error'}`;
   }
 };
