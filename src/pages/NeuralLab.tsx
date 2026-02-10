@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
@@ -10,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
+import { storage } from '@/lib/storage';
 import { showSuccess, showError } from '@/utils/toast';
 import ProjectModal from '@/components/ProjectModal';
 import {
@@ -53,60 +53,22 @@ const NeuralLab = () => {
   }, [messages]);
 
   const fetchProjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('scripts')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        setProjects(data);
-        if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
-      } else {
-        const localProjects = JSON.parse(localStorage.getItem(`scripts_${user?.id}`) || '[]');
-        setProjects(localProjects);
-        if (localProjects.length > 0 && !selectedProject) setSelectedProject(localProjects[0]);
-      }
-    } catch (err) {
-      const localProjects = JSON.parse(localStorage.getItem(`scripts_${user?.id}`) || '[]');
-      setProjects(localProjects);
-    }
+    if (!user) return;
+    const data = await storage.get('scripts', user.id);
+    setProjects(data);
+    if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
   };
 
   const handleCreateProject = async (project: { title: string; description: string }) => {
     if (!user) return;
-    
     const newProject = {
-      user_id: user.id,
       title: project.title,
-      content: `// Project: ${project.title}\n// Objective: ${project.description}\n\n// Initialize neural link...`,
-      created_at: new Date().toISOString()
+      content: `// Project: ${project.title}\n// Objective: ${project.description}\n\n// Initialize neural link...`
     };
-
-    try {
-      const { data, error } = await supabase
-        .from('scripts')
-        .insert([newProject])
-        .select()
-        .single();
-
-      if (!error && data) {
-        setProjects([data, ...projects]);
-        setSelectedProject(data);
-        showSuccess(`Project "${project.title}" initialized in cloud.`);
-      } else {
-        throw new Error("Supabase insert failed");
-      }
-    } catch (err) {
-      const localId = Date.now();
-      const localProject = { ...newProject, id: localId };
-      const updatedProjects = [localProject, ...projects];
-      setProjects(updatedProjects);
-      setSelectedProject(localProject);
-      localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedProjects));
-      showSuccess(`Project "${project.title}" initialized locally.`);
-    }
+    const data = await storage.insert('scripts', user.id, newProject);
+    setProjects([data, ...projects]);
+    setSelectedProject(data);
+    showSuccess(`Project "${project.title}" initialized.`);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,37 +85,14 @@ const NeuralLab = () => {
 
   const handleSaveAsScript = async (content: string) => {
     if (!user) return;
-    
     const newScript = {
-      user_id: user.id,
       title: `Lab Script ${new Date().toLocaleTimeString()}`,
-      content: content,
-      created_at: new Date().toISOString()
+      content: content
     };
-
-    try {
-      const { data, error } = await supabase
-        .from('scripts')
-        .insert([newScript])
-        .select()
-        .single();
-
-      if (!error && data) {
-        setProjects([data, ...projects]);
-        setSelectedProject(data);
-        showSuccess("Archived to Cloud Scripts");
-      } else {
-        throw new Error("Supabase insert failed");
-      }
-    } catch (err) {
-      const localId = Date.now();
-      const localScript = { ...newScript, id: localId };
-      const updatedProjects = [localScript, ...projects];
-      setProjects(updatedProjects);
-      setSelectedProject(localScript);
-      localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedProjects));
-      showSuccess("Archived to Local Scripts");
-    }
+    const data = await storage.insert('scripts', user.id, newScript);
+    setProjects([data, ...projects]);
+    setSelectedProject(data);
+    showSuccess("Archived to Scripts");
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -225,7 +164,6 @@ const NeuralLab = () => {
       
       <main className="flex-1 pt-32 pb-10 px-6 max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-8 relative z-10">
         <aside className="lg:w-80 flex flex-col gap-6">
-          {/* Project Selector */}
           <div className="pill-nav p-6 bg-white/5 border-white/10">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 flex items-center gap-2">
