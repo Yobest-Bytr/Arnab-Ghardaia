@@ -3,11 +3,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
-import { Plus, MoreVertical, Calendar, CheckCircle2, Clock, BrainCircuit, Sparkles, TrendingUp, Loader2, Code, MessageSquare, Save, History } from 'lucide-react';
+import { Plus, MoreVertical, Calendar, CheckCircle2, Clock, BrainCircuit, Sparkles, TrendingUp, Loader2, Code, MessageSquare, Save, History, Edit2, Trash2, ExternalLink } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactConfetti from 'react-confetti';
 import { grokChat } from '@/lib/puter';
+import ScriptEditor from '@/components/ScriptEditor';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -18,6 +25,7 @@ const Dashboard = () => {
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'scripts' | 'history'>('tasks');
+  const [editingScript, setEditingScript] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -28,31 +36,16 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch Tasks - Silently handle 404/PGRST205 if table doesn't exist
-      const { data: taskData, error: taskError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      
-      if (taskError && taskError.code !== '42P01' && taskError.code !== 'PGRST205') {
-        console.error('Task fetch error:', taskError);
-      }
-
-      // Load from local storage as fallback or primary
       const localTasks = JSON.parse(localStorage.getItem(`tasks_${user?.id}`) || '[]');
-      setTasks(taskData || localTasks);
+      setTasks(localTasks);
 
-      // Fetch Scripts from local storage
       const savedScripts = localStorage.getItem(`scripts_${user?.id}`);
       if (savedScripts) setScripts(JSON.parse(savedScripts));
 
-      // Fetch Messages from local storage
       const savedMsgs = localStorage.getItem(`messages_${user?.id}`);
       if (savedMsgs) setMessages(JSON.parse(savedMsgs));
-
     } catch (error: any) {
-      // Ignore errors related to missing tables
+      console.error("Fetch error:", error);
     } finally {
       setLoading(false);
     }
@@ -61,7 +54,7 @@ const Dashboard = () => {
   const handleAiSuggest = async () => {
     setIsAiGenerating(true);
     try {
-      const suggestion = await grokChat("Suggest a single, highly productive task for a user today. Keep it under 10 words.");
+      const suggestion = await grokChat("Suggest a single, highly productive task for a user today. Keep it under 10 words.", { modelId: 'yobest-ai', userId: user?.id });
       
       const newTask = { 
         id: Date.now(), 
@@ -71,19 +64,10 @@ const Dashboard = () => {
         user_id: user?.id 
       };
 
-      // Try to save to Supabase, but don't fail if table is missing
-      try {
-        await supabase.from('tasks').insert([newTask]);
-      } catch (e) {
-        // Silent fail for DB insert
-      }
-      
-      // Always update local state and storage
       const updatedTasks = [newTask, ...tasks];
       setTasks(updatedTasks);
       localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updatedTasks));
       
-      // Save to history
       const newMsg = { id: Date.now(), role: 'assistant', content: suggestion, timestamp: new Date().toISOString() };
       const updatedMsgs = [newMsg, ...messages];
       setMessages(updatedMsgs);
@@ -95,6 +79,20 @@ const Dashboard = () => {
     } finally {
       setIsAiGenerating(false);
     }
+  };
+
+  const handleDeleteScript = (id: number) => {
+    const updated = scripts.filter(s => s.id !== id);
+    setScripts(updated);
+    localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updated));
+    showSuccess('Script purged from archive.');
+  };
+
+  const handleSaveScript = (updatedScript: any) => {
+    const updated = scripts.map(s => s.id === updatedScript.id ? updatedScript : s);
+    setScripts(updated);
+    localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updated));
+    showSuccess('Script updated successfully.');
   };
 
   return (
@@ -130,7 +128,6 @@ const Dashboard = () => {
           </div>
         </motion.header>
 
-        {/* Workspace Tabs */}
         <div className="flex gap-4 mb-12 border-b border-white/5 pb-4">
           {[
             { id: 'tasks', label: 'Tasks', icon: CheckCircle2 },
@@ -150,7 +147,6 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Content Area */}
         <div className="space-y-4">
           {loading ? (
             <div className="py-20 text-center text-white/20 font-medium">Synchronizing neural data...</div>
@@ -163,7 +159,7 @@ const Dashboard = () => {
                       <p className="text-white/40 font-medium">No active tasks. Use AI Suggest to begin.</p>
                     </div>
                   ) : (
-                    tasks.map((task, i) => (
+                    tasks.map((task) => (
                       <div key={task.id} className="pill-nav p-6 flex items-center justify-between mb-4 group hover:bg-white/10 transition-all">
                         <div className="flex items-center gap-6">
                           <div className={`w-6 h-6 rounded-full border-2 ${task.status === 'completed' ? 'bg-[#99f6ff] border-[#99f6ff]' : 'border-white/10'}`} />
@@ -185,17 +181,35 @@ const Dashboard = () => {
                       </div>
                     ) : (
                       scripts.map((script) => (
-                        <div key={script.id} className="pill-nav p-8 bg-white/5 border-white/10 group">
+                        <div key={script.id} className="pill-nav p-8 bg-white/5 border-white/10 group relative">
                           <div className="flex items-center justify-between mb-6">
                             <h4 className="text-xl font-black">{script.title}</h4>
-                            <Code size={20} className="text-[#99f6ff]" />
+                            <div className="flex items-center gap-2">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-white/20 hover:text-white">
+                                    <MoreVertical size={20} />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="bg-[#020408] border-white/10 text-white">
+                                  <DropdownMenuItem onClick={() => setEditingScript(script)} className="flex items-center gap-2 cursor-pointer">
+                                    <Edit2 size={14} /> Edit Script
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDeleteScript(script.id)} className="flex items-center gap-2 text-rose-400 cursor-pointer">
+                                    <Trash2 size={14} /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
-                          <pre className="bg-black/40 p-4 rounded-xl text-xs font-mono text-indigo-300 overflow-x-auto mb-6">
+                          <pre className="bg-black/40 p-4 rounded-xl text-xs font-mono text-indigo-300 overflow-x-auto mb-6 max-h-40">
                             {script.content}
                           </pre>
                           <div className="flex items-center justify-between text-[10px] font-black text-white/20 uppercase tracking-widest">
                             <span>{new Date(script.created_at).toLocaleDateString()}</span>
-                            <button className="hover:text-white transition-colors">Open Editor</button>
+                            <button onClick={() => setEditingScript(script)} className="hover:text-white transition-colors flex items-center gap-1">
+                              <ExternalLink size={12} /> Open Editor
+                            </button>
                           </div>
                         </div>
                       ))
@@ -234,6 +248,15 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+
+      {editingScript && (
+        <ScriptEditor 
+          script={editingScript} 
+          isOpen={!!editingScript} 
+          onClose={() => setEditingScript(null)} 
+          onSave={handleSaveScript}
+        />
+      )}
     </div>
   );
 };

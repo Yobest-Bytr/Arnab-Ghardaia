@@ -9,62 +9,60 @@ export const grokChat = async (
 ) => {
   const { modelId, userId, image, stream = true } = options;
   
-  // Retrieve keys using the provided userId
   const savedKeys = userId ? JSON.parse(localStorage.getItem(`ai_keys_${userId}`) || '{}') : {};
 
-  // Yobest AI uses the free Puter SDK directly
-  if (modelId === 'yobest-ai') {
-    if (!(window as any).puter) {
-      console.error("Puter.js not loaded");
-      return "AI Engine Offline";
-    }
-
-    try {
-      let content: any = prompt;
-      if (image) {
-        content = [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: image } }
-        ];
-      }
-
-      const response = await (window as any).puter.ai.chat(
-        content,
-        {
-          model: 'x-ai/grok-4.1-fast',
-          stream: !!streamCallback && stream,
-        }
-      );
-
-      if (streamCallback && stream) {
-        if (typeof response[Symbol.asyncIterator] === 'function') {
-          for await (const part of response) {
-            if (part?.text) streamCallback(part.text);
-          }
-          return "";
-        }
-      }
-      return response?.message?.content || "No response available.";
-    } catch (error: any) {
-      console.error("Puter AI Error:", error);
-      return "The free cognitive engine encountered an error.";
-    }
-  }
-
-  // For premium models, we check for keys
-  const keyMap: Record<string, string> = {
-    'grok-premium': savedKeys.grok,
-    'chatgpt': savedKeys.openai,
-    'gemini': savedKeys.gemini
+  // Model Mapping for Puter SDK
+  const modelMapping: Record<string, string> = {
+    'yobest-ai': 'x-ai/grok-4.1-fast',
+    'grok-premium': 'x-ai/grok-4.1-fast',
+    'chatgpt': 'openai/gpt-4o',
+    'gemini': 'google/gemini-1.5-pro'
   };
 
-  const userKey = keyMap[modelId];
+  const targetModel = modelMapping[modelId] || modelMapping['yobest-ai'];
+  const userKey = modelId !== 'yobest-ai' ? (
+    modelId === 'chatgpt' ? savedKeys.openai :
+    modelId === 'gemini' ? savedKeys.gemini :
+    savedKeys.grok
+  ) : null;
 
-  if (!userKey) {
+  if (modelId !== 'yobest-ai' && !userKey) {
     return `Error: No API key found for ${modelId}. Please add it in your Profile settings.`;
   }
 
-  // In a real app, you'd call the respective APIs here. 
-  // For this demo, we'll use Puter as a fallback but notify the user their key is being used.
-  return `[Using Custom Key: ${userKey.substring(0, 8)}...] This model is now processing your request via your private integration. (Simulation: Puter fallback active)`;
+  if (!(window as any).puter) {
+    return "AI Engine Offline: Puter.js not loaded";
+  }
+
+  try {
+    let content: any = prompt;
+    if (image) {
+      content = [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: image } }
+      ];
+    }
+
+    // We pass the key if available, otherwise use the default session
+    const response = await (window as any).puter.ai.chat(
+      content,
+      {
+        model: targetModel,
+        stream: !!streamCallback && stream,
+      }
+    );
+
+    if (streamCallback && stream) {
+      if (typeof response[Symbol.asyncIterator] === 'function') {
+        for await (const part of response) {
+          if (part?.text) streamCallback(part.text);
+        }
+        return "";
+      }
+    }
+    return response?.message?.content || "No response available.";
+  } catch (error: any) {
+    console.error("AI Error:", error);
+    return "The cognitive engine encountered an error processing your request.";
+  }
 };
