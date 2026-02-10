@@ -12,6 +12,7 @@ import { grokChat } from '@/lib/puter';
 import { storage } from '@/lib/storage';
 import { showSuccess, showError } from '@/utils/toast';
 import ProjectModal from '@/components/ProjectModal';
+import CodeFrame from '@/components/CodeFrame';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,16 +84,20 @@ const NeuralLab = () => {
     }
   };
 
-  const handleSaveAsScript = async (content: string) => {
-    if (!user) return;
-    const newScript = {
-      title: `Lab Script ${new Date().toLocaleTimeString()}`,
-      content: content
-    };
-    const data = await storage.insert('scripts', user.id, newScript);
-    setProjects([data, ...projects]);
-    setSelectedProject(data);
-    showSuccess("Archived to Scripts");
+  const handleAddCodeToProject = async (code: string) => {
+    if (!user || !selectedProject) {
+      showError("Please select a project first");
+      return;
+    }
+    
+    const updatedContent = selectedProject.content + "\n\n" + code;
+    await storage.update('scripts', user.id, selectedProject.id, { content: updatedContent });
+    
+    // Update local state
+    setSelectedProject({ ...selectedProject, content: updatedContent });
+    setProjects(projects.map(p => p.id === selectedProject.id ? { ...p, content: updatedContent } : p));
+    
+    showSuccess("Code added to active project");
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -155,6 +160,28 @@ const NeuralLab = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Helper to parse message content into text and code blocks
+  const renderMessageContent = (content: string) => {
+    const parts = content.split(/(```[\s\S]*?```)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('```')) {
+        const match = part.match(/```(\w+)?\n?([\s\S]*?)```/);
+        const language = match?.[1] || 'javascript';
+        const code = match?.[2] || '';
+        return (
+          <CodeFrame 
+            key={index} 
+            code={code} 
+            language={language} 
+            onAdd={handleAddCodeToProject} 
+          />
+        );
+      }
+      return <p key={index} className="font-medium leading-relaxed whitespace-pre-wrap text-sm md:text-base">{part}</p>;
+    });
   };
 
   return (
@@ -249,14 +276,9 @@ const NeuralLab = () => {
                         {msg.role === 'user' ? <Zap size={12} /> : <Cpu size={12} />}
                         {msg.role === 'user' ? 'Researcher' : msg.model}
                       </div>
-                      {msg.role === 'assistant' && (
-                        <button onClick={() => handleSaveAsScript(msg.content)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#99f6ff] hover:text-white">
-                          <FileCode size={16} />
-                        </button>
-                      )}
                     </div>
                     {msg.image && <img src={msg.image} className="mb-4 rounded-2xl max-h-64 w-full object-cover border border-white/10" alt="Uploaded" />}
-                    <p className="font-medium leading-relaxed whitespace-pre-wrap text-sm md:text-base">{msg.content}</p>
+                    {renderMessageContent(msg.content)}
                   </div>
                 </motion.div>
               ))
