@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check } from 'lucide-react';
+import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import CodeFrame from './CodeFrame';
@@ -38,7 +38,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Simple parser for code blocks
   const renderContent = (text: string) => {
     const parts = text.split(/```(\w+)?\n([\s\S]*?)```/g);
     if (parts.length === 1) return <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>;
@@ -50,15 +49,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       } else if (i % 3 === 1) {
         const language = parts[i] || 'javascript';
         const code = parts[i + 1];
-        elements.push(
-          <CodeFrame 
-            key={i} 
-            code={code} 
-            language={language} 
-            onAdd={onApplyCode}
-          />
-        );
-        i++; // Skip the code part as we handled it
+        elements.push(<CodeFrame key={i} code={code} language={language} onAdd={onApplyCode} />);
+        i++;
       }
     }
     return elements;
@@ -76,7 +68,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
   return (
     <div className="flex flex-col gap-4 mb-8 group">
-      {/* Thought Section */}
       {thought && (
         <div className="flex flex-col gap-2">
           <button 
@@ -85,6 +76,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           >
             {isThoughtOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="uppercase tracking-widest">Thought</span>
+            <span className="text-white/10 font-medium ml-2">Addressing the request</span>
           </button>
           
           {isThoughtOpen && (
@@ -99,12 +91,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         </div>
       )}
 
-      {/* Main Content */}
       <div className="text-sm text-white/90 leading-relaxed">
         {renderContent(content)}
       </div>
 
-      {/* File Change Card */}
       {fileChange && (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -118,16 +108,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               </div>
             </div>
             <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60 transition-all">
-              View Diff <ChevronRight size={14} />
+              <Edit2 size={14} /> Edit <ChevronRight size={14} />
             </button>
           </div>
           <p className="text-[11px] text-white/40 font-medium leading-relaxed">
             {fileChange.summary}
           </p>
         </div>
-      )}
+      </div>
 
-      {/* Status & Actions */}
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-4">
           <button onClick={handleCopy} className="text-white/20 hover:text-white transition-colors">
@@ -135,7 +124,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           </button>
           <div className="flex items-center gap-2 text-emerald-400/60 text-[11px] font-bold">
             <CheckCircle2 size={14} />
-            <span>Verified</span>
+            <span>Approved</span>
+            <span className="text-white/10 ml-1">auto</span>
           </div>
         </div>
         
