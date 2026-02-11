@@ -3,11 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
-  Image as ImageIcon, Loader2, 
-  FileCode, Terminal, Layers, X,
+  Loader2, FileCode, Terminal, Layers, X,
   ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy,
   AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw,
-  Github, Database, ExternalLink, CheckCircle2, Info
+  Github, Database, ExternalLink, CheckCircle2, Info, Folder
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -25,14 +24,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 const MODELS = [
-  { id: 'yobest-ai', name: 'Auto', icon: Sparkles, type: 'Free', desc: 'Unlimited Grok 3 Fast' },
-  { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, type: 'Key Required', desc: 'Anthropic Sonnet' },
-  { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, type: 'Key Required', desc: 'OpenAI Multimodal' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, type: 'Key Required', desc: 'Google Flash Pro' },
+  { id: 'yobest-ai', name: 'Auto', icon: Sparkles, desc: 'Unlimited Grok 3 Fast' },
+  { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, desc: 'Anthropic Sonnet' },
+  { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, desc: 'OpenAI Multimodal' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, desc: 'Google Flash Pro' },
 ];
 
 const NeuralLab = () => {
@@ -192,12 +192,40 @@ const NeuralLab = () => {
       {/* Top IDE Navigation */}
       <div className="pt-24 px-4 h-36 border-b border-white/5 flex items-center justify-between bg-[#0a0a0a]">
         <div className="flex items-center gap-6">
+          {/* Project Switcher */}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all outline-none group">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                <Folder size={18} />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Project</p>
+                <p className="text-xs font-bold text-white">{selectedProject?.title || 'Select Project'}</p>
+              </div>
+              <ChevronDown size={14} className="text-white/20 ml-2" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 p-2">
+              <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/20">Your Projects</div>
+              {projects.map(p => (
+                <DropdownMenuItem key={p.id} onClick={() => setSelectedProject(p)} className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
+                  <Folder size={16} className="text-indigo-400" />
+                  <span className="font-bold text-xs">{p.title}</span>
+                  {selectedProject?.id === p.id && <CheckCircle2 size={14} className="ml-auto text-indigo-400" />}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)} className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5 text-indigo-400">
+                <Plus size={16} />
+                <span className="font-bold text-xs">New Project</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="h-8 w-[1px] bg-white/10" />
+
           <div className="flex items-center gap-2 text-white/40">
-            <RefreshCw size={16} className="animate-spin-slow" />
+            <RefreshCw size={14} className="animate-spin-slow" />
             <span className="text-[11px] font-bold">{projects.length} files</span>
-          </div>
-          <div className="relative w-64">
-            <input type="text" placeholder="Search file contents" className="w-full bg-white/5 border border-white/5 rounded-lg py-1.5 px-3 text-[11px] outline-none focus:border-indigo-500/50 transition-all" />
           </div>
         </div>
 
@@ -215,7 +243,7 @@ const NeuralLab = () => {
               onClick={() => setActiveTab(btn.id)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
-                activeTab === btn.id ? "bg-indigo-600 text-white" : "text-white/40 hover:bg-white/5 hover:text-white"
+                activeTab === btn.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/40 hover:bg-white/5 hover:text-white"
               )}
             >
               <btn.icon size={14} />
@@ -311,13 +339,29 @@ const NeuralLab = () => {
                         {isGenerating && <Loader2 className="animate-spin text-indigo-400 mx-auto" size={20} />}
                       </div>
 
-                      <ChatInput 
-                        value={input} 
-                        onChange={setInput} 
-                        onSubmit={handleSend} 
-                        isGenerating={isGenerating} 
-                        selectedModel={selectedModel.name} 
-                      />
+                      <DropdownMenu>
+                        <ChatInput 
+                          value={input} 
+                          onChange={setInput} 
+                          onSubmit={handleSend} 
+                          isGenerating={isGenerating} 
+                          selectedModel={selectedModel.name}
+                          onModelChange={() => {}} // Handled by DropdownMenuTrigger wrapper if needed, but we'll use the trigger inside ChatInput
+                        />
+                        <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 p-2">
+                          <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/20">Select AI Model</div>
+                          {MODELS.map(m => (
+                            <DropdownMenuItem key={m.id} onClick={() => setSelectedModel(m)} className="flex flex-col items-start gap-1 p-3 cursor-pointer rounded-xl hover:bg-white/5">
+                              <div className="flex items-center gap-2 w-full">
+                                <m.icon size={14} className="text-indigo-400" />
+                                <span className="font-bold text-xs">{m.name}</span>
+                                {selectedModel.id === m.id && <CheckCircle2 size={14} className="ml-auto text-indigo-400" />}
+                              </div>
+                              <p className="text-[10px] text-white/30">{m.desc}</p>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </ResizablePanel>
                 </ResizablePanelGroup>
