@@ -16,6 +16,7 @@ import ProjectModal from '@/components/ProjectModal';
 import CodeFrame from '@/components/CodeFrame';
 import FileExplorer from '@/components/FileExplorer';
 import SystemMessages from '@/components/SystemMessages';
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
