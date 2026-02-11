@@ -6,7 +6,7 @@ import {
   Loader2, FileCode, Terminal, Layers, X,
   ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy,
   AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw,
-  Github, Database, ExternalLink, CheckCircle2, Info, Folder
+  Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -42,6 +42,7 @@ const NeuralLab = () => {
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -116,12 +117,13 @@ const NeuralLab = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isGenerating) return;
+    if ((!input.trim() && !attachedImage) || isGenerating) return;
 
     const userMsg = { 
       id: Date.now(), 
       role: 'user', 
       content: input, 
+      image: attachedImage,
       timestamp: new Date().toISOString() 
     };
     
@@ -136,7 +138,7 @@ const NeuralLab = () => {
       
       await grokChat(
         contextPrompt, 
-        { modelId: selectedModel.id, userId: user?.id },
+        { modelId: selectedModel.id, userId: user?.id, image: attachedImage || undefined },
         (chunk) => {
           responseText += chunk;
           setMessages(prev => {
@@ -170,6 +172,7 @@ const NeuralLab = () => {
       addLog('error', 'Neural link interrupted.');
     } finally {
       setIsGenerating(false);
+      setAttachedImage(null);
     }
   };
 
@@ -190,27 +193,82 @@ const NeuralLab = () => {
       <Navbar />
       
       {/* Top IDE Navigation */}
-      <div className="pt-24 px-4 h-36 border-b border-white/5 flex items-center justify-between bg-[#0a0a0a]">
-        <div className="flex items-center gap-6">
-          {/* Project Switcher */}
+      <div className="pt-24 px-4 h-36 border-b border-white/5 flex flex-col bg-[#0a0a0a]">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-1">
+            {[
+              { id: 'preview', label: 'Preview', icon: Eye },
+              { id: 'problems', label: 'Problems', icon: AlertTriangle },
+              { id: 'code', label: 'Code', icon: CodeIcon },
+              { id: 'configure', label: 'Configure', icon: Settings },
+              { id: 'security', label: 'Security', icon: Shield },
+              { id: 'publish', label: 'Publish', icon: Globe },
+            ].map((btn) => (
+              <button 
+                key={btn.id}
+                onClick={() => setActiveTab(btn.id)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
+                  activeTab === btn.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/40 hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <btn.icon size={14} />
+                {btn.label}
+              </button>
+            ))}
+            <div className="w-[1px] h-6 bg-white/10 mx-2" />
+            <button className="p-2 text-white/40 hover:text-white"><Bell size={16} /></button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="p-2 text-white/40 hover:text-white outline-none">
+                <MoreHorizontal size={16} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-48 p-2">
+                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
+                  <RotateCcw size={14} />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs">Rebuild</span>
+                    <span className="text-[9px] text-white/30">Re-installs node_modules</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
+                  <Trash2 size={14} />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs">Clear Cache</span>
+                    <span className="text-[9px] text-white/30">Clears local storage</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-white">Building TaskMaster with Supabase</span>
+                <span className="text-[9px] text-white/30">vibrant-wolf-glow</span>
+              </div>
+              <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <CheckCircle2 size={10} />
+              </div>
+            </div>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold hover:bg-white/10 transition-all">
+              <RotateCcw size={14} /> Restart
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6 h-12">
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all outline-none group">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
-                <Folder size={18} />
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Project</p>
-                <p className="text-xs font-bold text-white">{selectedProject?.title || 'Select Project'}</p>
-              </div>
-              <ChevronDown size={14} className="text-white/20 ml-2" />
+            <DropdownMenuTrigger className="flex items-center gap-3 px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all outline-none group">
+              <Folder size={14} className="text-indigo-400" />
+              <span className="text-xs font-bold text-white">{selectedProject?.title || 'Select Project'}</span>
+              <ChevronDown size={12} className="text-white/20" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 p-2">
-              <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/20">Your Projects</div>
               {projects.map(p => (
                 <DropdownMenuItem key={p.id} onClick={() => setSelectedProject(p)} className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
                   <Folder size={16} className="text-indigo-400" />
                   <span className="font-bold text-xs">{p.title}</span>
-                  {selectedProject?.id === p.id && <CheckCircle2 size={14} className="ml-auto text-indigo-400" />}
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator className="bg-white/5" />
@@ -221,39 +279,14 @@ const NeuralLab = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="h-8 w-[1px] bg-white/10" />
-
           <div className="flex items-center gap-2 text-white/40">
-            <RefreshCw size={14} className="animate-spin-slow" />
-            <span className="text-[11px] font-bold">{projects.length} files</span>
+            <RefreshCw size={12} className="animate-spin-slow" />
+            <span className="text-[10px] font-bold">{projects.length} files</span>
           </div>
-        </div>
-
-        <div className="flex items-center gap-1">
-          {[
-            { id: 'preview', label: 'Preview', icon: Eye },
-            { id: 'problems', label: 'Problems', icon: AlertTriangle },
-            { id: 'code', label: 'Code', icon: CodeIcon },
-            { id: 'configure', label: 'Configure', icon: Settings },
-            { id: 'security', label: 'Security', icon: Shield },
-            { id: 'publish', label: 'Publish', icon: Globe },
-          ].map((btn) => (
-            <button 
-              key={btn.id}
-              onClick={() => setActiveTab(btn.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
-                activeTab === btn.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/40 hover:bg-white/5 hover:text-white"
-              )}
-            >
-              <btn.icon size={14} />
-              {btn.label}
-            </button>
-          ))}
-          <div className="w-[1px] h-6 bg-white/10 mx-2" />
-          <button className="p-2 text-white/40 hover:text-white"><Bell size={16} /></button>
-          <button className="p-2 text-white/40 hover:text-white"><MoreHorizontal size={16} /></button>
-          <div className="w-24 h-8 bg-rose-600 rounded-full ml-4 shadow-[0_0_20px_rgba(225,29,72,0.3)]" />
+          
+          <div className="relative flex-1 max-w-md">
+            <input type="text" placeholder="Search file contents" className="w-full bg-white/5 border border-white/5 rounded-lg py-1 px-3 text-[10px] outline-none focus:border-indigo-500/50 transition-all" />
+          </div>
         </div>
       </div>
 
@@ -346,7 +379,9 @@ const NeuralLab = () => {
                           onSubmit={handleSend} 
                           isGenerating={isGenerating} 
                           selectedModel={selectedModel.name}
-                          onModelChange={() => {}} // Handled by DropdownMenuTrigger wrapper if needed, but we'll use the trigger inside ChatInput
+                          onModelChange={() => {}} 
+                          attachedImage={attachedImage}
+                          onImageAttach={setAttachedImage}
                         />
                         <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 p-2">
                           <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/20">Select AI Model</div>
