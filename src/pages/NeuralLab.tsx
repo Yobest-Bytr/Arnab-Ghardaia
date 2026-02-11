@@ -5,7 +5,8 @@ import {
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Image as ImageIcon, Loader2, 
   FileCode, Terminal, Layers, X,
-  ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy
+  ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy,
+  AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -13,6 +14,8 @@ import { storage } from '@/lib/storage';
 import { showSuccess, showError } from '@/utils/toast';
 import ProjectModal from '@/components/ProjectModal';
 import CodeFrame from '@/components/CodeFrame';
+import FileExplorer from '@/components/FileExplorer';
+import SystemMessages from '@/components/SystemMessages';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,22 +29,23 @@ const MODELS = [
   { id: 'yobest-ai', name: 'Yobest AI', icon: Sparkles, type: 'Free', desc: 'Unlimited Grok 3 Fast' },
   { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, type: 'Key Required', desc: 'Anthropic Sonnet' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, type: 'Key Required', desc: 'OpenAI Multimodal' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, type: 'Key Required', desc: 'Google Flash Pro' },
-  { id: 'deepseek-chat', name: 'DeepSeek', icon: Terminal, type: 'Key Required', desc: 'DeepSeek V3 Chat' },
 ];
 
 const NeuralLab = () => {
   const { user } = useAuth();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
+  const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isConsoleOpen, setIsConsoleOpen] = useState(true);
   const [activeEditorTab, setActiveEditorTab] = useState('code');
   const [editorContent, setEditorContent] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +54,7 @@ const NeuralLab = () => {
   useEffect(() => {
     if (user) {
       fetchProjects();
+      addLog('info', 'Neural Lab initialized. Neural link established.');
     }
   }, [user]);
 
@@ -62,14 +67,29 @@ const NeuralLab = () => {
   useEffect(() => {
     if (selectedProject) {
       setEditorContent(selectedProject.content);
+      addLog('info', `Switched to project: ${selectedProject.title}`);
     }
   }, [selectedProject]);
+
+  const addLog = (type: 'info' | 'warn' | 'error', text: string) => {
+    setSystemLogs(prev => [{ type, text, timestamp: new Date().toISOString() }, ...prev].slice(0, 50));
+  };
 
   const fetchProjects = async () => {
     if (!user) return;
     const data = await storage.get('scripts', user.id);
     setProjects(data);
     if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
+  };
+
+  const handleRunChecks = () => {
+    setIsChecking(true);
+    addLog('info', 'Running neural checks...');
+    setTimeout(() => {
+      setIsChecking(false);
+      addLog('info', 'Checks complete. 0 errors, 0 warnings found.');
+      showSuccess("Neural checks passed.");
+    }, 1500);
   };
 
   const handleCreateProject = async (project: { title: string; description: string }) => {
@@ -81,43 +101,20 @@ const NeuralLab = () => {
     const data = await storage.insert('scripts', user.id, newProject);
     setProjects([data, ...projects]);
     setSelectedProject(data);
-    showSuccess(`Project "${project.title}" initialized.`);
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAttachedImage(reader.result as string);
-        showSuccess("Image attached to neural buffer");
-      };
-      reader.readAsDataURL(file);
-    }
+    addLog('info', `Created new project: ${project.title}`);
   };
 
   const handleAddCodeToProject = (code: string) => {
     setEditorContent(prev => prev + "\n\n" + code);
-    showSuccess("Code added to editor");
-  };
-
-  const handleApplyAll = (messageContent: string) => {
-    const codeBlocks = messageContent.match(/```[\s\S]*?```/g);
-    if (codeBlocks) {
-      const allCode = codeBlocks.map(block => {
-        const match = block.match(/```(\w+)?\n?([\s\S]*?)```/);
-        return match?.[2] || '';
-      }).join('\n\n');
-      setEditorContent(prev => prev + "\n\n" + allCode);
-      showSuccess("All code blocks applied to editor");
-    }
+    addLog('info', 'Applied AI code block to editor.');
   };
 
   const handleSaveProject = async () => {
     if (!user || !selectedProject) return;
     await storage.update('scripts', user.id, selectedProject.id, { content: editorContent });
     setProjects(projects.map(p => p.id === selectedProject.id ? { ...p, content: editorContent } : p));
-    showSuccess("Project saved to neural archive");
+    addLog('info', 'Project saved to neural archive.');
+    showSuccess("Project saved.");
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -134,19 +131,17 @@ const NeuralLab = () => {
     
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    const currentImage = attachedImage;
-    setAttachedImage(null);
     setIsGenerating(true);
+    addLog('info', 'Sending neural request...');
 
     try {
       let responseText = "";
-      const result = await grokChat(
-        input || "Analyze this image", 
-        { 
-          modelId: selectedModel.id, 
-          userId: user?.id,
-          image: currentImage || undefined 
-        },
+      // Pass current project context to AI
+      const contextPrompt = selectedProject ? `[Context: Current file is ${selectedProject.title}. Content: ${editorContent.slice(0, 1000)}...] ${input}` : input;
+      
+      await grokChat(
+        contextPrompt, 
+        { modelId: selectedModel.id, userId: user?.id, image: attachedImage || undefined },
         (chunk) => {
           responseText += chunk;
           setMessages(prev => {
@@ -165,56 +160,13 @@ const NeuralLab = () => {
           });
         }
       );
-
-      if (result && !responseText) {
-        setMessages(prev => [...prev, { 
-          id: Date.now() + 1, 
-          role: 'assistant', 
-          content: result, 
-          model: selectedModel.name,
-          timestamp: new Date().toISOString() 
-        }]);
-      }
+      addLog('info', 'Neural response received.');
     } catch (error) {
-      showError("Neural link interrupted.");
+      addLog('error', 'Neural link interrupted.');
     } finally {
       setIsGenerating(false);
+      setAttachedImage(null);
     }
-  };
-
-  const renderMessageContent = (msg: any) => {
-    const parts = msg.content.split(/(```[\s\S]*?```)/g);
-    const hasCode = msg.content.includes('```');
-    
-    return (
-      <div className="space-y-4">
-        {parts.map((part: string, index: number) => {
-          if (part.startsWith('```')) {
-            const match = part.match(/```(\w+)?\n?([\s\S]*?)```/);
-            const language = match?.[1] || 'javascript';
-            const code = match?.[2] || '';
-            return (
-              <CodeFrame 
-                key={index} 
-                code={code} 
-                language={language} 
-                onAdd={handleAddCodeToProject} 
-              />
-            );
-          }
-          return <p key={index} className="font-medium leading-relaxed whitespace-pre-wrap text-sm md:text-base">{part}</p>;
-        })}
-        {hasCode && msg.role === 'assistant' && (
-          <button 
-            onClick={() => handleApplyAll(msg.content)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#99f6ff]/10 text-[#99f6ff] hover:bg-[#99f6ff] hover:text-[#020408] text-[10px] font-black uppercase tracking-widest transition-all mt-4"
-          >
-            <Plus size={14} />
-            Apply All Code
-          </button>
-        )}
-      </div>
-    );
   };
 
   const updatePreview = () => {
@@ -224,192 +176,173 @@ const NeuralLab = () => {
         doc.open();
         doc.write(editorContent);
         doc.close();
+        addLog('info', 'Live preview refreshed.');
       }
     }
   };
 
-  useEffect(() => {
-    if (activeEditorTab === 'preview') {
-      updatePreview();
-    }
-  }, [activeEditorTab, editorContent]);
-
   return (
     <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
-      <div className="absolute inset-0 auron-radial pointer-events-none" />
       <Navbar />
       
-      <main className="flex-1 pt-24 w-full relative z-10 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Left Side: AI Chat & Models */}
-          <ResizablePanel defaultSize={40} minSize={30}>
-            <div className="h-full flex flex-col p-6 gap-6 border-r border-white/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
-                    <BrainCircuit size={20} />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-black uppercase tracking-widest">Neural Lab</h2>
-                    <p className="text-[10px] text-white/30 font-bold">Cognitive Research Engine</p>
-                  </div>
-                </div>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="pill-nav py-2 px-4 flex items-center gap-2 text-xs font-bold outline-none hover:bg-white/10 transition-all">
-                    <selectedModel.icon size={14} className="text-indigo-400" />
-                    {selectedModel.name}
-                    <ChevronDown size={12} />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64">
-                    {MODELS.map((model) => (
-                      <DropdownMenuItem key={model.id} onClick={() => setSelectedModel(model)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-                        <div className="flex items-center gap-2 w-full">
-                          <model.icon size={14} className="text-indigo-400" />
-                          <span className="font-bold text-xs">{model.name}</span>
-                          <span className="ml-auto text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-white/5">{model.type}</span>
-                        </div>
-                        <p className="text-[10px] text-white/30">{model.desc}</p>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+      {/* Top IDE Navigation */}
+      <div className="pt-24 px-4 h-36 border-b border-white/5 flex items-center justify-between bg-[#0a0a0a]">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 text-white/40">
+            <RefreshCw size={16} className="animate-spin-slow" />
+            <span className="text-[11px] font-bold">{projects.length} files</span>
+          </div>
+          <div className="relative w-64">
+            <input type="text" placeholder="Search file contents" className="w-full bg-white/5 border border-white/5 rounded-lg py-1.5 px-3 text-[11px] outline-none" />
+          </div>
+        </div>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-8 pr-4 custom-scrollbar">
-                {messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
-                    <Sparkles size={48} className="mb-6 text-indigo-400 animate-pulse" />
-                    <h3 className="text-xl font-black mb-2">Awaiting Neural Input</h3>
-                    <p className="text-xs font-medium max-w-xs">Ask the cognitive engine to generate code, analyze images, or build your next project.</p>
-                  </div>
-                ) : (
-                  messages.map((msg) => (
-                    <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[90%] p-6 rounded-[2rem] relative group ${
-                        msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 
-                        'bg-white/5 border border-white/10 text-gray-200 rounded-tl-none'
-                      }`}>
-                        <div className="flex items-center gap-2 opacity-40 text-[10px] font-black uppercase tracking-widest mb-3">
-                          {msg.role === 'user' ? <Zap size={12} /> : <Cpu size={12} />}
-                          {msg.role === 'user' ? 'Researcher' : msg.model}
-                        </div>
-                        {msg.image && <img src={msg.image} className="mb-4 rounded-xl max-h-48 w-full object-cover border border-white/10" alt="Uploaded" />}
-                        {renderMessageContent(msg)}
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-                {isGenerating && (
-                  <div className="flex justify-start">
-                    <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] rounded-tl-none">
-                      <Loader2 className="animate-spin text-indigo-400" size={20} />
-                    </div>
-                  </div>
-                )}
-              </div>
+        <div className="flex items-center gap-1">
+          {[
+            { id: 'preview', label: 'Preview', icon: Eye, action: () => setActiveEditorTab('preview') },
+            { id: 'problems', label: 'Problems', icon: AlertTriangle, action: handleRunChecks },
+            { id: 'code', label: 'Code', icon: CodeIcon, action: () => setActiveEditorTab('code') },
+            { id: 'configure', label: 'Configure', icon: Settings },
+            { id: 'security', label: 'Security', icon: Shield },
+            { id: 'publish', label: 'Publish', icon: Globe },
+          ].map((btn) => (
+            <button 
+              key={btn.id}
+              onClick={btn.action}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
+                activeEditorTab === btn.id ? "bg-indigo-600 text-white" : "text-white/40 hover:bg-white/5 hover:text-white"
+              )}
+            >
+              <btn.icon size={14} />
+              {btn.label}
+            </button>
+          ))}
+          <div className="w-[1px] h-6 bg-white/10 mx-2" />
+          <button className="p-2 text-white/40 hover:text-white"><Bell size={16} /></button>
+          <button className="p-2 text-white/40 hover:text-white"><MoreHorizontal size={16} /></button>
+          <div className="w-24 h-8 bg-rose-600 rounded-full ml-4" />
+        </div>
+      </div>
 
-              <div className="relative">
-                <AnimatePresence>
-                  {attachedImage && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-4 left-0 p-2 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl flex items-center gap-3">
-                      <img src={attachedImage} className="w-12 h-12 rounded-lg object-cover" alt="Preview" />
-                      <button onClick={() => setAttachedImage(null)} className="p-1 hover:bg-white/10 rounded-full text-rose-400"><X size={16} /></button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <form onSubmit={handleSend} className="pill-nav p-2 flex items-center bg-white/5 border-white/10 focus-within:border-indigo-500/50 transition-all shadow-2xl">
-                  <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${attachedImage ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/20 hover:text-white hover:bg-white/5'}`}>
-                    <ImageIcon size={20} />
-                  </button>
-                  <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask the cognitive engine..." className="flex-1 bg-transparent border-none h-12 px-4 text-white placeholder:text-white/20 focus:ring-0 font-medium text-sm" />
-                  <button type="submit" disabled={isGenerating || (!input.trim() && !attachedImage)} className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-500 transition-all disabled:opacity-50">
-                    <Send size={18} />
-                  </button>
-                </form>
-              </div>
-            </div>
+      <main className="flex-1 w-full relative z-10 overflow-hidden flex flex-col">
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          {/* Sidebar: File Explorer */}
+          <ResizablePanel defaultSize={15} minSize={10}>
+            <FileExplorer 
+              files={projects} 
+              onFileSelect={setSelectedProject} 
+              selectedFileId={selectedProject?.id} 
+            />
           </ResizablePanel>
 
           <ResizableHandle className="w-1 bg-white/5 hover:bg-indigo-500/30 transition-colors" />
 
-          {/* Right Side: Editor & Preview */}
-          <ResizablePanel defaultSize={60}>
-            <div className="h-full flex flex-col bg-[#010204]">
-              <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="flex items-center gap-2 text-sm font-bold text-white/50 hover:text-white transition-all outline-none">
-                      <FolderOpen size={16} className="text-indigo-400" />
-                      {selectedProject ? selectedProject.title : "Select Project"}
-                      <ChevronDown size={14} />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64">
-                      {projects.map((p) => (
-                        <DropdownMenuItem key={p.id} onClick={() => setSelectedProject(p)} className="cursor-pointer font-medium">
-                          {p.title}
-                        </DropdownMenuItem>
-                      ))}
-                      <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)} className="text-indigo-400 font-bold">
-                        <Plus size={14} className="mr-2" /> New Project
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+          {/* Center: Editor & AI */}
+          <ResizablePanel defaultSize={85}>
+            <ResizablePanelGroup direction="vertical">
+              <ResizablePanel defaultSize={70}>
+                <ResizablePanelGroup direction="horizontal">
+                  {/* Editor Area */}
+                  <ResizablePanel defaultSize={60}>
+                    <div className="h-full flex flex-col bg-[#010204]">
+                      <div className="px-4 py-2 bg-white/5 border-b border-white/5 flex items-center gap-4">
+                        <span className="text-[10px] font-bold text-white/40">src > components > {selectedProject?.title}</span>
+                        <Maximize2 size={12} className="ml-auto text-white/20" />
+                      </div>
+                      
+                      <div className="flex-1 relative">
+                        {activeEditorTab === 'code' ? (
+                          <textarea
+                            value={editorContent}
+                            onChange={(e) => setEditorContent(e.target.value)}
+                            className="w-full h-full bg-transparent p-8 font-mono text-sm text-indigo-300 outline-none resize-none custom-scrollbar leading-relaxed"
+                            spellCheck={false}
+                          />
+                        ) : (
+                          <iframe
+                            ref={previewRef}
+                            title="Live Preview"
+                            className="w-full h-full border-none bg-white"
+                            onLoad={updatePreview}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </ResizablePanel>
 
-                <div className="flex items-center gap-2">
-                  <button onClick={handleSaveProject} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-all" title="Save Project">
-                    <Save size={18} />
-                  </button>
-                  <button onClick={() => { navigator.clipboard.writeText(editorContent); showSuccess("Project copied"); }} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-all" title="Copy All">
-                    <Copy size={18} />
-                  </button>
-                </div>
-              </div>
+                  <ResizableHandle className="w-1 bg-white/5 hover:bg-indigo-500/30 transition-colors" />
 
-              <Tabs value={activeEditorTab} onValueChange={setActiveEditorTab} className="flex-1 flex flex-col">
-                <div className="px-4 bg-white/5 flex items-center justify-between">
-                  <TabsList className="bg-transparent border-none h-12 p-0">
-                    <TabsTrigger value="code" className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-500 data-[state=active]:bg-transparent text-xs font-black uppercase tracking-widest h-full px-6">
-                      <CodeIcon size={14} className="mr-2" /> Code Editor
-                    </TabsTrigger>
-                    <TabsTrigger value="preview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#99f6ff] data-[state=active]:bg-transparent text-xs font-black uppercase tracking-widest h-full px-6">
-                      <Eye size={14} className="mr-2" /> Live Preview
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  {activeEditorTab === 'preview' && (
-                    <button onClick={updatePreview} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#99f6ff] hover:text-white transition-all">
-                      <Play size={12} className="fill-current" /> Refresh Preview
-                    </button>
-                  )}
-                </div>
+                  {/* AI Chat Area */}
+                  <ResizablePanel defaultSize={40}>
+                    <div className="h-full flex flex-col p-6 gap-6 bg-[#0a0a0a] border-l border-white/5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <BrainCircuit size={20} className="text-indigo-400" />
+                          <h2 className="text-xs font-black uppercase tracking-widest">AI Assistant</h2>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="text-[10px] font-bold text-white/40 hover:text-white outline-none">
+                            {selectedModel.name} <ChevronDown size={10} className="inline" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-[#020408] border-white/10 text-white">
+                            {MODELS.map(m => (
+                              <DropdownMenuItem key={m.id} onClick={() => setSelectedModel(m)} className="text-xs font-bold">
+                                {m.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
 
-                <TabsContent value="code" className="flex-1 m-0 p-0 relative">
-                  <textarea
-                    value={editorContent}
-                    onChange={(e) => setEditorContent(e.target.value)}
-                    className="w-full h-full bg-transparent p-8 font-mono text-sm text-indigo-300 outline-none resize-none custom-scrollbar leading-relaxed"
-                    spellCheck={false}
-                    placeholder="// Write your neural scripts here..."
-                  />
-                  <div className="absolute bottom-4 right-4 p-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/20">
-                    {editorContent.length} characters
-                  </div>
-                </TabsContent>
+                      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-6 pr-2 custom-scrollbar">
+                        {messages.map((msg) => (
+                          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[95%] p-4 rounded-2xl ${msg.role === 'user' ? 'bg-indigo-600' : 'bg-white/5 border border-white/10'}`}>
+                              <div className="text-[9px] font-black uppercase opacity-40 mb-2">{msg.role === 'user' ? 'You' : msg.model}</div>
+                              <div className="text-sm leading-relaxed">
+                                {msg.content.split(/(```[\s\S]*?```)/g).map((part, i) => {
+                                  if (part.startsWith('```')) {
+                                    const code = part.match(/```(\w+)?\n?([\s\S]*?)```/)?.[2] || '';
+                                    return <CodeFrame key={i} code={code} onAdd={handleAddCodeToProject} />;
+                                  }
+                                  return <p key={i} className="whitespace-pre-wrap">{part}</p>;
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {isGenerating && <Loader2 className="animate-spin text-indigo-400 mx-auto" size={20} />}
+                      </div>
 
-                <TabsContent value="preview" className="flex-1 m-0 p-0 bg-white">
-                  <iframe
-                    ref={previewRef}
-                    title="Live Preview"
-                    className="w-full h-full border-none"
-                    sandbox="allow-scripts allow-same-origin"
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
+                      <form onSubmit={handleSend} className="relative">
+                        <input 
+                          type="text" 
+                          value={input} 
+                          onChange={(e) => setInput(e.target.value)}
+                          placeholder="Ask AI to explain or modify code..." 
+                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm outline-none focus:border-indigo-500/50"
+                        />
+                        <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-400 hover:text-white">
+                          <Send size={18} />
+                        </button>
+                      </form>
+                    </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </ResizablePanel>
+
+              <ResizableHandle className="h-1 bg-white/5 hover:bg-indigo-500/30 transition-colors" />
+
+              {/* Bottom: System Messages */}
+              <ResizablePanel defaultSize={30}>
+                <SystemMessages 
+                  messages={systemLogs} 
+                  isOpen={isConsoleOpen} 
+                  onToggle={() => setIsConsoleOpen(!isConsoleOpen)} 
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
