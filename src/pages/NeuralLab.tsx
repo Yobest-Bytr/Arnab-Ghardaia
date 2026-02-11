@@ -6,7 +6,8 @@ import {
   Loader2, FileCode, Terminal, Layers, X,
   ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy,
   AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw,
-  Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2
+  Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
+  ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -110,11 +111,6 @@ const NeuralLab = () => {
     addLog('info', `Created new project: ${project.title}`);
   };
 
-  const handleAddCodeToProject = (code: string) => {
-    setEditorContent(prev => prev + "\n\n" + code);
-    addLog('info', 'Applied AI code block to editor.');
-  };
-
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!input.trim() && !attachedImage) || isGenerating) return;
@@ -192,101 +188,72 @@ const NeuralLab = () => {
     <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
       <Navbar />
       
-      {/* Top IDE Navigation */}
+      {/* Top Browser-like Toolbar */}
       <div className="pt-24 px-4 h-36 border-b border-white/5 flex flex-col bg-[#0a0a0a]">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-1">
-            {[
-              { id: 'preview', label: 'Preview', icon: Eye },
-              { id: 'problems', label: 'Problems', icon: AlertTriangle },
-              { id: 'code', label: 'Code', icon: CodeIcon },
-              { id: 'configure', label: 'Configure', icon: Settings },
-              { id: 'security', label: 'Security', icon: Shield },
-              { id: 'publish', label: 'Publish', icon: Globe },
-            ].map((btn) => (
-              <button 
-                key={btn.id}
-                onClick={() => setActiveTab(btn.id)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
-                  activeTab === btn.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/40 hover:bg-white/5 hover:text-white"
-                )}
-              >
-                <btn.icon size={14} />
-                {btn.label}
-              </button>
-            ))}
-            <div className="w-[1px] h-6 bg-white/10 mx-2" />
-            <button className="p-2 text-white/40 hover:text-white"><Bell size={16} /></button>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="p-2 text-white/40 hover:text-white outline-none">
-                <MoreHorizontal size={16} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-48 p-2">
-                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
-                  <RotateCcw size={14} />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-xs">Rebuild</span>
-                    <span className="text-[9px] text-white/30">Re-installs node_modules</span>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
-                  <Trash2 size={14} />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-xs">Clear Cache</span>
-                    <span className="text-[9px] text-white/30">Clears local storage</span>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <button className="p-1.5 text-white/40 hover:text-white transition-colors"><Maximize size={14} /></button>
+              <button className="p-1.5 text-indigo-400 hover:text-indigo-300 transition-colors"><MousePointer2 size={14} /></button>
+              <button className="p-1.5 text-white/40 hover:text-white transition-colors"><Pencil size={14} /></button>
+            </div>
+            <div className="flex items-center gap-1">
+              <button className="p-1.5 text-white/40 hover:text-white transition-colors"><ArrowLeft size={16} /></button>
+              <button className="p-1.5 text-white/40 hover:text-white transition-colors"><ArrowRight size={16} /></button>
+              <button className="p-1.5 text-white/40 hover:text-white transition-colors"><RefreshCw size={14} /></button>
+            </div>
+            
+            {/* URL Bar */}
+            <div className="relative w-[600px] group">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Globe size={12} className="text-white/20" />
+              </div>
+              <input 
+                type="text" 
+                readOnly 
+                value="/neural-lab" 
+                className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-10 text-[11px] font-medium text-white/60 outline-none group-hover:bg-white/10 transition-all cursor-default"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <ChevronDown size={12} className="text-white/20" />
+              </div>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black text-white">Building TaskMaster with Supabase</span>
-                <span className="text-[9px] text-white/30">vibrant-wolf-glow</span>
-              </div>
-              <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                <CheckCircle2 size={10} />
-              </div>
-            </div>
             <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold hover:bg-white/10 transition-all">
               <RotateCcw size={14} /> Restart
             </button>
+            <button className="p-2 text-white/40 hover:text-white"><ExternalLink size={16} /></button>
+            <div className="flex items-center gap-1 text-white/40">
+              <Maximize2 size={16} />
+              <span className="text-[10px] font-bold">0</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-6 h-12">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-3 px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all outline-none group">
-              <Folder size={14} className="text-indigo-400" />
-              <span className="text-xs font-bold text-white">{selectedProject?.title || 'Select Project'}</span>
-              <ChevronDown size={12} className="text-white/20" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 p-2">
-              {projects.map(p => (
-                <DropdownMenuItem key={p.id} onClick={() => setSelectedProject(p)} className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
-                  <Folder size={16} className="text-indigo-400" />
-                  <span className="font-bold text-xs">{p.title}</span>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator className="bg-white/5" />
-              <DropdownMenuItem onClick={() => setIsProjectModalOpen(true)} className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5 text-indigo-400">
-                <Plus size={16} />
-                <span className="font-bold text-xs">New Project</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="flex items-center gap-2 text-white/40">
-            <RefreshCw size={12} className="animate-spin-slow" />
-            <span className="text-[10px] font-bold">{projects.length} files</span>
-          </div>
-          
-          <div className="relative flex-1 max-w-md">
-            <input type="text" placeholder="Search file contents" className="w-full bg-white/5 border border-white/5 rounded-lg py-1 px-3 text-[10px] outline-none focus:border-indigo-500/50 transition-all" />
-          </div>
+        {/* IDE Tabs */}
+        <div className="flex items-center gap-1 h-12">
+          {[
+            { id: 'preview', label: 'Preview', icon: Eye },
+            { id: 'problems', label: 'Problems', icon: AlertTriangle },
+            { id: 'code', label: 'Code', icon: CodeIcon },
+            { id: 'configure', label: 'Configure', icon: Settings },
+            { id: 'security', label: 'Security', icon: Shield },
+            { id: 'publish', label: 'Publish', icon: Globe },
+          ].map((btn) => (
+            <button 
+              key={btn.id}
+              onClick={() => setActiveTab(btn.id)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-t-lg text-[11px] font-black uppercase tracking-widest transition-all border-b-2",
+                activeTab === btn.id ? "bg-white/5 text-white border-indigo-500" : "text-white/40 hover:bg-white/5 hover:text-white border-transparent"
+              )}
+            >
+              <btn.icon size={14} />
+              {btn.label}
+            </button>
+          ))}
         </div>
       </div>
 
