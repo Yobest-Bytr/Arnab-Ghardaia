@@ -29,20 +29,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
-const MODELS = [
-  { id: 'yobest-ai', name: 'Auto', icon: Sparkles, desc: 'Unlimited Grok 3 Fast' },
-  { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, desc: 'Anthropic Sonnet' },
-  { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, desc: 'OpenAI Multimodal' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, desc: 'Google Flash Pro' },
-];
-
 const NeuralLab = () => {
   const { user } = useAuth();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+  const [selectedModel, setSelectedModel] = useState({ id: 'yobest-ai', name: 'Auto' });
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
@@ -188,8 +181,8 @@ const NeuralLab = () => {
     <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
       <Navbar />
       
-      {/* Top Browser-like Toolbar */}
-      <div className="pt-24 px-4 h-36 border-b border-white/5 flex flex-col bg-[#0a0a0a]">
+      {/* Top Browser-like Toolbar - Adjusted padding to prevent overlap with Navbar */}
+      <div className="pt-32 px-4 h-44 border-b border-white/5 flex flex-col bg-[#0a0a0a] relative z-20">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -339,31 +332,16 @@ const NeuralLab = () => {
                         {isGenerating && <Loader2 className="animate-spin text-indigo-400 mx-auto" size={20} />}
                       </div>
 
-                      <DropdownMenu>
-                        <ChatInput 
-                          value={input} 
-                          onChange={setInput} 
-                          onSubmit={handleSend} 
-                          isGenerating={isGenerating} 
-                          selectedModel={selectedModel.name}
-                          onModelChange={() => {}} 
-                          attachedImage={attachedImage}
-                          onImageAttach={setAttachedImage}
-                        />
-                        <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 p-2">
-                          <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/20">Select AI Model</div>
-                          {MODELS.map(m => (
-                            <DropdownMenuItem key={m.id} onClick={() => setSelectedModel(m)} className="flex flex-col items-start gap-1 p-3 cursor-pointer rounded-xl hover:bg-white/5">
-                              <div className="flex items-center gap-2 w-full">
-                                <m.icon size={14} className="text-indigo-400" />
-                                <span className="font-bold text-xs">{m.name}</span>
-                                {selectedModel.id === m.id && <CheckCircle2 size={14} className="ml-auto text-indigo-400" />}
-                              </div>
-                              <p className="text-[10px] text-white/30">{m.desc}</p>
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <ChatInput 
+                        value={input} 
+                        onChange={setInput} 
+                        onSubmit={handleSend} 
+                        isGenerating={isGenerating} 
+                        selectedModelId={selectedModel.id}
+                        onModelChange={setSelectedModel} 
+                        attachedImage={attachedImage}
+                        onImageAttach={setAttachedImage}
+                      />
                     </div>
                   </ResizablePanel>
                 </ResizablePanelGroup>

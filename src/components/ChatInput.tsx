@@ -1,15 +1,28 @@
 "use client";
 
 import React, { useRef } from 'react';
-import { Send, Plus, ChevronDown, Sparkles, ImageIcon, X } from 'lucide-react';
+import { Send, Plus, ChevronDown, Sparkles, ImageIcon, X, Cpu, Zap, Layers, CheckCircle2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const MODELS = [
+  { id: 'yobest-ai', name: 'Auto', icon: Sparkles, desc: 'Unlimited Grok 3 Fast' },
+  { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, desc: 'Anthropic Sonnet' },
+  { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, desc: 'OpenAI Multimodal' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, desc: 'Google Flash Pro' },
+];
 
 interface ChatInputProps {
   value: string;
   onChange: (val: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   isGenerating: boolean;
-  selectedModel: string;
-  onModelChange?: () => void;
+  selectedModelId: string;
+  onModelChange: (model: any) => void;
   attachedImage: string | null;
   onImageAttach: (img: string | null) => void;
 }
@@ -19,12 +32,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onChange, 
   onSubmit, 
   isGenerating, 
-  selectedModel, 
+  selectedModelId, 
   onModelChange,
   attachedImage,
   onImageAttach
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedModel = MODELS.find(m => m.id === selectedModelId) || MODELS[0];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -91,15 +105,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
         {/* Bottom Bar */}
         <div className="px-4 py-2 bg-white/5 border-t border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button 
-              type="button" 
-              onClick={onModelChange}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 text-[11px] font-bold text-white/40 hover:text-white transition-all"
-            >
-              <Sparkles size={14} className="text-indigo-400" />
-              <span>{selectedModel}</span>
-              <ChevronDown size={12} />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 text-[11px] font-bold text-white/40 hover:text-white transition-all outline-none">
+                <selectedModel.icon size={14} className="text-indigo-400" />
+                <span>{selectedModel.name}</span>
+                <ChevronDown size={12} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 p-2 z-[110]">
+                <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/20">Select AI Model</div>
+                {MODELS.map(m => (
+                  <DropdownMenuItem 
+                    key={m.id} 
+                    onClick={() => onModelChange(m)} 
+                    className="flex flex-col items-start gap-1 p-3 cursor-pointer rounded-xl hover:bg-white/5"
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <m.icon size={14} className="text-indigo-400" />
+                      <span className="font-bold text-xs">{m.name}</span>
+                      {selectedModelId === m.id && <CheckCircle2 size={14} className="ml-auto text-indigo-400" />}
+                    </div>
+                    <p className="text-[10px] text-white/30">{m.desc}</p>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
           <div className="flex items-center gap-1">
