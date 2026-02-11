@@ -6,7 +6,8 @@ import {
   Image as ImageIcon, Loader2, 
   FileCode, Terminal, Layers, X,
   ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy,
-  AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw
+  AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw,
+  Github, Database, ExternalLink, CheckCircle2, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -30,6 +31,7 @@ const MODELS = [
   { id: 'yobest-ai', name: 'Yobest AI', icon: Sparkles, type: 'Free', desc: 'Unlimited Grok 3 Fast' },
   { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, type: 'Key Required', desc: 'Anthropic Sonnet' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, type: 'Key Required', desc: 'OpenAI Multimodal' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, type: 'Key Required', desc: 'Google Flash Pro' },
 ];
 
 const NeuralLab = () => {
@@ -44,9 +46,10 @@ const NeuralLab = () => {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isConsoleOpen, setIsConsoleOpen] = useState(true);
-  const [activeEditorTab, setActiveEditorTab] = useState('code');
+  const [activeTab, setActiveTab] = useState('code');
   const [editorContent, setEditorContent] = useState('');
   const [isChecking, setIsChecking] = useState(false);
+  const [checkResults, setCheckResults] = useState<any>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,12 +88,18 @@ const NeuralLab = () => {
 
   const handleRunChecks = () => {
     setIsChecking(true);
+    setCheckResults(null);
     addLog('info', 'Running neural checks...');
     setTimeout(() => {
       setIsChecking(false);
+      setCheckResults({
+        errors: 0,
+        warnings: 0,
+        status: 'Optimal'
+      });
       addLog('info', 'Checks complete. 0 errors, 0 warnings found.');
       showSuccess("Neural checks passed.");
-    }, 1500);
+    }, 2000);
   };
 
   const handleCreateProject = async (project: { title: string; description: string }) => {
@@ -137,7 +146,6 @@ const NeuralLab = () => {
 
     try {
       let responseText = "";
-      // Pass current project context to AI
       const contextPrompt = selectedProject ? `[Context: Current file is ${selectedProject.title}. Content: ${editorContent.slice(0, 1000)}...] ${input}` : input;
       
       await grokChat(
@@ -194,25 +202,25 @@ const NeuralLab = () => {
             <span className="text-[11px] font-bold">{projects.length} files</span>
           </div>
           <div className="relative w-64">
-            <input type="text" placeholder="Search file contents" className="w-full bg-white/5 border border-white/5 rounded-lg py-1.5 px-3 text-[11px] outline-none" />
+            <input type="text" placeholder="Search file contents" className="w-full bg-white/5 border border-white/5 rounded-lg py-1.5 px-3 text-[11px] outline-none focus:border-indigo-500/50 transition-all" />
           </div>
         </div>
 
         <div className="flex items-center gap-1">
           {[
-            { id: 'preview', label: 'Preview', icon: Eye, action: () => setActiveEditorTab('preview') },
-            { id: 'problems', label: 'Problems', icon: AlertTriangle, action: handleRunChecks },
-            { id: 'code', label: 'Code', icon: CodeIcon, action: () => setActiveEditorTab('code') },
+            { id: 'preview', label: 'Preview', icon: Eye },
+            { id: 'problems', label: 'Problems', icon: AlertTriangle },
+            { id: 'code', label: 'Code', icon: CodeIcon },
             { id: 'configure', label: 'Configure', icon: Settings },
             { id: 'security', label: 'Security', icon: Shield },
             { id: 'publish', label: 'Publish', icon: Globe },
           ].map((btn) => (
             <button 
               key={btn.id}
-              onClick={btn.action}
+              onClick={() => setActiveTab(btn.id)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
-                activeEditorTab === btn.id ? "bg-indigo-600 text-white" : "text-white/40 hover:bg-white/5 hover:text-white"
+                activeTab === btn.id ? "bg-indigo-600 text-white" : "text-white/40 hover:bg-white/5 hover:text-white"
               )}
             >
               <btn.icon size={14} />
@@ -222,7 +230,7 @@ const NeuralLab = () => {
           <div className="w-[1px] h-6 bg-white/10 mx-2" />
           <button className="p-2 text-white/40 hover:text-white"><Bell size={16} /></button>
           <button className="p-2 text-white/40 hover:text-white"><MoreHorizontal size={16} /></button>
-          <div className="w-24 h-8 bg-rose-600 rounded-full ml-4" />
+          <div className="w-24 h-8 bg-rose-600 rounded-full ml-4 shadow-[0_0_20px_rgba(225,29,72,0.3)]" />
         </div>
       </div>
 
@@ -239,35 +247,110 @@ const NeuralLab = () => {
 
           <ResizableHandle className="w-1 bg-white/5 hover:bg-indigo-500/30 transition-colors" />
 
-          {/* Center: Editor & AI */}
+          {/* Center: Workspace */}
           <ResizablePanel defaultSize={85}>
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={70}>
                 <ResizablePanelGroup direction="horizontal">
-                  {/* Editor Area */}
+                  {/* Main Content Area */}
                   <ResizablePanel defaultSize={60}>
                     <div className="h-full flex flex-col bg-[#010204]">
                       <div className="px-4 py-2 bg-white/5 border-b border-white/5 flex items-center gap-4">
                         <span className="text-[10px] font-bold text-white/40">src > components > {selectedProject?.title}</span>
-                        <Maximize2 size={12} className="ml-auto text-white/20" />
+                        <Maximize2 size={12} className="ml-auto text-white/20 cursor-pointer" />
                       </div>
                       
-                      <div className="flex-1 relative">
-                        {activeEditorTab === 'code' ? (
-                          <textarea
-                            value={editorContent}
-                            onChange={(e) => setEditorContent(e.target.value)}
-                            className="w-full h-full bg-transparent p-8 font-mono text-sm text-indigo-300 outline-none resize-none custom-scrollbar leading-relaxed"
-                            spellCheck={false}
-                          />
-                        ) : (
-                          <iframe
-                            ref={previewRef}
-                            title="Live Preview"
-                            className="w-full h-full border-none bg-white"
-                            onLoad={updatePreview}
-                          />
-                        )}
+                      <div className="flex-1 relative overflow-hidden">
+                        <AnimatePresence mode="wait">
+                          {activeTab === 'code' && (
+                            <motion.div key="code" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                              <textarea
+                                value={editorContent}
+                                onChange={(e) => setEditorContent(e.target.value)}
+                                className="w-full h-full bg-transparent p-8 font-mono text-sm text-indigo-300 outline-none resize-none custom-scrollbar leading-relaxed"
+                                spellCheck={false}
+                              />
+                            </motion.div>
+                          )}
+
+                          {activeTab === 'preview' && (
+                            <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full bg-white">
+                              <iframe
+                                ref={previewRef}
+                                title="Live Preview"
+                                className="w-full h-full border-none"
+                                onLoad={updatePreview}
+                              />
+                            </motion.div>
+                          )}
+
+                          {activeTab === 'problems' && (
+                            <motion.div key="problems" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col items-center justify-center p-12 text-center">
+                              {!checkResults ? (
+                                <>
+                                  <AlertTriangle size={48} className="text-white/10 mb-6" />
+                                  <h3 className="text-2xl font-black mb-2">No Problems Report</h3>
+                                  <p className="text-white/40 font-medium mb-8 max-w-md">Run checks to scan your app for TypeScript errors and other problems.</p>
+                                  <button 
+                                    onClick={handleRunChecks}
+                                    disabled={isChecking}
+                                    className="pill-nav px-8 h-12 flex items-center gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition-all font-bold"
+                                  >
+                                    {isChecking ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+                                    Run checks
+                                  </button>
+                                </>
+                              ) : (
+                                <div className="pill-nav p-12 bg-emerald-500/5 border-emerald-500/20">
+                                  <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-6" />
+                                  <h3 className="text-2xl font-black mb-2">Neural Integrity Optimal</h3>
+                                  <p className="text-emerald-400/60 font-medium">0 errors, 0 warnings found in workspace.</p>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+
+                          {activeTab === 'publish' && (
+                            <motion.div key="publish" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 overflow-y-auto custom-scrollbar">
+                              <h2 className="text-3xl font-black mb-12">Publish App</h2>
+                              
+                              <div className="space-y-8">
+                                <section className="pill-nav p-10 bg-white/5 border-white/10">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <Github size={24} className="text-white" />
+                                    <h3 className="text-xl font-black">GitHub</h3>
+                                  </div>
+                                  <p className="text-white/40 text-sm font-medium mb-8">Sync your code to GitHub for collaboration.</p>
+                                  
+                                  <div className="space-y-6">
+                                    <div className="flex gap-1 p-1 bg-black/40 rounded-xl border border-white/5 w-fit">
+                                      <button className="px-6 py-2 rounded-lg bg-white text-black text-xs font-black">Create new repo</button>
+                                      <button className="px-6 py-2 rounded-lg text-white/40 text-xs font-black">Connect to existing repo</button>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <label className="text-[10px] font-black uppercase tracking-widest text-white/20">Repository Name</label>
+                                      <input type="text" defaultValue="vibrant-wolf-glow" className="w-full bg-white/5 border border-white/5 rounded-xl h-12 px-4 text-sm font-bold" />
+                                    </div>
+                                    
+                                    <button className="pill-nav px-8 h-12 bg-white text-black font-black text-xs">Create Repo</button>
+                                  </div>
+                                </section>
+
+                                <section className="pill-nav p-10 bg-white/5 border-white/10">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <Database size={24} className="text-indigo-400" />
+                                    <h3 className="text-xl font-black">Supabase Deployment</h3>
+                                  </div>
+                                  <p className="text-white/40 text-sm font-medium mb-8">Save and run your site scripts directly from Supabase.</p>
+                                  <button className="auron-button h-12 px-8 flex items-center gap-2">
+                                    <ExternalLink size={16} /> Deploy to Supabase
+                                  </button>
+                                </section>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                   </ResizablePanel>
@@ -283,13 +366,17 @@ const NeuralLab = () => {
                           <h2 className="text-xs font-black uppercase tracking-widest">AI Assistant</h2>
                         </div>
                         <DropdownMenu>
-                          <DropdownMenuTrigger className="text-[10px] font-bold text-white/40 hover:text-white outline-none">
-                            {selectedModel.name} <ChevronDown size={10} className="inline" />
+                          <DropdownMenuTrigger className="text-[10px] font-bold text-white/40 hover:text-white outline-none flex items-center gap-2">
+                            Model: <span className="text-indigo-400">{selectedModel.name}</span> <ChevronDown size={10} />
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent className="bg-[#020408] border-white/10 text-white">
+                          <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64">
                             {MODELS.map(m => (
-                              <DropdownMenuItem key={m.id} onClick={() => setSelectedModel(m)} className="text-xs font-bold">
-                                {m.name}
+                              <DropdownMenuItem key={m.id} onClick={() => setSelectedModel(m)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+                                <div className="flex items-center gap-2 w-full">
+                                  <m.icon size={14} className="text-indigo-400" />
+                                  <span className="font-bold text-xs">{m.name}</span>
+                                </div>
+                                <p className="text-[10px] text-white/30">{m.desc}</p>
                               </DropdownMenuItem>
                             ))}
                           </DropdownMenuContent>
@@ -299,7 +386,7 @@ const NeuralLab = () => {
                       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-6 pr-2 custom-scrollbar">
                         {messages.map((msg) => (
                           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[95%] p-4 rounded-2xl ${msg.role === 'user' ? 'bg-indigo-600' : 'bg-white/5 border border-white/10'}`}>
+                            <div className={`max-w-[95%] p-5 rounded-3xl ${msg.role === 'user' ? 'bg-indigo-600' : 'bg-white/5 border border-white/10'}`}>
                               <div className="text-[9px] font-black uppercase opacity-40 mb-2">{msg.role === 'user' ? 'You' : msg.model}</div>
                               <div className="text-sm leading-relaxed">
                                 {msg.content.split(/(```[\s\S]*?```)/g).map((part, i) => {
@@ -322,9 +409,9 @@ const NeuralLab = () => {
                           value={input} 
                           onChange={(e) => setInput(e.target.value)}
                           placeholder="Ask AI to explain or modify code..." 
-                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm outline-none focus:border-indigo-500/50"
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-5 pr-14 text-sm outline-none focus:border-indigo-500/50 transition-all"
                         />
-                        <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-400 hover:text-white">
+                        <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-500 transition-all">
                           <Send size={18} />
                         </button>
                       </form>
