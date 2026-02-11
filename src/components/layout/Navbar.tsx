@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Sparkles, Globe, ChevronDown, Menu, X, LayoutDashboard, Code, Zap } from 'lucide-react';
+import { Sparkles, Globe, ChevronDown, Menu, X, LayoutDashboard, Code, Zap, Home, Settings } from 'lucide-react';
 import AvatarDecoration from '@/components/AvatarDecoration';
 import {
   DropdownMenu,
@@ -10,12 +10,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from '@/lib/utils';
 
 const Navbar = () => {
   const { user } = useAuth();
   const { language, setLanguage } = useLanguage();
+  const location = useLocation();
   const [effect, setEffect] = useState<string>('none');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -30,9 +31,14 @@ const Navbar = () => {
     { code: 'ar', label: 'العربية', flag: '🇸🇦' },
   ];
 
+  const isNeuralLab = location.pathname === '/neural-lab';
+
   return (
     <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center p-4 md:p-8 pointer-events-none">
-      <nav className="pill-nav flex items-center gap-4 md:gap-8 max-w-7xl w-full justify-between pointer-events-auto shadow-2xl">
+      <nav className={cn(
+        "pill-nav flex items-center gap-4 md:gap-8 max-w-7xl w-full justify-between pointer-events-auto shadow-2xl transition-all duration-500",
+        isNeuralLab ? "bg-[#0a0a0a]/80 border-white/5" : "bg-white/5"
+      )}>
         <Link to="/" className="flex items-center gap-2 group shrink-0">
           <Sparkles className="w-5 h-5 text-[#99f6ff]" />
           <span className="font-bold text-lg tracking-tight text-white">Yobest</span>
@@ -49,12 +55,16 @@ const Navbar = () => {
 
         {/* Mobile Icons / Actions */}
         <div className="flex items-center gap-3 md:gap-6">
-          <div className="flex xl:hidden items-center gap-2">
-            <Link to="/dashboard" className="p-2 rounded-full bg-white/5 text-white/50 hover:text-white transition-all">
-              <LayoutDashboard size={18} />
+          {/* Mobile Quick Access Icons */}
+          <div className="flex xl:hidden items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
+            <Link to="/" className={cn("p-2 rounded-full transition-all", location.pathname === '/' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white")}>
+              <Home size={16} />
             </Link>
-            <Link to="/neural-lab" className="p-2 rounded-full bg-white/5 text-white/50 hover:text-white transition-all">
-              <Code size={18} />
+            <Link to="/dashboard" className={cn("p-2 rounded-full transition-all", location.pathname === '/dashboard' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white")}>
+              <LayoutDashboard size={16} />
+            </Link>
+            <Link to="/neural-lab" className={cn("p-2 rounded-full transition-all", location.pathname === '/neural-lab' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white")}>
+              <Code size={16} />
             </Link>
           </div>
 

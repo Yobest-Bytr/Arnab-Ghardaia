@@ -17,7 +17,7 @@ import ProjectModal from '@/components/ProjectModal';
 import CodeFrame from '@/components/CodeFrame';
 import FileExplorer from '@/components/FileExplorer';
 import SystemMessages from '@/components/SystemMessages';
-import ChatMessage from '@/components/ChatMessage';
+import { ChatMessage } from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 import { cn } from "@/lib/utils";
 import {

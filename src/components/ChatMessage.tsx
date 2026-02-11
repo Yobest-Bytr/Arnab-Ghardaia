@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import CodeFrame from './CodeFrame';
 
 interface ChatMessageProps {
@@ -20,7 +20,7 @@ interface ChatMessageProps {
   onApplyCode?: (code: string) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ 
+export const ChatMessage: React.FC<ChatMessageProps> = ({ 
   role, 
   content, 
   thought, 
@@ -39,17 +39,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   const renderContent = (text: string) => {
+    if (!text) return null;
     const parts = text.split(/```(\w+)?\n([\s\S]*?)```/g);
     if (parts.length === 1) return <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>;
 
     const elements = [];
     for (let i = 0; i < parts.length; i++) {
       if (i % 3 === 0) {
-        if (parts[i]) elements.push(<p key={i} className="text-sm leading-relaxed whitespace-pre-wrap mb-4">{parts[i]}</p>);
+        if (parts[i]) elements.push(<p key={`text-${i}`} className="text-sm leading-relaxed whitespace-pre-wrap mb-4">{parts[i]}</p>);
       } else if (i % 3 === 1) {
         const language = parts[i] || 'javascript';
         const code = parts[i + 1];
-        elements.push(<CodeFrame key={i} code={code} language={language} onAdd={onApplyCode} />);
+        if (code) {
+          elements.push(<CodeFrame key={`code-${i}`} code={code} language={language} onAdd={onApplyCode} />);
+        }
         i++;
       }
     }
@@ -75,19 +78,21 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             className="flex items-center gap-2 text-[11px] font-bold text-white/30 hover:text-white/60 transition-colors w-fit"
           >
             {isThoughtOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span className="uppercase tracking-widest">Thought</span>
-            <span className="text-white/10 font-medium ml-2">Addressing the request</span>
+            <span className="uppercase tracking-widest">Thinking</span>
           </button>
           
-          {isThoughtOpen && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="pl-4 border-l border-white/10 text-sm text-white/50 leading-relaxed italic mb-2"
-            >
-              {thought}
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {isThoughtOpen && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="pl-4 border-l border-white/10 text-sm text-white/40 leading-relaxed italic mb-2 overflow-hidden"
+              >
+                {thought}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
@@ -115,7 +120,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             {fileChange.summary}
           </p>
         </div>
-      </div>
+      )}
 
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-4">
