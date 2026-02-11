@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check, Edit2, CheckCircle } from 'lucide-react';
+import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import CodeFrame from './CodeFrame';
@@ -78,6 +78,28 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   return (
     <div className="flex flex-col gap-4 mb-8 group">
+      {/* AI Metadata Header */}
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+            <Zap size={16} className="fill-current" />
+          </div>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/60">{model || 'Yobest AI'}</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-400">
+                <ShieldCheck size={10} /> 98% Confidence
+              </div>
+              <div className="w-1 h-1 rounded-full bg-white/10" />
+              <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-400">
+                <Activity size={10} /> High Impact
+              </div>
+            </div>
+          </div>
+        </div>
+        <span className="text-[9px] font-black text-white/10 uppercase tracking-widest">{new Date(timestamp).toLocaleTimeString()}</span>
+      </div>
+
       {thought && (
         <div className="flex flex-col gap-2">
           <button 
@@ -85,7 +107,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             className="flex items-center gap-2 text-[11px] font-bold text-white/30 hover:text-white/60 transition-colors w-fit"
           >
             {isThoughtOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span className="uppercase tracking-widest">Thinking</span>
+            <span className="uppercase tracking-widest">Neural Processing</span>
           </button>
           
           <AnimatePresence>
@@ -103,12 +125,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </div>
       )}
 
-      <div className="text-sm text-white/90 leading-relaxed">
+      <div className="text-sm text-white/90 leading-relaxed bg-white/5 p-6 rounded-2xl border border-white/5">
         {renderContent(content)}
       </div>
 
       {fileChange && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-3">
+        <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center text-indigo-400">
@@ -160,10 +182,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             <RotateCcw size={14} /> Retry
           </button>
         </div>
-      </div>
-      
-      <div className="text-[9px] font-black text-white/10 uppercase tracking-widest">
-        {new Date(timestamp).toLocaleTimeString()} • {model}
       </div>
     </div>
   );
