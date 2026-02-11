@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, FileCode, Edit3, CheckCircle2, RotateCcw, Undo2, Copy, Check } from 'lucide-react';
+import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import CodeFrame from './CodeFrame';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -15,9 +17,18 @@ interface ChatMessageProps {
   };
   model?: string;
   timestamp: string;
+  onApplyCode?: (code: string) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, thought, fileChange, model, timestamp }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ 
+  role, 
+  content, 
+  thought, 
+  fileChange, 
+  model, 
+  timestamp,
+  onApplyCode 
+}) => {
   const [isThoughtOpen, setIsThoughtOpen] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -25,6 +36,32 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, thought, fileC
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Simple parser for code blocks
+  const renderContent = (text: string) => {
+    const parts = text.split(/```(\w+)?\n([\s\S]*?)```/g);
+    if (parts.length === 1) return <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>;
+
+    const elements = [];
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 3 === 0) {
+        if (parts[i]) elements.push(<p key={i} className="text-sm leading-relaxed whitespace-pre-wrap mb-4">{parts[i]}</p>);
+      } else if (i % 3 === 1) {
+        const language = parts[i] || 'javascript';
+        const code = parts[i + 1];
+        elements.push(
+          <CodeFrame 
+            key={i} 
+            code={code} 
+            language={language} 
+            onAdd={onApplyCode}
+          />
+        );
+        i++; // Skip the code part as we handled it
+      }
+    }
+    return elements;
   };
 
   if (role === 'user') {
@@ -48,14 +85,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, thought, fileC
           >
             {isThoughtOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="uppercase tracking-widest">Thought</span>
-            <span className="font-medium normal-case">Addressing the request</span>
           </button>
           
           {isThoughtOpen && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="pl-4 border-l border-white/10 text-sm text-white/50 leading-relaxed italic"
+              className="pl-4 border-l border-white/10 text-sm text-white/50 leading-relaxed italic mb-2"
             >
               {thought}
             </motion.div>
@@ -64,8 +100,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, thought, fileC
       )}
 
       {/* Main Content */}
-      <div className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap">
-        {content}
+      <div className="text-sm text-white/90 leading-relaxed">
+        {renderContent(content)}
       </div>
 
       {/* File Change Card */}
@@ -82,25 +118,24 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, thought, fileC
               </div>
             </div>
             <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60 transition-all">
-              Edit <ChevronRight size={14} />
+              View Diff <ChevronRight size={14} />
             </button>
           </div>
           <p className="text-[11px] text-white/40 font-medium leading-relaxed">
-            Summary: {fileChange.summary}
+            {fileChange.summary}
           </p>
         </div>
       )}
 
       {/* Status & Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-4">
           <button onClick={handleCopy} className="text-white/20 hover:text-white transition-colors">
             {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
           </button>
           <div className="flex items-center gap-2 text-emerald-400/60 text-[11px] font-bold">
             <CheckCircle2 size={14} />
-            <span>Approved</span>
-            <span className="text-white/20 font-medium ml-1">auto</span>
+            <span>Verified</span>
           </div>
         </div>
         
@@ -121,5 +156,4 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, thought, fileC
   );
 };
 
-import { motion } from 'framer-motion';
 export default ChatMessage;

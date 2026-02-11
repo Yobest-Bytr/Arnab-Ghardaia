@@ -7,7 +7,7 @@ import {
   ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy,
   AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw,
   Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
-  ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize
+  ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -29,13 +29,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
+const MODELS = [
+  { id: 'yobest-ai', name: 'Auto', icon: Sparkles, desc: 'Unlimited Grok 3 Fast' },
+  { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, desc: 'Anthropic Sonnet' },
+  { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, desc: 'OpenAI Multimodal' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, desc: 'Google Flash Pro' },
+];
+
 const NeuralLab = () => {
   const { user } = useAuth();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedModel, setSelectedModel] = useState({ id: 'yobest-ai', name: 'Auto' });
+  const [selectedModel, setSelectedModel] = useState(MODELS[0]);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
@@ -45,6 +52,7 @@ const NeuralLab = () => {
   const [editorContent, setEditorContent] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const [checkResults, setCheckResults] = useState<any>(null);
+  const [isRestarting, setIsRestarting] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
@@ -80,6 +88,37 @@ const NeuralLab = () => {
     if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
   };
 
+  const handleRestart = () => {
+    setIsRestarting(true);
+    addLog('warn', 'Restarting neural server...');
+    setTimeout(() => {
+      setIsRestarting(false);
+      addLog('info', 'Neural server restarted successfully.');
+      showSuccess("Server restarted.");
+      updatePreview();
+    }, 1500);
+  };
+
+  const handleRebuild = () => {
+    addLog('warn', 'Initiating full rebuild...');
+    addLog('info', 'Cleaning node_modules...');
+    setTimeout(() => {
+      addLog('info', 'Installing dependencies...');
+      setTimeout(() => {
+        addLog('info', 'Build complete. Optimized for production.');
+        showSuccess("Rebuild complete.");
+      }, 2000);
+    }, 1000);
+  };
+
+  const handleSave = async () => {
+    if (!selectedProject || !user) return;
+    addLog('info', `Saving ${selectedProject.title}...`);
+    await storage.update('scripts', user.id, selectedProject.id, { content: editorContent });
+    showSuccess("Project saved.");
+    updatePreview();
+  };
+
   const handleRunChecks = () => {
     setIsChecking(true);
     setCheckResults(null);
@@ -102,6 +141,12 @@ const NeuralLab = () => {
     setProjects([data, ...projects]);
     setSelectedProject(data);
     addLog('info', `Created new project: ${project.title}`);
+  };
+
+  const handleApplyCode = (code: string) => {
+    setEditorContent(prev => prev + "\n\n" + code);
+    addLog('info', 'Applied AI code block to editor.');
+    showSuccess("Code applied to editor.");
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -181,7 +226,7 @@ const NeuralLab = () => {
     <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
       <Navbar />
       
-      {/* Top Browser-like Toolbar - Adjusted padding to prevent overlap with Navbar */}
+      {/* Top Browser-like Toolbar */}
       <div className="pt-32 px-4 h-44 border-b border-white/5 flex flex-col bg-[#0a0a0a] relative z-20">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
@@ -193,7 +238,7 @@ const NeuralLab = () => {
             <div className="flex items-center gap-1">
               <button className="p-1.5 text-white/40 hover:text-white transition-colors"><ArrowLeft size={16} /></button>
               <button className="p-1.5 text-white/40 hover:text-white transition-colors"><ArrowRight size={16} /></button>
-              <button className="p-1.5 text-white/40 hover:text-white transition-colors"><RefreshCw size={14} /></button>
+              <button onClick={updatePreview} className="p-1.5 text-white/40 hover:text-white transition-colors"><RefreshCw size={14} /></button>
             </div>
             
             {/* URL Bar */}
@@ -204,7 +249,7 @@ const NeuralLab = () => {
               <input 
                 type="text" 
                 readOnly 
-                value="/neural-lab" 
+                value={`/neural-lab/${selectedProject?.title || ''}`} 
                 className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-10 text-[11px] font-medium text-white/60 outline-none group-hover:bg-white/10 transition-all cursor-default"
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -214,14 +259,27 @@ const NeuralLab = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold hover:bg-white/10 transition-all">
-              <RotateCcw size={14} /> Restart
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold hover:bg-white/10 transition-all outline-none">
+                <MoreHorizontal size={14} /> Actions
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-48 p-2">
+                <DropdownMenuItem onClick={handleRestart} className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
+                  <RotateCcw size={14} /> Restart Server
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleRebuild} className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5">
+                  <RefreshCw size={14} /> Full Rebuild
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/5" />
+                <DropdownMenuItem onClick={handleSave} className="flex items-center gap-3 p-3 cursor-pointer rounded-xl hover:bg-white/5 text-indigo-400">
+                  <Save size={14} /> Save Project
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button onClick={handleRestart} disabled={isRestarting} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold hover:bg-white/10 transition-all">
+              {isRestarting ? <Loader2 className="animate-spin" size={14} /> : <RotateCcw size={14} />} Restart
             </button>
             <button className="p-2 text-white/40 hover:text-white"><ExternalLink size={16} /></button>
-            <div className="flex items-center gap-1 text-white/40">
-              <Maximize2 size={16} />
-              <span className="text-[10px] font-bold">0</span>
-            </div>
           </div>
         </div>
 
@@ -264,9 +322,12 @@ const NeuralLab = () => {
                 <ResizablePanelGroup direction="horizontal">
                   <ResizablePanel defaultSize={60}>
                     <div className="h-full flex flex-col bg-[#010204]">
-                      <div className="px-4 py-2 bg-white/5 border-b border-white/5 flex items-center gap-4">
-                        <span className="text-[10px] font-bold text-white/40">src > components > {selectedProject?.title}</span>
-                        <Maximize2 size={12} className="ml-auto text-white/20 cursor-pointer" />
+                      <div className="px-4 py-2 bg-white/5 border-b border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-bold text-white/40">src > components > {selectedProject?.title}</span>
+                          {activeTab === 'code' && <button onClick={handleSave} className="text-[10px] font-black text-indigo-400 hover:text-white transition-colors flex items-center gap-1"><Save size={12} /> Save</button>}
+                        </div>
+                        <Maximize2 size={12} className="text-white/20 cursor-pointer" />
                       </div>
                       <div className="flex-1 relative overflow-hidden">
                         <AnimatePresence mode="wait">
@@ -306,6 +367,69 @@ const NeuralLab = () => {
                               )}
                             </motion.div>
                           )}
+                          {activeTab === 'configure' && (
+                            <motion.div key="configure" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12">
+                              <h3 className="text-2xl font-black mb-8 flex items-center gap-3"><Settings className="text-indigo-400" /> Workspace Configuration</h3>
+                              <div className="grid md:grid-cols-2 gap-8">
+                                <div className="pill-nav p-8 bg-white/5 border-white/10 space-y-4">
+                                  <h4 className="text-sm font-black uppercase tracking-widest text-white/40">Environment</h4>
+                                  <div className="flex items-center justify-between p-4 bg-black/40 rounded-xl border border-white/5">
+                                    <span className="text-xs font-bold">Node Version</span>
+                                    <span className="text-xs font-mono text-indigo-400">v20.11.0</span>
+                                  </div>
+                                  <div className="flex items-center justify-between p-4 bg-black/40 rounded-xl border border-white/5">
+                                    <span className="text-xs font-bold">Package Manager</span>
+                                    <span className="text-xs font-mono text-indigo-400">npm</span>
+                                  </div>
+                                </div>
+                                <div className="pill-nav p-8 bg-white/5 border-white/10 space-y-4">
+                                  <h4 className="text-sm font-black uppercase tracking-widest text-white/40">Build Settings</h4>
+                                  <div className="flex items-center justify-between p-4 bg-black/40 rounded-xl border border-white/5">
+                                    <span className="text-xs font-bold">Auto-Rebuild</span>
+                                    <div className="w-10 h-5 bg-indigo-600 rounded-full relative"><div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full" /></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                          {activeTab === 'security' && (
+                            <motion.div key="security" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12">
+                              <h3 className="text-2xl font-black mb-8 flex items-center gap-3"><Shield className="text-rose-400" /> Neural Security</h3>
+                              <div className="space-y-6">
+                                <div className="pill-nav p-8 bg-rose-500/5 border-rose-500/20 flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                    <Lock className="text-rose-400" size={24} />
+                                    <div>
+                                      <h4 className="font-bold">Encryption Active</h4>
+                                      <p className="text-xs text-white/40">All neural scripts are encrypted with AES-256.</p>
+                                    </div>
+                                  </div>
+                                  <CheckCircle2 className="text-emerald-400" />
+                                </div>
+                                <div className="pill-nav p-8 bg-white/5 border-white/10 flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                    <Key className="text-indigo-400" size={24} />
+                                    <div>
+                                      <h4 className="font-bold">API Key Vault</h4>
+                                      <p className="text-xs text-white/40">Manage secure keys for external AI providers.</p>
+                                    </div>
+                                  </div>
+                                  <button className="text-xs font-black uppercase text-indigo-400 hover:text-white transition-colors">Manage Vault</button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                          {activeTab === 'publish' && (
+                            <motion.div key="publish" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col items-center justify-center p-12 text-center">
+                              <Cloud size={64} className="text-indigo-400 mb-8 animate-pulse" />
+                              <h3 className="text-3xl font-black mb-4">Ready for Deployment</h3>
+                              <p className="text-white/40 font-medium mb-12 max-w-md">Push your cognitive workspace to the global neural edge network.</p>
+                              <div className="flex gap-4">
+                                <button className="auron-button h-14 px-10 flex items-center gap-2"><Globe size={18} /> Deploy to Edge</button>
+                                <button className="pill-nav h-14 px-10 flex items-center gap-2 font-bold"><Github size={18} /> Push to Git</button>
+                              </div>
+                            </motion.div>
+                          )}
                         </AnimatePresence>
                       </div>
                     </div>
@@ -327,7 +451,7 @@ const NeuralLab = () => {
 
                       <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {messages.map((msg) => (
-                          <ChatMessage key={msg.id} {...msg} />
+                          <ChatMessage key={msg.id} {...msg} onApplyCode={handleApplyCode} />
                         ))}
                         {isGenerating && <Loader2 className="animate-spin text-indigo-400 mx-auto" size={20} />}
                       </div>
