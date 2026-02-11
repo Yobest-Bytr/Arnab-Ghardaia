@@ -7,7 +7,7 @@ import {
   ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy,
   AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw,
   Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
-  ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box
+  ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box, Wand2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -30,6 +30,7 @@ import {
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 const MODELS = [
+  { id: 'auto', name: 'Auto', icon: Wand2, desc: 'Automatic Model Selection' },
   { id: 'yobest-ai', name: 'Yobest AI 4.1', icon: Sparkles, desc: 'Native Cognitive Engine' },
   { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, desc: 'Anthropic Sonnet' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, desc: 'OpenAI Multimodal' },
@@ -166,15 +167,18 @@ const NeuralLab = () => {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsGenerating(true);
-    addLog('info', 'Sending neural request...');
+    addLog('info', `Sending neural request via ${selectedModel.name}...`);
 
     try {
       let responseText = "";
       const contextPrompt = selectedProject ? `[Context: Current file is ${selectedProject.title}. Content: ${editorContent.slice(0, 1000)}...] ${input}` : input;
       
+      // If Auto is selected, we use yobest-ai as the default engine
+      const modelId = selectedModel.id === 'auto' ? 'yobest-ai' : selectedModel.id;
+
       await grokChat(
         contextPrompt, 
-        { modelId: selectedModel.id, userId: user?.id },
+        { modelId, userId: user?.id },
         (chunk) => {
           responseText += chunk;
           setMessages(prev => {
@@ -228,8 +232,23 @@ const NeuralLab = () => {
     <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
       <Navbar />
       
-      {/* Top Browser-like Toolbar - Fixed Overlap */}
+      {/* Top Browser-like Toolbar */}
       <div className="mt-24 px-4 h-44 border-b border-white/5 flex flex-col bg-[#0a0a0a] relative z-20">
+        {/* Neural Sync Status Bar */}
+        <div className="h-8 flex items-center justify-between px-4 bg-indigo-600/5 border-b border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500/60">Neural Sync: Optimal</span>
+            </div>
+            <div className="h-3 w-[1px] bg-white/10" />
+            <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Latency: 24ms</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Region: US-East-1</span>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">

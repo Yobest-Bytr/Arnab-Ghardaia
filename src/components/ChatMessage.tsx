@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check, Edit2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check, Edit2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import CodeFrame from './CodeFrame';
+import { showSuccess } from '@/utils/toast';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -31,11 +32,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 }) => {
   const [isThoughtOpen, setIsThoughtOpen] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleApprove = () => {
+    setIsApproved(true);
+    showSuccess("Changes approved and merged into neural context.");
   };
 
   const renderContent = (text: string) => {
@@ -127,11 +134,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           <button onClick={handleCopy} className="text-white/20 hover:text-white transition-colors">
             {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
           </button>
-          <div className="flex items-center gap-2 text-emerald-400/60 text-[11px] font-bold">
-            <CheckCircle2 size={14} />
-            <span>Approved</span>
-            <span className="text-white/10 ml-1">auto</span>
-          </div>
+          
+          {isApproved ? (
+            <div className="flex items-center gap-2 text-emerald-400 text-[11px] font-bold animate-in fade-in zoom-in duration-300">
+              <CheckCircle2 size={14} />
+              <span>Approved</span>
+              <span className="text-white/10 ml-1">auto</span>
+            </div>
+          ) : (
+            <button 
+              onClick={handleApprove}
+              className="flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
+            >
+              <CheckCircle size={12} />
+              Approve
+            </button>
+          )}
         </div>
         
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

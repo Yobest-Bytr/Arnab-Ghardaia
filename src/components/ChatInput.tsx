@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from 'react';
-import { Send, Plus, ChevronDown, Sparkles, ImageIcon, X, Cpu, Zap, Layers, CheckCircle2, FileUp, Box } from 'lucide-react';
+import { Send, Plus, ChevronDown, Sparkles, ImageIcon, X, Cpu, Zap, Layers, CheckCircle2, FileUp, Box, Wand2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +11,7 @@ import {
 import { showSuccess } from '@/utils/toast';
 
 const MODELS = [
+  { id: 'auto', name: 'Auto', icon: Wand2, desc: 'Automatic Model Selection' },
   { id: 'yobest-ai', name: 'Yobest AI 4.1', icon: Sparkles, desc: 'Native Cognitive Engine' },
   { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, desc: 'Anthropic Sonnet' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, desc: 'OpenAI Multimodal' },
