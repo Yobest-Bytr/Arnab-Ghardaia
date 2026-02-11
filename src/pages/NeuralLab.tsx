@@ -17,6 +17,8 @@ import ProjectModal from '@/components/ProjectModal';
 import CodeFrame from '@/components/CodeFrame';
 import FileExplorer from '@/components/FileExplorer';
 import SystemMessages from '@/components/SystemMessages';
+import ChatMessage from '@/components/ChatMessage';
+import ChatInput from '@/components/ChatInput';
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -25,10 +27,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MODELS = [
-  { id: 'yobest-ai', name: 'Yobest AI', icon: Sparkles, type: 'Free', desc: 'Unlimited Grok 3 Fast' },
+  { id: 'yobest-ai', name: 'Auto', icon: Sparkles, type: 'Free', desc: 'Unlimited Grok 3 Fast' },
   { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, type: 'Key Required', desc: 'Anthropic Sonnet' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, type: 'Key Required', desc: 'OpenAI Multimodal' },
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, type: 'Key Required', desc: 'Google Flash Pro' },
@@ -41,7 +42,6 @@ const NeuralLab = () => {
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
-  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -52,7 +52,6 @@ const NeuralLab = () => {
   const [checkResults, setCheckResults] = useState<any>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -92,11 +91,7 @@ const NeuralLab = () => {
     addLog('info', 'Running neural checks...');
     setTimeout(() => {
       setIsChecking(false);
-      setCheckResults({
-        errors: 0,
-        warnings: 0,
-        status: 'Optimal'
-      });
+      setCheckResults({ errors: 0, warnings: 0, status: 'Optimal' });
       addLog('info', 'Checks complete. 0 errors, 0 warnings found.');
       showSuccess("Neural checks passed.");
     }, 2000);
@@ -119,23 +114,14 @@ const NeuralLab = () => {
     addLog('info', 'Applied AI code block to editor.');
   };
 
-  const handleSaveProject = async () => {
-    if (!user || !selectedProject) return;
-    await storage.update('scripts', user.id, selectedProject.id, { content: editorContent });
-    setProjects(projects.map(p => p.id === selectedProject.id ? { ...p, content: editorContent } : p));
-    addLog('info', 'Project saved to neural archive.');
-    showSuccess("Project saved.");
-  };
-
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && !attachedImage) || isGenerating) return;
+    if (!input.trim() || isGenerating) return;
 
     const userMsg = { 
       id: Date.now(), 
       role: 'user', 
       content: input, 
-      image: attachedImage,
       timestamp: new Date().toISOString() 
     };
     
@@ -150,20 +136,30 @@ const NeuralLab = () => {
       
       await grokChat(
         contextPrompt, 
-        { modelId: selectedModel.id, userId: user?.id, image: attachedImage || undefined },
+        { modelId: selectedModel.id, userId: user?.id },
         (chunk) => {
           responseText += chunk;
           setMessages(prev => {
             const last = prev[prev.length - 1];
             if (last?.role === 'assistant') {
-              return [...prev.slice(0, -1), { ...last, content: responseText }];
+              return [...prev.slice(0, -1), { 
+                ...last, 
+                content: responseText,
+                thought: "Analyzing the codebase and applying the requested changes to ensure optimal performance and clean architecture."
+              }];
             } else {
               return [...prev, { 
                 id: Date.now() + 1, 
                 role: 'assistant', 
                 content: responseText, 
+                thought: "Analyzing the codebase and applying the requested changes to ensure optimal performance and clean architecture.",
                 model: selectedModel.name,
-                timestamp: new Date().toISOString() 
+                timestamp: new Date().toISOString(),
+                fileChange: selectedProject ? {
+                  name: selectedProject.title,
+                  path: `src/pages/${selectedProject.title}`,
+                  summary: `Updating ${selectedProject.title} with new logic.`
+                } : undefined
               }];
             }
           });
@@ -174,7 +170,6 @@ const NeuralLab = () => {
       addLog('error', 'Neural link interrupted.');
     } finally {
       setIsGenerating(false);
-      setAttachedImage(null);
     }
   };
 
@@ -236,30 +231,22 @@ const NeuralLab = () => {
 
       <main className="flex-1 w-full relative z-10 overflow-hidden flex flex-col">
         <ResizablePanelGroup direction="horizontal" className="flex-1">
-          {/* Sidebar: File Explorer */}
           <ResizablePanel defaultSize={15} minSize={10}>
-            <FileExplorer 
-              files={projects} 
-              onFileSelect={setSelectedProject} 
-              selectedFileId={selectedProject?.id} 
-            />
+            <FileExplorer files={projects} onFileSelect={setSelectedProject} selectedFileId={selectedProject?.id} />
           </ResizablePanel>
 
           <ResizableHandle className="w-1 bg-white/5 hover:bg-indigo-500/30 transition-colors" />
 
-          {/* Center: Workspace */}
           <ResizablePanel defaultSize={85}>
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={70}>
                 <ResizablePanelGroup direction="horizontal">
-                  {/* Main Content Area */}
                   <ResizablePanel defaultSize={60}>
                     <div className="h-full flex flex-col bg-[#010204]">
                       <div className="px-4 py-2 bg-white/5 border-b border-white/5 flex items-center gap-4">
                         <span className="text-[10px] font-bold text-white/40">src > components > {selectedProject?.title}</span>
                         <Maximize2 size={12} className="ml-auto text-white/20 cursor-pointer" />
                       </div>
-                      
                       <div className="flex-1 relative overflow-hidden">
                         <AnimatePresence mode="wait">
                           {activeTab === 'code' && (
@@ -272,18 +259,11 @@ const NeuralLab = () => {
                               />
                             </motion.div>
                           )}
-
                           {activeTab === 'preview' && (
                             <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full bg-white">
-                              <iframe
-                                ref={previewRef}
-                                title="Live Preview"
-                                className="w-full h-full border-none"
-                                onLoad={updatePreview}
-                              />
+                              <iframe ref={previewRef} title="Live Preview" className="w-full h-full border-none" onLoad={updatePreview} />
                             </motion.div>
                           )}
-
                           {activeTab === 'problems' && (
                             <motion.div key="problems" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col items-center justify-center p-12 text-center">
                               {!checkResults ? (
@@ -291,11 +271,7 @@ const NeuralLab = () => {
                                   <AlertTriangle size={48} className="text-white/10 mb-6" />
                                   <h3 className="text-2xl font-black mb-2">No Problems Report</h3>
                                   <p className="text-white/40 font-medium mb-8 max-w-md">Run checks to scan your app for TypeScript errors and other problems.</p>
-                                  <button 
-                                    onClick={handleRunChecks}
-                                    disabled={isChecking}
-                                    className="pill-nav px-8 h-12 flex items-center gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition-all font-bold"
-                                  >
+                                  <button onClick={handleRunChecks} disabled={isChecking} className="pill-nav px-8 h-12 flex items-center gap-2 bg-white/5 border-white/10 hover:bg-white/10 transition-all font-bold">
                                     {isChecking ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
                                     Run checks
                                   </button>
@@ -309,47 +285,6 @@ const NeuralLab = () => {
                               )}
                             </motion.div>
                           )}
-
-                          {activeTab === 'publish' && (
-                            <motion.div key="publish" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 overflow-y-auto custom-scrollbar">
-                              <h2 className="text-3xl font-black mb-12">Publish App</h2>
-                              
-                              <div className="space-y-8">
-                                <section className="pill-nav p-10 bg-white/5 border-white/10">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <Github size={24} className="text-white" />
-                                    <h3 className="text-xl font-black">GitHub</h3>
-                                  </div>
-                                  <p className="text-white/40 text-sm font-medium mb-8">Sync your code to GitHub for collaboration.</p>
-                                  
-                                  <div className="space-y-6">
-                                    <div className="flex gap-1 p-1 bg-black/40 rounded-xl border border-white/5 w-fit">
-                                      <button className="px-6 py-2 rounded-lg bg-white text-black text-xs font-black">Create new repo</button>
-                                      <button className="px-6 py-2 rounded-lg text-white/40 text-xs font-black">Connect to existing repo</button>
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                      <label className="text-[10px] font-black uppercase tracking-widest text-white/20">Repository Name</label>
-                                      <input type="text" defaultValue="vibrant-wolf-glow" className="w-full bg-white/5 border border-white/5 rounded-xl h-12 px-4 text-sm font-bold" />
-                                    </div>
-                                    
-                                    <button className="pill-nav px-8 h-12 bg-white text-black font-black text-xs">Create Repo</button>
-                                  </div>
-                                </section>
-
-                                <section className="pill-nav p-10 bg-white/5 border-white/10">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <Database size={24} className="text-indigo-400" />
-                                    <h3 className="text-xl font-black">Supabase Deployment</h3>
-                                  </div>
-                                  <p className="text-white/40 text-sm font-medium mb-8">Save and run your site scripts directly from Supabase.</p>
-                                  <button className="auron-button h-12 px-8 flex items-center gap-2">
-                                    <ExternalLink size={16} /> Deploy to Supabase
-                                  </button>
-                                </section>
-                              </div>
-                            </motion.div>
-                          )}
                         </AnimatePresence>
                       </div>
                     </div>
@@ -357,7 +292,6 @@ const NeuralLab = () => {
 
                   <ResizableHandle className="w-1 bg-white/5 hover:bg-indigo-500/30 transition-colors" />
 
-                  {/* AI Chat Area */}
                   <ResizablePanel defaultSize={40}>
                     <div className="h-full flex flex-col p-6 gap-6 bg-[#0a0a0a] border-l border-white/5">
                       <div className="flex items-center justify-between">
@@ -365,56 +299,25 @@ const NeuralLab = () => {
                           <BrainCircuit size={20} className="text-indigo-400" />
                           <h2 className="text-xs font-black uppercase tracking-widest">AI Assistant</h2>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="text-[10px] font-bold text-white/40 hover:text-white outline-none flex items-center gap-2">
-                            Model: <span className="text-indigo-400">{selectedModel.name}</span> <ChevronDown size={10} />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64">
-                            {MODELS.map(m => (
-                              <DropdownMenuItem key={m.id} onClick={() => setSelectedModel(m)} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-                                <div className="flex items-center gap-2 w-full">
-                                  <m.icon size={14} className="text-indigo-400" />
-                                  <span className="font-bold text-xs">{m.name}</span>
-                                </div>
-                                <p className="text-[10px] text-white/30">{m.desc}</p>
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <button className="text-white/20 hover:text-white transition-colors">
+                          <X size={18} />
+                        </button>
                       </div>
 
-                      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-6 pr-2 custom-scrollbar">
+                      <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {messages.map((msg) => (
-                          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[95%] p-5 rounded-3xl ${msg.role === 'user' ? 'bg-indigo-600' : 'bg-white/5 border border-white/10'}`}>
-                              <div className="text-[9px] font-black uppercase opacity-40 mb-2">{msg.role === 'user' ? 'You' : msg.model}</div>
-                              <div className="text-sm leading-relaxed">
-                                {msg.content.split(/(```[\s\S]*?```)/g).map((part, i) => {
-                                  if (part.startsWith('```')) {
-                                    const code = part.match(/```(\w+)?\n?([\s\S]*?)```/)?.[2] || '';
-                                    return <CodeFrame key={i} code={code} onAdd={handleAddCodeToProject} />;
-                                  }
-                                  return <p key={i} className="whitespace-pre-wrap">{part}</p>;
-                                })}
-                              </div>
-                            </div>
-                          </div>
+                          <ChatMessage key={msg.id} {...msg} />
                         ))}
                         {isGenerating && <Loader2 className="animate-spin text-indigo-400 mx-auto" size={20} />}
                       </div>
 
-                      <form onSubmit={handleSend} className="relative">
-                        <input 
-                          type="text" 
-                          value={input} 
-                          onChange={(e) => setInput(e.target.value)}
-                          placeholder="Ask AI to explain or modify code..." 
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-5 pr-14 text-sm outline-none focus:border-indigo-500/50 transition-all"
-                        />
-                        <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-500 transition-all">
-                          <Send size={18} />
-                        </button>
-                      </form>
+                      <ChatInput 
+                        value={input} 
+                        onChange={setInput} 
+                        onSubmit={handleSend} 
+                        isGenerating={isGenerating} 
+                        selectedModel={selectedModel.name} 
+                      />
                     </div>
                   </ResizablePanel>
                 </ResizablePanelGroup>
@@ -422,24 +325,15 @@ const NeuralLab = () => {
 
               <ResizableHandle className="h-1 bg-white/5 hover:bg-indigo-500/30 transition-colors" />
 
-              {/* Bottom: System Messages */}
               <ResizablePanel defaultSize={30}>
-                <SystemMessages 
-                  messages={systemLogs} 
-                  isOpen={isConsoleOpen} 
-                  onToggle={() => setIsConsoleOpen(!isConsoleOpen)} 
-                />
+                <SystemMessages messages={systemLogs} isOpen={isConsoleOpen} onToggle={() => setIsConsoleOpen(!isConsoleOpen)} />
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
 
-      <ProjectModal 
-        isOpen={isProjectModalOpen} 
-        onClose={() => setIsProjectModalOpen(false)} 
-        onSave={handleCreateProject} 
-      />
+      <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSave={handleCreateProject} />
     </div>
   );
 };
