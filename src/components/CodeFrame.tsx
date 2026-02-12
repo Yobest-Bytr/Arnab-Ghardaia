@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Copy, Check, Plus, Code } from 'lucide-react';
+import { Copy, Check, Plus, Code, FileEdit, ListPlus } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 
 interface CodeFrameProps {
   code: string;
   language?: string;
-  onAdd?: (code: string) => void;
+  onApply?: (code: string, mode: 'replace' | 'append') => void;
 }
 
-const CodeFrame: React.FC<CodeFrameProps> = ({ code, language = 'javascript', onAdd }) => {
+const CodeFrame: React.FC<CodeFrameProps> = ({ code, language = 'javascript', onApply }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -35,19 +35,29 @@ const CodeFrame: React.FC<CodeFrameProps> = ({ code, language = 'javascript', on
           >
             {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
           </button>
-          {onAdd && (
-            <button 
-              onClick={() => onAdd(code)}
-              className="p-1.5 rounded-lg hover:bg-indigo-600/20 text-indigo-400 hover:text-white transition-all"
-              title="Add to Editor"
-            >
-              <Plus size={14} />
-            </button>
+          
+          {onApply && (
+            <div className="flex items-center gap-1 ml-2 border-l border-white/10 pl-2">
+              <button 
+                onClick={() => onApply(code, 'replace')}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white text-[9px] font-black uppercase tracking-tighter transition-all"
+                title="Replace Editor Content"
+              >
+                <FileEdit size={12} /> Replace
+              </button>
+              <button 
+                onClick={() => onApply(code, 'append')}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 text-white/40 hover:bg-white/10 hover:text-white text-[9px] font-black uppercase tracking-tighter transition-all"
+                title="Append to Editor"
+              >
+                <ListPlus size={12} /> Append
+              </button>
+            </div>
           )}
         </div>
       </div>
       
-      <div className="p-6 overflow-x-auto custom-scrollbar">
+      <div className="p-6 overflow-x-auto custom-scrollbar max-h-[400px]">
         <pre className="text-xs font-mono text-indigo-300 leading-relaxed">
           {code}
         </pre>

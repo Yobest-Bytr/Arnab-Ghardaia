@@ -121,10 +121,17 @@ const NeuralLab = () => {
     addLog('info', `Created new project: ${project.title}`);
   };
 
-  const handleApplyCode = (code: string) => {
-    setEditorContent(prev => prev + "\n\n" + code);
-    addLog('info', 'Applied AI code block to editor.');
-    showSuccess("Code applied.");
+  const handleApplyCode = (code: string, mode: 'replace' | 'append') => {
+    if (mode === 'replace') {
+      setEditorContent(code);
+      addLog('info', 'Replaced editor content with AI suggestion.');
+      showSuccess("Editor content replaced.");
+    } else {
+      setEditorContent(prev => prev + "\n\n" + code);
+      addLog('info', 'Appended AI code block to editor.');
+      showSuccess("Code appended.");
+    }
+    updatePreview();
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -147,9 +154,9 @@ const NeuralLab = () => {
       let responseText = "";
       
       // Build context from history and current project
-      const historyContext = messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
-      const projectContext = selectedProject ? `Current Project: ${selectedProject.title}\nSource Code:\n${editorContent.slice(0, 2000)}` : '';
-      const fullPrompt = `Context:\n${historyContext}\n\n${projectContext}\n\nUser Request: ${input}`;
+      const historyContext = messages.slice(-10).map(m => `${m.role}: ${m.content}`).join('\n');
+      const projectContext = selectedProject ? `Current Project: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
+      const fullPrompt = `Context:\n${historyContext}\n\n${projectContext}\n\nUser Request: ${input}\n\nIMPORTANT: If you are providing a full file update, provide the entire code block. Do not cut off.`;
       
       const modelId = selectedModel.id === 'auto' ? 'yobest-ai' : selectedModel.id;
 

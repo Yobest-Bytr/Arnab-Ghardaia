@@ -24,7 +24,7 @@ interface ChatMessageProps {
   };
   model?: string;
   timestamp: string;
-  onApplyCode?: (code: string) => void;
+  onApplyCode?: (code: string, mode: 'replace' | 'append') => void;
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ 
@@ -65,7 +65,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         const language = parts[i] || 'javascript';
         const code = parts[i + 1];
         if (code) {
-          elements.push(<CodeFrame key={`code-${i}`} code={code} language={language} onAdd={onApplyCode} />);
+          elements.push(<CodeFrame key={`code-${i}`} code={code} language={language} onApply={onApplyCode} />);
         }
         i++;
       }
