@@ -155,8 +155,8 @@ const NeuralLab = () => {
       const historyContext = messages.slice(-10).map(m => `${m.role}: ${m.content}`).join('\n');
       const projectContext = selectedProject ? `Current Project: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
       
-      const systemPrompt = `You are the Yobest AI Assistant. You must follow this response format strictly:
-1. Start with a "### Thinking" section explaining your logic.
+      const systemPrompt = `You are the Yobest AI Assistant. You MUST follow this response format strictly:
+1. Start with "### Thinking" followed by your reasoning.
 2. Provide a brief summary of the changes.
 3. If you are providing code, provide the FULL code block inside a markdown block.
 4. Ensure your code is complete and functional.
@@ -169,24 +169,38 @@ ${historyContext}`;
       const modelId = selectedModel.id === 'auto' ? 'yobest-ai' : selectedModel.id;
 
       await grokChat(
-        input, 
+        `${systemPrompt}\n\nUser Request: ${input}`, 
         { modelId, userId: user?.id, stream: true },
         (chunk) => {
           responseText += chunk;
+          
+          // Parse Thinking vs Content
+          let thought = "Analyzing the codebase and applying the requested changes...";
+          let displayContent = responseText;
+          
+          if (responseText.includes('### Thinking')) {
+            const parts = responseText.split(/### Thinking/i);
+            if (parts.length > 1) {
+              const thoughtPart = parts[1].split(/\n###|\n\n/)[0];
+              thought = thoughtPart.trim();
+              displayContent = responseText.replace(`### Thinking${thoughtPart}`, "").trim();
+            }
+          }
+
           setMessages(prev => {
             const last = prev[prev.length - 1];
             if (last?.role === 'assistant') {
               return [...prev.slice(0, -1), { 
                 ...last, 
-                content: responseText,
-                thought: "Analyzing the codebase and applying the requested changes to ensure optimal performance and clean architecture."
+                content: displayContent,
+                thought: thought
               }];
             } else {
               return [...prev, { 
                 id: Date.now() + 1, 
                 role: 'assistant', 
-                content: responseText, 
-                thought: "Analyzing the codebase and applying the requested changes to ensure optimal performance and clean architecture.",
+                content: displayContent, 
+                thought: thought,
                 model: selectedModel.name,
                 timestamp: new Date().toISOString(),
                 fileChange: selectedProject ? {

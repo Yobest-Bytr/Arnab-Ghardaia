@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, 
   Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, 
@@ -41,10 +41,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const [isApproved, setIsApproved] = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
 
-  // Extract code blocks for the "Approve" button to use
+  // Improved code extraction that handles truncated blocks
   const extractCode = (text: string) => {
-    const match = text.match(/```(?:\w+)?\n([\s\S]*?)```/);
-    return match ? match[1] : null;
+    // Try to find a complete block first
+    const completeMatch = text.match(/```(?:\w+)?\n([\s\S]*?)```/);
+    if (completeMatch) return completeMatch[1];
+    
+    // If no complete block, look for an unclosed one at the end (common with truncation)
+    const unclosedMatch = text.match(/```(?:\w+)?\n([\s\S]*)$/);
+    if (unclosedMatch) return unclosedMatch[1];
+    
+    return null;
   };
 
   const handleCopy = () => {
@@ -58,16 +65,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     if (code && onApplyCode) {
       onApplyCode(code, 'replace');
       setIsApproved(true);
-      showSuccess("Changes approved and merged into workspace.");
+      showSuccess("Changes merged into workspace.");
     } else {
-      showSuccess("Changes approved (no code block found to merge).");
+      showSuccess("Approved (no code found to merge).");
       setIsApproved(true);
     }
   };
 
   const renderContent = (text: string) => {
     if (!text) return null;
-    const parts = text.split(/```(\w+)?\n([\s\S]*?)```/g);
+    const parts = text.split(/```(\w+)?\n([\s\S]*?)(?:```|$)/g);
     if (parts.length === 1) return <p className="text-sm leading-relaxed whitespace-pre-wrap text-white/80">{text}</p>;
 
     const elements = [];
@@ -107,7 +114,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           >
             {isThoughtOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="flex items-center gap-2">
-              <Info size={12} /> Thought <span className="text-white/10 font-medium normal-case tracking-normal">Addressing the request</span>
+              <Info size={12} /> Thought <span className="text-white/10 font-medium normal-case tracking-normal">Analyzing Request</span>
             </span>
           </button>
           
@@ -131,7 +138,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         {renderContent(content)}
       </div>
 
-      {/* File Change Card - Styled like the image */}
+      {/* File Change Card */}
       {fileChange && (
         <div className="bg-[#121212] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl relative overflow-hidden group/card">
           <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50" />
