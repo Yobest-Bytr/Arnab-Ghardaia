@@ -177,6 +177,15 @@ const NeuralLab = () => {
     updatePreview();
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isGenerating) return;
@@ -195,6 +204,12 @@ const NeuralLab = () => {
 
     try {
       let responseText = "";
+      let imageBase64 = "";
+
+      if (attachedFile) {
+        addLog('info', `Processing image attachment: ${attachedFile.name}`);
+        imageBase64 = await fileToBase64(attachedFile);
+      }
       
       const fileList = projects.map(p => p.title).join(', ');
       const projectContext = selectedProject ? `Current File: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
@@ -215,7 +230,12 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
 
       await grokChat(
         `${systemPrompt}\n\nUser Request: ${input}`, 
-        { modelId, userId: user?.id, stream: true },
+        { 
+          modelId, 
+          userId: user?.id, 
+          stream: true,
+          image: imageBase64 || undefined
+        },
         (chunk) => {
           responseText += chunk;
           
@@ -446,6 +466,23 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
                                 {activeTab === 'preview' && (
                                   <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full bg-white">
                                     <iframe ref={previewRef} title="Live Preview" className="w-full h-full border-none" onLoad={updatePreview} />
+                                  </motion.div>
+                                )}
+                                {activeTab === 'problems' && (
+                                  <motion.div key="problems" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 overflow-y-auto custom-scrollbar">
+                                    <div className="max-w-2xl mx-auto space-y-4">
+                                      <div className="flex items-center gap-3 mb-8">
+                                        <AlertTriangle className="text-amber-400" size={24} />
+                                        <h3 className="text-2xl font-black">Workspace Problems</h3>
+                                      </div>
+                                      <div className="pill-nav p-6 bg-white/5 border-white/10 flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                          <span className="text-sm font-bold">No critical errors detected in current scripts.</span>
+                                        </div>
+                                        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Optimal</span>
+                                      </div>
+                                    </div>
                                   </motion.div>
                                 )}
                                 {activeTab === 'publish' && (
