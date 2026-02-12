@@ -7,7 +7,8 @@ import {
   ChevronDown, FolderOpen, Plus, Play, Code as CodeIcon, Eye, Save, Copy,
   AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw,
   Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
-  ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box, Wand2, LayoutGrid
+  ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box, Wand2, LayoutGrid,
+  ChevronLeft, RotateCcw as RestartIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -37,6 +38,27 @@ const MODELS = [
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, desc: 'Google Flash Pro' },
 ];
 
+const ROUTES = [
+  { path: '/', label: 'Home' },
+  { path: '/about', label: 'About' },
+  { path: '/login', label: 'Login' },
+  { path: '/signup', label: 'Signup' },
+  { path: '/forgot-password', label: 'Forgot password' },
+  { path: '/privacy', label: 'Privacy' },
+  { path: '/terms', label: 'Terms' },
+  { path: '/changelog', label: 'Changelog' },
+  { path: '/pricing', label: 'Pricing' },
+  { path: '/showcase', label: 'Showcase' },
+  { path: '/dashboard', label: 'Dashboard' },
+  { path: '/profile', label: 'Profile' },
+  { path: '/ai-insights', label: 'Ai insights' },
+  { path: '/shared', label: 'Shared' },
+  { path: '/neural-lab', label: 'Neural lab' },
+  { path: '/analytics', label: 'Analytics' },
+  { path: '/archive', label: 'Archive' },
+  { path: '/settings', label: 'Settings' },
+];
+
 const NeuralLab = () => {
   const { user } = useAuth();
   const [input, setInput] = useState('');
@@ -45,14 +67,19 @@ const NeuralLab = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [projectScripts, setProjectScripts] = useState<any[]>([]);
+  const [selectedScript, setSelectedScript] = useState<any>(null);
+  
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isConsoleOpen, setIsConsoleOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('code');
+  const [activeTab, setActiveTab] = useState('preview');
   const [mainMode, setMainMode] = useState<'dashboard' | 'workspace'>('dashboard');
   const [editorContent, setEditorContent] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
+  const [currentPath, setCurrentPath] = useState('/');
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
@@ -71,11 +98,11 @@ const NeuralLab = () => {
   }, [messages]);
 
   useEffect(() => {
-    if (selectedProject) {
-      setEditorContent(selectedProject.content);
-      addLog('info', `Switched to script: ${selectedProject.title}`);
+    if (selectedScript) {
+      setEditorContent(selectedScript.content);
+      addLog('info', `Switched to script: ${selectedScript.title}`);
     }
-  }, [selectedProject]);
+  }, [selectedScript]);
 
   const addLog = (type: 'info' | 'warn' | 'error', text: string) => {
     setSystemLogs(prev => [{ type, text, timestamp: new Date().toISOString() }, ...prev].slice(0, 100));
@@ -83,9 +110,18 @@ const NeuralLab = () => {
 
   const fetchProjects = async () => {
     if (!user) return;
-    const data = await storage.get('scripts', user.id);
+    // Fetch projects from a dedicated projects table
+    const data = await storage.get('projects', user.id);
     setProjects(data);
-    if (data.length > 0 && !selectedProject) setSelectedProject(data[0]);
+  };
+
+  const fetchScripts = async (projectId: string) => {
+    if (!user) return;
+    const data = await storage.get('scripts', user.id);
+    // Filter scripts by project_id (simulated here)
+    const filtered = data.filter((s: any) => s.project_id === projectId);
+    setProjectScripts(filtered);
+    if (filtered.length > 0) setSelectedScript(filtered[0]);
   };
 
   const handleBuild = () => {
@@ -99,9 +135,9 @@ const NeuralLab = () => {
   };
 
   const handleSave = async () => {
-    if (!selectedProject || !user) return;
-    addLog('info', `Saving ${selectedProject.title} to Supabase...`);
-    await storage.update('scripts', user.id, selectedProject.id, { content: editorContent });
+    if (!selectedScript || !user) return;
+    addLog('info', `Saving ${selectedScript.title} to Supabase...`);
+    await storage.update('scripts', user.id, selectedScript.id, { content: editorContent });
     showSuccess("Script saved to cloud.");
     updatePreview();
   };
@@ -109,102 +145,96 @@ const NeuralLab = () => {
   const handleCreateProject = async (project: { title: string; description: string; template: string }) => {
     if (!user) return;
     
-    addLog('info', `Initializing full-stack boilerplate for: ${project.title}`);
+    addLog('info', `Initializing project: ${project.title}`);
     
+    // 1. Create the project entry
+    const newProject = await storage.insert('projects', user.id, {
+      title: project.title,
+      description: project.description,
+      template: project.template
+    });
+
+    // 2. Create boilerplate scripts for this project
     const boilerplate = [
       {
         title: 'index.html',
+        project_id: newProject.id,
         content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title} - Yobest AI</title>\n    <script src="https://js.puter.com/v2/"></script>\n  </head>\n\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>`
       },
       {
-        title: 'vite.config.ts',
-        content: `import { defineConfig } from "vite";\nimport dyadComponentTagger from "@dyad-sh/react-vite-component-tagger";\nimport react from "@vitejs/plugin-react-swc";\nimport path from "path";\n\nexport default defineConfig(() => ({\n  server: {\n    host: "::",\n    port: 8080,\n  },\n  plugins: [dyadComponentTagger(), react()],\n  resolve: {\n    alias: {\n      "@": path.resolve(__dirname, "./src"),\n    },\n  },\n}));`
-      },
-      {
-        title: 'package.json',
-        content: `{\n  "name": "yobest_app",\n  "version": "0.0.0",\n  "private": true,\n  "type": "module",\n  "dependencies": {\n    "react": "^19.2.3",\n    "react-dom": "^19.2.3",\n    "framer-motion": "^12.33.0",\n    "lucide-react": "^0.462.0"\n  }\n}`
-      },
-      {
         title: 'App.tsx',
+        project_id: newProject.id,
         content: `"use client";\n\nimport React from 'react';\n\nexport default function App() {\n  return (\n    <div className="min-h-screen bg-[#020408] text-white flex flex-col items-center justify-center p-8">\n      <h1 className="text-7xl font-black dopamine-text mb-4">${project.title}</h1>\n      <p className="text-xl text-white/40 font-medium">${project.description}</p>\n    </div>\n  );\n}`
       }
     ];
 
-    let firstScript = null;
     for (const script of boilerplate) {
-      const data = await storage.insert('scripts', user.id, script);
-      if (!firstScript) firstScript = data;
+      await storage.insert('scripts', user.id, script);
     }
 
     await fetchProjects();
-    setSelectedProject(firstScript);
+    setSelectedProject(newProject);
+    await fetchScripts(newProject.id);
     setMainMode('workspace');
-    showSuccess("Full-stack workspace initialized.");
+    showSuccess("Project workspace initialized.");
   };
 
   const handleQuickCreate = async () => {
-    if (!user) return;
+    if (!user || !selectedProject) return;
     const name = prompt("Enter script name (e.g., styles.css):");
     if (!name) return;
     
-    const newProject = {
+    const newScript = {
       title: name,
+      project_id: selectedProject.id,
       content: `/* New script: ${name} */`
     };
-    const data = await storage.insert('scripts', user.id, newProject);
-    setProjects([data, ...projects]);
-    setSelectedProject(data);
+    const data = await storage.insert('scripts', user.id, newScript);
+    setProjectScripts([data, ...projectScripts]);
+    setSelectedScript(data);
     addLog('info', `Added new script: ${name}`);
   };
 
   const handleFileDelete = async (id: string) => {
     if (!user || !confirm("Are you sure you want to delete this script?")) return;
     await storage.delete('scripts', user.id, id);
-    const updated = projects.filter(p => p.id !== id);
-    setProjects(updated);
-    if (selectedProject?.id === id) {
-      setSelectedProject(updated[0] || null);
+    const updated = projectScripts.filter(p => p.id !== id);
+    setProjectScripts(updated);
+    if (selectedScript?.id === id) {
+      setSelectedScript(updated[0] || null);
     }
     addLog('warn', `Deleted script ID: ${id}`);
   };
 
   const handleApplyCode = async (code: string, path: string, mode: 'replace' | 'append') => {
-    if (!user) return;
+    if (!user || !selectedProject) return;
     
     const fileName = path.split('/').pop() || path;
-    const existingFile = projects.find(p => p.title === fileName);
+    const existingFile = projectScripts.find(p => p.title === fileName);
 
     if (existingFile) {
       const newContent = mode === 'replace' ? code : existingFile.content + "\n\n" + code;
       await storage.update('scripts', user.id, existingFile.id, { content: newContent });
       
-      if (selectedProject?.id === existingFile.id) {
+      if (selectedScript?.id === existingFile.id) {
         setEditorContent(newContent);
       }
       
-      setProjects(prev => prev.map(p => p.id === existingFile.id ? { ...p, content: newContent } : p));
+      setProjectScripts(prev => prev.map(p => p.id === existingFile.id ? { ...p, content: newContent } : p));
       addLog('info', `Updated existing file: ${fileName}`);
     } else {
       const newFile = {
         title: fileName,
+        project_id: selectedProject.id,
         content: code
       };
       const data = await storage.insert('scripts', user.id, newFile);
-      setProjects([data, ...projects]);
-      setSelectedProject(data);
+      setProjectScripts([data, ...projectScripts]);
+      setSelectedScript(data);
       addLog('info', `Created new file from AI suggestion: ${fileName}`);
     }
     
     updatePreview();
-  };
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -225,63 +255,29 @@ const NeuralLab = () => {
 
     try {
       let responseText = "";
-      let imageBase64 = "";
-
-      if (attachedFile) {
-        addLog('info', `Processing image attachment: ${attachedFile.name}`);
-        imageBase64 = await fileToBase64(attachedFile);
-      }
+      const fileList = projectScripts.map(p => p.title).join(', ');
+      const scriptContext = selectedScript ? `Current File: ${selectedScript.title}\nSource Code:\n${editorContent}` : '';
       
-      const fileList = projects.map(p => p.title).join(', ');
-      const projectContext = selectedProject ? `Current File: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
-      
-      const systemPrompt = `You are the Yobest AI Assistant, a world-class full-stack engineer. 
-You MUST follow this response format strictly:
-1. Start with "### Thinking" followed by your reasoning.
-2. Provide a brief summary of the changes.
-3. For each file you want to create or edit, use the header "### File: path/to/filename" followed by the code block.
-4. Use TypeScript (.ts, .tsx) for all logic and components.
-5. You can suggest installing npm packages by adding a "### Package: package-name" section.
-6. Ensure your code is complete, functional, and follows modern React/Vite/Tailwind patterns.
-7. DO NOT TRUNCATE CODE. Provide the full file content every time.
-
+      const systemPrompt = `You are the Yobest AI Assistant. 
 Workspace Map: [${fileList}]
-Environment: Vite + React + Tailwind CSS
-${projectContext}
-
-Conversation History:
-${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
-
-      const modelId = selectedModel.id === 'auto' ? 'yobest-ai' : selectedModel.id;
+Project: ${selectedProject?.title}
+${scriptContext}`;
 
       await grokChat(
         `${systemPrompt}\n\nUser Request: ${input}`, 
         { 
-          modelId, 
+          modelId: selectedModel.id === 'auto' ? 'yobest-ai' : selectedModel.id, 
           userId: user?.id, 
-          stream: true,
-          image: imageBase64 || undefined
+          stream: true 
         },
         (chunk) => {
           responseText += chunk;
-          
           setMessages(prev => {
             const last = prev[prev.length - 1];
             if (last?.role === 'assistant') {
-              return [...prev.slice(0, -1), { 
-                ...last, 
-                content: responseText,
-                model: selectedModel.name,
-                timestamp: new Date().toISOString()
-              }];
+              return [...prev.slice(0, -1), { ...last, content: responseText }];
             } else {
-              return [...prev, { 
-                id: Date.now() + 1, 
-                role: 'assistant', 
-                content: responseText, 
-                model: selectedModel.name,
-                timestamp: new Date().toISOString()
-              }];
+              return [...prev, { id: Date.now() + 1, role: 'assistant', content: responseText, model: selectedModel.name, timestamp: new Date().toISOString() }];
             }
           });
         }
@@ -291,7 +287,6 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
       addLog('error', 'Neural link interrupted.');
     } finally {
       setIsGenerating(false);
-      setAttachedFile(null);
     }
   };
 
@@ -300,60 +295,10 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
       const doc = previewRef.current.contentDocument;
       if (doc) {
         doc.open();
-        
-        // Advanced Neural Preview Template with Babel Transpilation
-        const template = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="UTF-8" />
-              <script src="https://cdn.tailwindcss.com"></script>
-              <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-              <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-              <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-              <style>
-                body { background: #020408; color: white; font-family: sans-serif; margin: 0; }
-                .dopamine-text { background: linear-gradient(to bottom, white, rgba(255,255,255,0.4)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-              </style>
-            </head>
-            <body>
-              <div id="root"></div>
-              <script type="text/babel">
-                const { useState, useEffect, useMemo, useCallback, useRef, createContext, useContext } = React;
-                
-                // Simulated Workspace Environment
-                const App = () => {
-                  try {
-                    ${selectedProject?.title.endsWith('.tsx') || selectedProject?.title.endsWith('.ts') 
-                      ? editorContent.replace(/import.*from.*/g, '') // Strip imports for browser-side transpilation
-                      : 'return <div>Select a React component to preview.</div>'}
-                  } catch (err) {
-                    return (
-                      <div className="p-8 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
-                        <h2 className="text-rose-400 font-black mb-2">Runtime Error</h2>
-                        <pre className="text-xs text-rose-300/60 whitespace-pre-wrap">{err.message}</pre>
-                      </div>
-                    );
-                  }
-                };
-
-                const root = ReactDOM.createRoot(document.getElementById('root'));
-                root.render(<App />);
-              </script>
-            </body>
-          </html>
-        `;
-
-        if (selectedProject?.title.endsWith('.html')) {
-          doc.write(editorContent);
-        } else {
-          doc.write(template);
-        }
+        const indexHtml = projectScripts.find(s => s.title === 'index.html')?.content || '<h1>No index.html found</h1>';
+        doc.write(indexHtml);
         doc.close();
-        addLog('info', 'Neural preview engine updated.');
+        addLog('info', `Live preview refreshed for path: ${currentPath}`);
       }
     }
   };
@@ -375,10 +320,11 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
             <LayoutGrid size={14} /> Dashboard
           </button>
           <button 
-            onClick={() => setMainMode('workspace')}
+            onClick={() => selectedProject && setMainMode('workspace')}
+            disabled={!selectedProject}
             className={cn(
               "flex items-center gap-2 px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all",
-              mainMode === 'workspace' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white"
+              mainMode === 'workspace' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white disabled:opacity-30"
             )}
           >
             <CodeIcon size={14} /> Workspace
@@ -389,7 +335,7 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
               <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Active: {selectedProject.title}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Project: {selectedProject.title}</span>
             </div>
           </div>
         )}
@@ -425,23 +371,29 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
                       key={project.id}
                       onClick={() => {
                         setSelectedProject(project);
+                        fetchScripts(project.id);
                         setMainMode('workspace');
                       }}
                       className="pill-nav p-8 bg-white/5 border-white/10 hover:border-indigo-500/50 hover:bg-white/10 transition-all text-left group"
                     >
                       <div className="flex items-center justify-between mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20 group-hover:scale-110 transition-transform">
-                          <FileCode size={24} />
+                          <FolderOpen size={24} />
                         </div>
                         <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">{new Date(project.created_at).toLocaleDateString()}</span>
                       </div>
                       <h3 className="text-2xl font-black mb-2 group-hover:text-indigo-400 transition-colors">{project.title}</h3>
-                      <p className="text-sm text-white/40 font-medium line-clamp-2 mb-8">Neural workspace initialized for cognitive development.</p>
+                      <p className="text-sm text-white/40 font-medium line-clamp-2 mb-8">{project.description || 'Neural workspace initialized for cognitive development.'}</p>
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400">
                         Enter Workspace <ArrowRight size={12} />
                       </div>
                     </button>
                   ))}
+                  {projects.length === 0 && (
+                    <div className="col-span-full py-32 text-center pill-nav border-dashed border-white/10">
+                      <p className="text-white/40 font-medium">No projects found. Create your first project to begin.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -453,70 +405,14 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
               exit={{ opacity: 0 }}
               className="flex-1 flex flex-col"
             >
-              {/* Workspace Toolbar */}
-              <div className="px-4 h-28 border-b border-white/5 flex flex-col bg-[#0a0a0a] relative z-20">
-                <div className="flex items-center justify-between h-16">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <button className="p-1.5 text-white/40 hover:text-white transition-colors"><ArrowLeft size={16} /></button>
-                      <button className="p-1.5 text-white/40 hover:text-white transition-colors"><ArrowRight size={16} /></button>
-                      <button onClick={updatePreview} className="p-1.5 text-white/40 hover:text-white transition-colors"><RefreshCw size={14} /></button>
-                    </div>
-                    
-                    <div className="relative w-[300px] md:w-[500px] group">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <Globe size={12} className="text-white/20" />
-                      </div>
-                      <input 
-                        type="text" 
-                        readOnly 
-                        value={`/neural-lab/${selectedProject?.title || ''}`} 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-10 text-[11px] font-medium text-white/60 outline-none group-hover:bg-white/10 transition-all cursor-default"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-[11px] font-bold hover:bg-indigo-500 transition-all">
-                      <Save size={14} /> Save
-                    </button>
-                    <button onClick={handleBuild} disabled={isBuilding} className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold hover:bg-white/10 transition-all">
-                      {isBuilding ? <Loader2 className="animate-spin" size={14} /> : <Box size={14} />} Build
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 h-12 overflow-x-auto no-scrollbar">
-                  {[
-                    { id: 'preview', label: 'Preview', icon: Eye },
-                    { id: 'problems', label: 'Problems', icon: AlertTriangle },
-                    { id: 'code', label: 'Code', icon: CodeIcon },
-                    { id: 'publish', label: 'Publish', icon: Globe },
-                    { id: 'configure', label: 'Configure', icon: Settings },
-                  ].map((btn) => (
-                    <button 
-                      key={btn.id}
-                      onClick={() => setActiveTab(btn.id)}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-t-lg text-[11px] font-black uppercase tracking-widest transition-all border-b-2 whitespace-nowrap",
-                        activeTab === btn.id ? "bg-white/5 text-white border-indigo-500" : "text-white/40 hover:bg-white/5 hover:text-white border-transparent"
-                      )}
-                    >
-                      <btn.icon size={14} />
-                      {btn.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <ResizablePanelGroup direction="horizontal" className="flex-1">
                 <ResizablePanel defaultSize={15} minSize={10} className="hidden md:block">
                   <FileExplorer 
-                    files={projects} 
-                    onFileSelect={setSelectedProject} 
+                    files={projectScripts} 
+                    onFileSelect={setSelectedScript} 
                     onFileCreate={handleQuickCreate}
                     onFileDelete={handleFileDelete}
-                    selectedFileId={selectedProject?.id} 
+                    selectedFileId={selectedScript?.id} 
                   />
                 </ResizablePanel>
 
@@ -528,6 +424,43 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
                       <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={60}>
                           <div className="h-full flex flex-col bg-[#010204]">
+                            {/* Browser Header UI */}
+                            <div className="h-12 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-4 shrink-0">
+                              <div className="flex items-center gap-2">
+                                <button className="p-1.5 text-white/40 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
+                                <button className="p-1.5 text-white/40 hover:text-white transition-colors rotate-180"><ChevronLeft size={16} /></button>
+                                <button onClick={updatePreview} className="p-1.5 text-white/40 hover:text-white transition-colors"><RefreshCw size={14} /></button>
+                              </div>
+                              
+                              <div className="flex-1 relative group">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger className="w-full bg-black/40 border border-white/10 rounded-lg py-1.5 px-4 text-[11px] font-medium text-white/60 flex items-center justify-between outline-none hover:bg-black/60 transition-all">
+                                    <span className="truncate">{currentPath}</span>
+                                    <ChevronDown size={12} />
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-[400px] p-2 z-[110]">
+                                    {ROUTES.map(route => (
+                                      <DropdownMenuItem 
+                                        key={route.path} 
+                                        onClick={() => setCurrentPath(route.path)}
+                                        className="flex items-center justify-between p-3 cursor-pointer rounded-xl hover:bg-white/5"
+                                      >
+                                        <span className="font-bold text-xs">{route.label}</span>
+                                        <span className="text-[10px] text-white/20 font-mono">{route.path}</span>
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button onClick={updatePreview} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold hover:bg-white/10 transition-all">
+                                  <RestartIcon size={14} /> Restart
+                                </button>
+                                <button className="p-1.5 text-white/40 hover:text-white transition-colors"><Maximize2 size={14} /></button>
+                              </div>
+                            </div>
+
                             <div className="flex-1 relative overflow-hidden">
                               <AnimatePresence mode="wait">
                                 {activeTab === 'code' && (
@@ -545,64 +478,27 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
                                     <iframe ref={previewRef} title="Live Preview" className="w-full h-full border-none" onLoad={updatePreview} />
                                   </motion.div>
                                 )}
-                                {activeTab === 'problems' && (
-                                  <motion.div key="problems" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-2xl mx-auto space-y-4">
-                                      <div className="flex items-center gap-3 mb-8">
-                                        <AlertTriangle className="text-amber-400" size={24} />
-                                        <h3 className="text-2xl font-black">Workspace Problems</h3>
-                                      </div>
-                                      <div className="pill-nav p-6 bg-white/5 border-white/10 flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                          <span className="text-sm font-bold">No critical errors detected in current scripts.</span>
-                                        </div>
-                                        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Optimal</span>
-                                      </div>
-                                    </div>
-                                  </motion.div>
-                                )}
-                                {activeTab === 'publish' && (
-                                  <motion.div key="publish" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-2xl mx-auto space-y-12">
-                                      <div className="pill-nav p-10 bg-white/5 border-white/10">
-                                        <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
-                                          <Github className="text-white" />
-                                          Connect to GitHub
-                                        </h3>
-                                        <p className="text-white/40 font-medium mb-8">Push your site scripts directly to a GitHub repository.</p>
-                                        <button className="auron-button w-full h-14 flex items-center justify-center gap-3">
-                                          <Github size={20} /> Connect Repository
-                                        </button>
-                                      </div>
-
-                                      <div className="pill-nav p-10 bg-white/5 border-white/10">
-                                        <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
-                                          <Globe className="text-indigo-400" />
-                                          Custom Domains
-                                        </h3>
-                                        <p className="text-white/40 font-medium mb-8">Run your site on a custom domain or a Yobest subdomain.</p>
-                                        <div className="flex gap-4">
-                                          <input type="text" placeholder="your-site.yobest.ai" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm outline-none focus:border-indigo-500" />
-                                          <button className="bg-indigo-600 px-6 rounded-xl font-bold text-sm">Deploy</button>
-                                        </div>
-                                      </div>
-
-                                      <div className="pill-nav p-10 bg-white/5 border-white/10">
-                                        <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
-                                          <Database className="text-emerald-400" />
-                                          Supabase Storage
-                                        </h3>
-                                        <p className="text-white/40 font-medium mb-8">Your site scripts are automatically backed up to Supabase.</p>
-                                        <div className="flex items-center justify-between p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                                          <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Cloud Sync Active</span>
-                                          <CheckCircle2 size={16} className="text-emerald-400" />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </motion.div>
-                                )}
                               </AnimatePresence>
+                            </div>
+
+                            {/* Bottom Tab Bar */}
+                            <div className="h-10 bg-[#0a0a0a] border-t border-white/5 flex items-center px-4 gap-1">
+                              {[
+                                { id: 'preview', label: 'Preview', icon: Eye },
+                                { id: 'code', label: 'Code', icon: CodeIcon },
+                                { id: 'problems', label: 'Problems', icon: AlertTriangle },
+                              ].map((tab) => (
+                                <button 
+                                  key={tab.id}
+                                  onClick={() => setActiveTab(tab.id)}
+                                  className={cn(
+                                    "flex items-center gap-2 px-4 h-full text-[10px] font-black uppercase tracking-widest transition-all border-t-2",
+                                    activeTab === tab.id ? "bg-white/5 text-white border-indigo-500" : "text-white/20 hover:text-white border-transparent"
+                                  )}
+                                >
+                                  <tab.icon size={12} /> {tab.label}
+                                </button>
+                              ))}
                             </div>
                           </div>
                         </ResizablePanel>
@@ -615,10 +511,6 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
                               <div className="flex items-center gap-3">
                                 <BrainCircuit size={20} className="text-indigo-400" />
                                 <h2 className="text-xs font-black uppercase tracking-widest">AI Assistant</h2>
-                              </div>
-                              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
-                                <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">Context: {selectedProject?.title}</span>
                               </div>
                             </div>
 
