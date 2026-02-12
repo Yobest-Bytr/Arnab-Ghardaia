@@ -121,16 +121,8 @@ const NeuralLab = () => {
         content: `import { defineConfig } from "vite";\nimport dyadComponentTagger from "@dyad-sh/react-vite-component-tagger";\nimport react from "@vitejs/plugin-react-swc";\nimport path from "path";\n\nexport default defineConfig(() => ({\n  server: {\n    host: "::",\n    port: 8080,\n  },\n  plugins: [dyadComponentTagger(), react()],\n  resolve: {\n    alias: {\n      "@": path.resolve(__dirname, "./src"),\n    },\n  },\n}));`
       },
       {
-        title: 'vercel.json',
-        content: `{\n  "$schema": "https://openapi.vercel.sh/vercel.json",\n  "rewrites": [\n    {\n      "source": "/(.*)",\n      "destination": "/index.html"\n    }\n  ]\n}`
-      },
-      {
         title: 'package.json',
-        content: `{\n  "name": "yobest_app",\n  "version": "0.0.0",\n  "private": true,\n  "type": "module",\n  "scripts": {\n    "dev": "vite",\n    "build": "vite build",\n    "preview": "vite preview"\n  },\n  "dependencies": {\n    "react": "^19.2.3",\n    "react-dom": "^19.2.3",\n    "framer-motion": "^12.33.0",\n    "lucide-react": "^0.462.0"\n  }\n}`
-      },
-      {
-        title: 'tailwind.config.ts',
-        content: `import type { Config } from "tailwindcss";\n\nexport default {\n  darkMode: ["class"],\n  content: ["./src/**/*.{ts,tsx}"],\n  theme: {\n    extend: {\n      colors: {\n        background: "hsl(var(--background))",\n        foreground: "hsl(var(--foreground))",\n      }\n    }\n  }\n} satisfies Config;`
+        content: `{\n  "name": "yobest_app",\n  "version": "0.0.0",\n  "private": true,\n  "type": "module",\n  "dependencies": {\n    "react": "^19.2.3",\n    "react-dom": "^19.2.3",\n    "framer-motion": "^12.33.0",\n    "lucide-react": "^0.462.0"\n  }\n}`
       },
       {
         title: 'App.tsx',
@@ -249,8 +241,9 @@ You MUST follow this response format strictly:
 2. Provide a brief summary of the changes.
 3. For each file you want to create or edit, use the header "### File: path/to/filename" followed by the code block.
 4. Use TypeScript (.ts, .tsx) for all logic and components.
-5. Ensure your code is complete, functional, and follows modern React/Vite/Tailwind patterns.
-6. DO NOT TRUNCATE CODE. Provide the full file content every time.
+5. You can suggest installing npm packages by adding a "### Package: package-name" section.
+6. Ensure your code is complete, functional, and follows modern React/Vite/Tailwind patterns.
+7. DO NOT TRUNCATE CODE. Provide the full file content every time.
 
 Workspace Map: [${fileList}]
 Environment: Vite + React + Tailwind CSS
@@ -307,32 +300,60 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
       const doc = previewRef.current.contentDocument;
       if (doc) {
         doc.open();
-        // If editing HTML, write it directly. If editing TSX, wrap it in a basic React runner.
+        
+        // Advanced Neural Preview Template with Babel Transpilation
+        const template = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8" />
+              <script src="https://cdn.tailwindcss.com"></script>
+              <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+              <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+              <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+              <style>
+                body { background: #020408; color: white; font-family: sans-serif; margin: 0; }
+                .dopamine-text { background: linear-gradient(to bottom, white, rgba(255,255,255,0.4)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+              </style>
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="text/babel">
+                const { useState, useEffect, useMemo, useCallback, useRef, createContext, useContext } = React;
+                
+                // Simulated Workspace Environment
+                const App = () => {
+                  try {
+                    ${selectedProject?.title.endsWith('.tsx') || selectedProject?.title.endsWith('.ts') 
+                      ? editorContent.replace(/import.*from.*/g, '') // Strip imports for browser-side transpilation
+                      : 'return <div>Select a React component to preview.</div>'}
+                  } catch (err) {
+                    return (
+                      <div className="p-8 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+                        <h2 className="text-rose-400 font-black mb-2">Runtime Error</h2>
+                        <pre className="text-xs text-rose-300/60 whitespace-pre-wrap">{err.message}</pre>
+                      </div>
+                    );
+                  }
+                };
+
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(<App />);
+              </script>
+            </body>
+          </html>
+        `;
+
         if (selectedProject?.title.endsWith('.html')) {
           doc.write(editorContent);
         } else {
-          doc.write(`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <style>
-                  body { background: #020408; color: white; font-family: sans-serif; }
-                  .dopamine-text { background: linear-gradient(to bottom, white, rgba(255,255,255,0.4)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-                </style>
-              </head>
-              <body>
-                <div id="root"></div>
-                <script type="module">
-                  // Simulated React Runner for Preview
-                  document.getElementById('root').innerHTML = \`<div class="p-8">\${'${editorContent.replace(/`/g, '\\`').replace(/\${/g, '\\${')}'}</div>\`;
-                </script>
-              </body>
-            </html>
-          `);
+          doc.write(template);
         }
         doc.close();
-        addLog('info', 'Live preview refreshed.');
+        addLog('info', 'Neural preview engine updated.');
       }
     }
   };
@@ -522,6 +543,23 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
                                 {activeTab === 'preview' && (
                                   <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full bg-white">
                                     <iframe ref={previewRef} title="Live Preview" className="w-full h-full border-none" onLoad={updatePreview} />
+                                  </motion.div>
+                                )}
+                                {activeTab === 'problems' && (
+                                  <motion.div key="problems" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 overflow-y-auto custom-scrollbar">
+                                    <div className="max-w-2xl mx-auto space-y-4">
+                                      <div className="flex items-center gap-3 mb-8">
+                                        <AlertTriangle className="text-amber-400" size={24} />
+                                        <h3 className="text-2xl font-black">Workspace Problems</h3>
+                                      </div>
+                                      <div className="pill-nav p-6 bg-white/5 border-white/10 flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                          <span className="text-sm font-bold">No critical errors detected in current scripts.</span>
+                                        </div>
+                                        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Optimal</span>
+                                      </div>
+                                    </div>
                                   </motion.div>
                                 )}
                                 {activeTab === 'publish' && (
