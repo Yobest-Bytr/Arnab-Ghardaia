@@ -125,11 +125,9 @@ const NeuralLab = () => {
     if (mode === 'replace') {
       setEditorContent(code);
       addLog('info', 'Replaced editor content with AI suggestion.');
-      showSuccess("Editor content replaced.");
     } else {
       setEditorContent(prev => prev + "\n\n" + code);
       addLog('info', 'Appended AI code block to editor.');
-      showSuccess("Code appended.");
     }
     updatePreview();
   };
@@ -156,13 +154,23 @@ const NeuralLab = () => {
       // Build context from history and current project
       const historyContext = messages.slice(-10).map(m => `${m.role}: ${m.content}`).join('\n');
       const projectContext = selectedProject ? `Current Project: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
-      const fullPrompt = `Context:\n${historyContext}\n\n${projectContext}\n\nUser Request: ${input}\n\nIMPORTANT: If you are providing a full file update, provide the entire code block. Do not cut off.`;
       
+      const systemPrompt = `You are the Yobest AI Assistant. You must follow this response format strictly:
+1. Start with a "### Thinking" section explaining your logic.
+2. Provide a brief summary of the changes.
+3. If you are providing code, provide the FULL code block inside a markdown block.
+4. Ensure your code is complete and functional.
+
+${projectContext}
+
+Conversation History:
+${historyContext}`;
+
       const modelId = selectedModel.id === 'auto' ? 'yobest-ai' : selectedModel.id;
 
       await grokChat(
-        fullPrompt, 
-        { modelId, userId: user?.id },
+        input, 
+        { modelId, userId: user?.id, stream: true },
         (chunk) => {
           responseText += chunk;
           setMessages(prev => {

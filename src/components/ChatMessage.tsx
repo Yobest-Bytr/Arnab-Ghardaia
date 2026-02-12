@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, 
   Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, 
-  Activity, X, Info, CornerDownRight, Clock
+  Activity, X, Info, CornerDownRight, Clock, FileEdit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,6 +41,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const [isApproved, setIsApproved] = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
 
+  // Extract code blocks for the "Approve" button to use
+  const extractCode = (text: string) => {
+    const match = text.match(/```(?:\w+)?\n([\s\S]*?)```/);
+    return match ? match[1] : null;
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
@@ -48,19 +54,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   const handleApprove = () => {
-    setIsApproved(true);
-    showSuccess("Changes approved and merged.");
+    const code = extractCode(content);
+    if (code && onApplyCode) {
+      onApplyCode(code, 'replace');
+      setIsApproved(true);
+      showSuccess("Changes approved and merged into workspace.");
+    } else {
+      showSuccess("Changes approved (no code block found to merge).");
+      setIsApproved(true);
+    }
   };
 
   const renderContent = (text: string) => {
     if (!text) return null;
     const parts = text.split(/```(\w+)?\n([\s\S]*?)```/g);
-    if (parts.length === 1) return <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>;
+    if (parts.length === 1) return <p className="text-sm leading-relaxed whitespace-pre-wrap text-white/80">{text}</p>;
 
     const elements = [];
     for (let i = 0; i < parts.length; i++) {
       if (i % 3 === 0) {
-        if (parts[i]) elements.push(<p key={`text-${i}`} className="text-sm leading-relaxed whitespace-pre-wrap mb-4">{parts[i]}</p>);
+        if (parts[i]) elements.push(<p key={`text-${i}`} className="text-sm leading-relaxed whitespace-pre-wrap text-white/80 mb-4">{parts[i]}</p>);
       } else if (i % 3 === 1) {
         const language = parts[i] || 'javascript';
         const code = parts[i + 1];
@@ -77,24 +90,24 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     return (
       <div className="flex justify-end mb-6">
         <div className="max-w-[85%] bg-indigo-600 text-white p-4 rounded-2xl rounded-tr-none shadow-lg border border-white/10">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{content}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 mb-8 group animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="flex flex-col gap-4 mb-10 group animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Thought Section */}
       {thought && (
         <div className="flex flex-col gap-2">
           <button 
             onClick={() => setIsThoughtOpen(!isThoughtOpen)}
-            className="flex items-center gap-2 text-[11px] font-bold text-white/30 hover:text-white/60 transition-colors w-fit"
+            className="flex items-center gap-2 text-[11px] font-black text-white/20 hover:text-white/40 transition-colors w-fit uppercase tracking-widest"
           >
             {isThoughtOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span className="uppercase tracking-widest flex items-center gap-2">
-              <Info size={12} /> Thought <span className="text-white/10 font-medium normal-case">Addressing the request</span>
+            <span className="flex items-center gap-2">
+              <Info size={12} /> Thought <span className="text-white/10 font-medium normal-case tracking-normal">Addressing the request</span>
             </span>
           </button>
           
@@ -104,7 +117,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="pl-4 border-l border-white/10 text-sm text-white/40 leading-relaxed italic mb-2 overflow-hidden"
+                className="pl-4 border-l border-white/5 text-sm text-white/30 leading-relaxed italic mb-2 overflow-hidden"
               >
                 {thought}
               </motion.div>
@@ -113,62 +126,72 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="text-sm text-white/90 leading-relaxed">
+      {/* Main Content Area */}
+      <div className="space-y-4">
         {renderContent(content)}
       </div>
 
-      {/* File Change Card */}
+      {/* File Change Card - Styled like the image */}
       {fileChange && (
-        <div className="bg-[#1a1a1a] border border-white/10 rounded-xl p-4 flex flex-col gap-3 shadow-xl">
+        <div className="bg-[#121212] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl relative overflow-hidden group/card">
+          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50" />
+          
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
-                <FileCode size={20} />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                <FileCode size={24} />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <h4 className="text-sm font-black text-white flex items-center gap-2">
                   {fileChange.name}
-                  <span className="text-[10px] font-medium text-white/20">{fileChange.path}</span>
+                  <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{fileChange.path}</span>
                 </h4>
-                <p className="text-[11px] text-white/40 font-medium mt-0.5">
+                <p className="text-[11px] text-white/40 font-medium mt-1">
                   Summary: {fileChange.summary}
                 </p>
               </div>
             </div>
-            <button className="p-2 text-white/20 hover:text-white transition-colors">
-              <Edit2 size={16} />
+            <button className="p-2 text-white/20 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+              <FileEdit size={18} />
             </button>
           </div>
           
           {/* Approval Workflow */}
-          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+          <div className="flex items-center justify-between pt-4 border-t border-white/5">
             <div className="flex items-center gap-3">
               <button 
                 onClick={handleApprove}
                 disabled={isApproved}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all",
+                  "flex items-center gap-2 px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
                   isApproved 
                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
                     : "bg-white/5 hover:bg-white/10 text-white border border-white/10"
                 )}
               >
-                <Check size={14} /> {isApproved ? "Approved" : "Approve"}
+                {isApproved ? <CheckCircle2 size={14} /> : <Check size={14} />}
+                {isApproved ? "Approved" : "Approve"}
               </button>
-              <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white border border-white/10 transition-all">
+              <button className="flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[11px] font-black uppercase tracking-widest text-white/40 border border-white/10 transition-all">
                 <X size={14} /> Reject
               </button>
             </div>
             
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="auto-approve" 
-                checked={autoApprove} 
-                onCheckedChange={setAutoApprove}
-                className="scale-75"
-              />
-              <Label htmlFor="auto-approve" className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Auto-approve</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Switch 
+                  id="auto-approve" 
+                  checked={autoApprove} 
+                  onCheckedChange={setAutoApprove}
+                  className="scale-75"
+                />
+                <Label htmlFor="auto-approve" className="text-[10px] font-black text-white/20 uppercase tracking-widest cursor-pointer">Auto</Label>
+              </div>
+              {isApproved && (
+                <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                  <CheckCircle size={12} /> Merged
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -177,19 +200,21 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       {/* Footer Actions */}
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-medium text-white/20 flex items-center gap-2">
-            <Clock size={12} /> {new Date(timestamp).toLocaleTimeString()} • {model || 'Auto'}
-          </span>
-          <button onClick={handleCopy} className="text-white/20 hover:text-white transition-colors">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-white/20">
+            <Clock size={12} /> {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <span className="mx-1">•</span>
+            <span className="text-indigo-400/60">{model || 'Auto'}</span>
+          </div>
+          <button onClick={handleCopy} className="text-white/20 hover:text-white transition-colors p-1">
             {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
           </button>
         </div>
         
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60 border border-white/5">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[11px] font-black uppercase tracking-widest text-white/40 border border-white/5 transition-all">
             <Undo2 size={14} /> Undo
           </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60 border border-white/5">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[11px] font-black uppercase tracking-widest text-white/40 border border-white/5 transition-all">
             <RotateCcw size={14} /> Retry
           </button>
         </div>
