@@ -73,7 +73,7 @@ const NeuralLab = () => {
   useEffect(() => {
     if (selectedProject) {
       setEditorContent(selectedProject.content);
-      addLog('info', `Switched to project: ${selectedProject.title}`);
+      addLog('info', `Switched to script: ${selectedProject.title}`);
     }
   }, [selectedProject]);
 
@@ -102,7 +102,7 @@ const NeuralLab = () => {
     if (!selectedProject || !user) return;
     addLog('info', `Saving ${selectedProject.title} to Supabase...`);
     await storage.update('scripts', user.id, selectedProject.id, { content: editorContent });
-    showSuccess("Project saved to cloud.");
+    showSuccess("Script saved to cloud.");
     updatePreview();
   };
 
@@ -118,7 +118,33 @@ const NeuralLab = () => {
     setProjects([data, ...projects]);
     setSelectedProject(data);
     setMainMode('workspace');
-    addLog('info', `Created new project: ${project.title}`);
+    addLog('info', `Created new script: ${project.title}`);
+  };
+
+  const handleQuickCreate = async () => {
+    if (!user) return;
+    const name = prompt("Enter script name (e.g., styles.css):");
+    if (!name) return;
+    
+    const newProject = {
+      title: name,
+      content: `/* New script: ${name} */`
+    };
+    const data = await storage.insert('scripts', user.id, newProject);
+    setProjects([data, ...projects]);
+    setSelectedProject(data);
+    addLog('info', `Added new script: ${name}`);
+  };
+
+  const handleFileDelete = async (id: string) => {
+    if (!user || !confirm("Are you sure you want to delete this script?")) return;
+    await storage.delete('scripts', user.id, id);
+    const updated = projects.filter(p => p.id !== id);
+    setProjects(updated);
+    if (selectedProject?.id === id) {
+      setSelectedProject(updated[0] || null);
+    }
+    addLog('warn', `Deleted script ID: ${id}`);
   };
 
   const handleApplyCode = (code: string, mode: 'replace' | 'append') => {
@@ -153,14 +179,16 @@ const NeuralLab = () => {
       
       // Build context from history and current project
       const historyContext = messages.slice(-10).map(m => `${m.role}: ${m.content}`).join('\n');
-      const projectContext = selectedProject ? `Current Project: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
+      const fileList = projects.map(p => p.title).join(', ');
+      const projectContext = selectedProject ? `Current File: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
       
       const systemPrompt = `You are the Yobest AI Assistant. You MUST follow this response format strictly:
 1. Start with "### Thinking" followed by your reasoning.
 2. Provide a brief summary of the changes.
 3. If you are providing code, provide the FULL code block inside a markdown block.
-4. Ensure your code is complete and functional.
+4. Ensure your code is complete and functional. If the code is long, do not truncate it.
 
+Workspace Map: [${fileList}]
 ${projectContext}
 
 Conversation History:
@@ -175,7 +203,7 @@ ${historyContext}`;
           responseText += chunk;
           
           // Parse Thinking vs Content
-          let thought = "Analyzing the codebase and applying the requested changes...";
+          let thought = "Analyzing the workspace and applying the requested changes...";
           let displayContent = responseText;
           
           if (responseText.includes('### Thinking')) {
@@ -205,7 +233,7 @@ ${historyContext}`;
                 timestamp: new Date().toISOString(),
                 fileChange: selectedProject ? {
                   name: selectedProject.title,
-                  path: `src/pages/${selectedProject.title}`,
+                  path: `src/scripts/${selectedProject.title}`,
                   summary: `Updating ${selectedProject.title} with new logic.`
                 } : undefined
               }];
@@ -387,7 +415,13 @@ ${historyContext}`;
 
               <ResizablePanelGroup direction="horizontal" className="flex-1">
                 <ResizablePanel defaultSize={15} minSize={10} className="hidden md:block">
-                  <FileExplorer files={projects} onFileSelect={setSelectedProject} selectedFileId={selectedProject?.id} />
+                  <FileExplorer 
+                    files={projects} 
+                    onFileSelect={setSelectedProject} 
+                    onFileCreate={handleQuickCreate}
+                    onFileDelete={handleFileDelete}
+                    selectedFileId={selectedProject?.id} 
+                  />
                 </ResizablePanel>
 
                 <ResizableHandle className="w-1 bg-white/5 hover:bg-indigo-500/30 transition-colors hidden md:block" />
