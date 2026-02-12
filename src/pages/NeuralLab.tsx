@@ -113,12 +113,24 @@ const NeuralLab = () => {
     
     const boilerplate = [
       {
+        title: 'index.html',
+        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title} - Yobest AI</title>\n    <script src="https://js.puter.com/v2/"></script>\n  </head>\n\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>`
+      },
+      {
         title: 'vite.config.ts',
         content: `import { defineConfig } from "vite";\nimport dyadComponentTagger from "@dyad-sh/react-vite-component-tagger";\nimport react from "@vitejs/plugin-react-swc";\nimport path from "path";\n\nexport default defineConfig(() => ({\n  server: {\n    host: "::",\n    port: 8080,\n  },\n  plugins: [dyadComponentTagger(), react()],\n  resolve: {\n    alias: {\n      "@": path.resolve(__dirname, "./src"),\n    },\n  },\n}));`
       },
       {
         title: 'vercel.json',
         content: `{\n  "$schema": "https://openapi.vercel.sh/vercel.json",\n  "rewrites": [\n    {\n      "source": "/(.*)",\n      "destination": "/index.html"\n    }\n  ]\n}`
+      },
+      {
+        title: 'package.json',
+        content: `{\n  "name": "yobest_app",\n  "version": "0.0.0",\n  "private": true,\n  "type": "module",\n  "scripts": {\n    "dev": "vite",\n    "build": "vite build",\n    "preview": "vite preview"\n  },\n  "dependencies": {\n    "react": "^19.2.3",\n    "react-dom": "^19.2.3",\n    "framer-motion": "^12.33.0",\n    "lucide-react": "^0.462.0"\n  }\n}`
+      },
+      {
+        title: 'tailwind.config.ts',
+        content: `import type { Config } from "tailwindcss";\n\nexport default {\n  darkMode: ["class"],\n  content: ["./src/**/*.{ts,tsx}"],\n  theme: {\n    extend: {\n      colors: {\n        background: "hsl(var(--background))",\n        foreground: "hsl(var(--foreground))",\n      }\n    }\n  }\n} satisfies Config;`
       },
       {
         title: 'App.tsx',
@@ -295,7 +307,30 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
       const doc = previewRef.current.contentDocument;
       if (doc) {
         doc.open();
-        doc.write(editorContent);
+        // If editing HTML, write it directly. If editing TSX, wrap it in a basic React runner.
+        if (selectedProject?.title.endsWith('.html')) {
+          doc.write(editorContent);
+        } else {
+          doc.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <style>
+                  body { background: #020408; color: white; font-family: sans-serif; }
+                  .dopamine-text { background: linear-gradient(to bottom, white, rgba(255,255,255,0.4)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+                </style>
+              </head>
+              <body>
+                <div id="root"></div>
+                <script type="module">
+                  // Simulated React Runner for Preview
+                  document.getElementById('root').innerHTML = \`<div class="p-8">\${'${editorContent.replace(/`/g, '\\`').replace(/\${/g, '\\${')}'}</div>\`;
+                </script>
+              </body>
+            </html>
+          `);
+        }
         doc.close();
         addLog('info', 'Live preview refreshed.');
       }
@@ -487,23 +522,6 @@ ${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
                                 {activeTab === 'preview' && (
                                   <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full bg-white">
                                     <iframe ref={previewRef} title="Live Preview" className="w-full h-full border-none" onLoad={updatePreview} />
-                                  </motion.div>
-                                )}
-                                {activeTab === 'problems' && (
-                                  <motion.div key="problems" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-2xl mx-auto space-y-4">
-                                      <div className="flex items-center gap-3 mb-8">
-                                        <AlertTriangle className="text-amber-400" size={24} />
-                                        <h3 className="text-2xl font-black">Workspace Problems</h3>
-                                      </div>
-                                      <div className="pill-nav p-6 bg-white/5 border-white/10 flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                          <span className="text-sm font-bold">No critical errors detected in current scripts.</span>
-                                        </div>
-                                        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Optimal</span>
-                                      </div>
-                                    </div>
                                   </motion.div>
                                 )}
                                 {activeTab === 'publish' && (
