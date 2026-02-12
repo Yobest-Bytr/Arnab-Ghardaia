@@ -10,8 +10,6 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import CodeFrame from './CodeFrame';
 import { showSuccess } from '@/utils/toast';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
