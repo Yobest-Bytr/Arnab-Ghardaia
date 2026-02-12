@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, 
   Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, 
-  Activity, X, Info, CornerDownRight
+  Activity, X, Info, CornerDownRight, Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -76,7 +76,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   if (role === 'user') {
     return (
       <div className="flex justify-end mb-6">
-        <div className="max-w-[85%] bg-indigo-600 text-white p-4 rounded-2xl rounded-tr-none shadow-lg">
+        <div className="max-w-[85%] bg-indigo-600 text-white p-4 rounded-2xl rounded-tr-none shadow-lg border border-white/10">
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
         </div>
       </div>
@@ -198,5 +198,4 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   );
 };
 
-import { Clock } from 'lucide-react';
 export default ChatMessage;

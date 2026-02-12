@@ -145,12 +145,16 @@ const NeuralLab = () => {
 
     try {
       let responseText = "";
-      const contextPrompt = selectedProject ? `[Context: Current file is ${selectedProject.title}. Content: ${editorContent.slice(0, 1000)}...] ${input}` : input;
+      
+      // Build context from history and current project
+      const historyContext = messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
+      const projectContext = selectedProject ? `Current Project: ${selectedProject.title}\nSource Code:\n${editorContent.slice(0, 2000)}` : '';
+      const fullPrompt = `Context:\n${historyContext}\n\n${projectContext}\n\nUser Request: ${input}`;
       
       const modelId = selectedModel.id === 'auto' ? 'yobest-ai' : selectedModel.id;
 
       await grokChat(
-        contextPrompt, 
+        fullPrompt, 
         { modelId, userId: user?.id },
         (chunk) => {
           responseText += chunk;
