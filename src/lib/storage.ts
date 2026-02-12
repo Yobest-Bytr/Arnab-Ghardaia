@@ -1,7 +1,14 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export const storage = {
+  // Get data from local storage first
   async get(table: string, userId: string) {
+    const localData = localStorage.getItem(`${table}_${userId}`);
+    if (localData) {
+      return JSON.parse(localData);
+    }
+    
+    // Fallback to Supabase only if local is empty
     try {
       const { data, error } = await supabase
         .from(table)
@@ -9,65 +16,60 @@ export const storage = {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (!error && data) {
+        localStorage.setItem(`${table}_${userId}`, JSON.stringify(data));
+        return data;
+      }
     } catch (err) {
-      console.warn(`Supabase ${table} fetch failed, falling back to local storage.`);
-      return JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
+      console.warn(`Supabase ${table} fetch failed.`);
     }
+    return [];
   },
 
+  // Save locally by default
   async insert(table: string, userId: string, item: any) {
-    const newItem = { ...item, user_id: userId, created_at: new Date().toISOString() };
-    try {
-      const { data, error } = await supabase
-        .from(table)
-        .insert([newItem])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    } catch (err) {
-      console.warn(`Supabase ${table} insert failed, saving to local storage.`);
-      const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
-      const localItem = { ...newItem, id: Date.now() };
-      localStorage.setItem(`${table}_${userId}`, JSON.stringify([localItem, ...localData]));
-      return localItem;
-    }
+    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
+    const newItem = { 
+      ...item, 
+      id: item.id || Math.random().toString(36).substr(2, 9),
+      user_id: userId, 
+      created_at: new Date().toISOString() 
+    };
+    
+    const updatedData = [newItem, ...localData];
+    localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
+    return newItem;
   },
 
   async update(table: string, userId: string, id: any, updates: any) {
-    try {
-      const { data, error } = await supabase
-        .from(table)
-        .update(updates)
-        .eq('id', id);
-      
-      if (error) throw error;
-      return data;
-    } catch (err) {
-      const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
-      const updatedData = localData.map((item: any) => 
-        item.id === id ? { ...item, ...updates } : item
-      );
-      localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
-      return updates;
-    }
+    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
+    const updatedData = localData.map((item: any) => 
+      item.id === id ? { ...item, ...updates, updated_at: new Date().toISOString() } : item
+    );
+    localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
+    return updates;
   },
 
   async delete(table: string, userId: string, id: any) {
+    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
+    const filteredData = localData.filter((item: any) => item.id !== id);
+    localStorage.setItem(`${table}_${userId}`, JSON.stringify(filteredData));
+  },
+
+  // Manual sync to Supabase
+  async syncToCloud(table: string, userId: string) {
+    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
+    if (localData.length === 0) return { success: false, message: "No local data to sync." };
+
     try {
       const { error } = await supabase
         .from(table)
-        .delete()
-        .eq('id', id);
+        .upsert(localData.map(item => ({ ...item, user_id: userId })));
       
       if (error) throw error;
-    } catch (err) {
-      const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
-      const filteredData = localData.filter((item: any) => item.id !== id);
-      localStorage.setItem(`${table}_${userId}`, JSON.stringify(filteredData));
+      return { success: true, message: "Cloud sync complete." };
+    } catch (err: any) {
+      return { success: false, message: err.message || "Sync failed. Table might not exist." };
     }
   }
 };
