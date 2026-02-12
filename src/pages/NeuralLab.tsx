@@ -147,14 +147,33 @@ const NeuralLab = () => {
     addLog('warn', `Deleted script ID: ${id}`);
   };
 
-  const handleApplyCode = (code: string, mode: 'replace' | 'append') => {
-    if (mode === 'replace') {
-      setEditorContent(code);
-      addLog('info', 'Replaced editor content with AI suggestion.');
+  const handleApplyCode = async (code: string, path: string, mode: 'replace' | 'append') => {
+    if (!user) return;
+    
+    const fileName = path.split('/').pop() || path;
+    const existingFile = projects.find(p => p.title === fileName);
+
+    if (existingFile) {
+      const newContent = mode === 'replace' ? code : existingFile.content + "\n\n" + code;
+      await storage.update('scripts', user.id, existingFile.id, { content: newContent });
+      
+      if (selectedProject?.id === existingFile.id) {
+        setEditorContent(newContent);
+      }
+      
+      setProjects(prev => prev.map(p => p.id === existingFile.id ? { ...p, content: newContent } : p));
+      addLog('info', `Updated existing file: ${fileName}`);
     } else {
-      setEditorContent(prev => prev + "\n\n" + code);
-      addLog('info', 'Appended AI code block to editor.');
+      const newFile = {
+        title: fileName,
+        content: code
+      };
+      const data = await storage.insert('scripts', user.id, newFile);
+      setProjects([data, ...projects]);
+      setSelectedProject(data);
+      addLog('info', `Created new file from AI suggestion: ${fileName}`);
     }
+    
     updatePreview();
   };
 
@@ -177,22 +196,20 @@ const NeuralLab = () => {
     try {
       let responseText = "";
       
-      // Build context from history and current project
-      const historyContext = messages.slice(-10).map(m => `${m.role}: ${m.content}`).join('\n');
       const fileList = projects.map(p => p.title).join(', ');
       const projectContext = selectedProject ? `Current File: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
       
       const systemPrompt = `You are the Yobest AI Assistant. You MUST follow this response format strictly:
 1. Start with "### Thinking" followed by your reasoning.
 2. Provide a brief summary of the changes.
-3. If you are providing code, provide the FULL code block inside a markdown block.
-4. Ensure your code is complete and functional. If the code is long, do not truncate it.
+3. For each file you want to create or edit, use the header "### File: path/to/filename" followed by the code block.
+4. Ensure your code is complete and functional. DO NOT TRUNCATE.
 
 Workspace Map: [${fileList}]
 ${projectContext}
 
 Conversation History:
-${historyContext}`;
+${messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}`;
 
       const modelId = selectedModel.id === 'auto' ? 'yobest-ai' : selectedModel.id;
 
@@ -202,40 +219,22 @@ ${historyContext}`;
         (chunk) => {
           responseText += chunk;
           
-          // Parse Thinking vs Content
-          let thought = "Analyzing the workspace and applying the requested changes...";
-          let displayContent = responseText;
-          
-          if (responseText.includes('### Thinking')) {
-            const parts = responseText.split(/### Thinking/i);
-            if (parts.length > 1) {
-              const thoughtPart = parts[1].split(/\n###|\n\n/)[0];
-              thought = thoughtPart.trim();
-              displayContent = responseText.replace(`### Thinking${thoughtPart}`, "").trim();
-            }
-          }
-
           setMessages(prev => {
             const last = prev[prev.length - 1];
             if (last?.role === 'assistant') {
               return [...prev.slice(0, -1), { 
                 ...last, 
-                content: displayContent,
-                thought: thought
+                content: responseText,
+                model: selectedModel.name,
+                timestamp: new Date().toISOString()
               }];
             } else {
               return [...prev, { 
                 id: Date.now() + 1, 
                 role: 'assistant', 
-                content: displayContent, 
-                thought: thought,
+                content: responseText, 
                 model: selectedModel.name,
-                timestamp: new Date().toISOString(),
-                fileChange: selectedProject ? {
-                  name: selectedProject.title,
-                  path: `src/scripts/${selectedProject.title}`,
-                  summary: `Updating ${selectedProject.title} with new logic.`
-                } : undefined
+                timestamp: new Date().toISOString()
               }];
             }
           });
