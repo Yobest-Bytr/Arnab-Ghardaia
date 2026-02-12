@@ -1,11 +1,17 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, Activity } from 'lucide-react';
+import { 
+  ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, 
+  Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, 
+  Activity, X, Info, CornerDownRight
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import CodeFrame from './CodeFrame';
 import { showSuccess } from '@/utils/toast';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -30,9 +36,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   timestamp,
   onApplyCode 
 }) => {
-  const [isThoughtOpen, setIsThoughtOpen] = useState(true);
+  const [isThoughtOpen, setIsThoughtOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -42,7 +49,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   const handleApprove = () => {
     setIsApproved(true);
-    showSuccess("Changes approved and merged into neural context.");
+    showSuccess("Changes approved and merged.");
   };
 
   const renderContent = (text: string) => {
@@ -77,29 +84,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   }
 
   return (
-    <div className="flex flex-col gap-4 mb-8 group">
-      {/* AI Metadata Header */}
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
-            <Zap size={16} className="fill-current" />
-          </div>
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/60">{model || 'Yobest AI'}</span>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-400">
-                <ShieldCheck size={10} /> 98% Confidence
-              </div>
-              <div className="w-1 h-1 rounded-full bg-white/10" />
-              <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-400">
-                <Activity size={10} /> High Impact
-              </div>
-            </div>
-          </div>
-        </div>
-        <span className="text-[9px] font-black text-white/10 uppercase tracking-widest">{new Date(timestamp).toLocaleTimeString()}</span>
-      </div>
-
+    <div className="flex flex-col gap-4 mb-8 group animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* Thought Section */}
       {thought && (
         <div className="flex flex-col gap-2">
           <button 
@@ -107,7 +93,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             className="flex items-center gap-2 text-[11px] font-bold text-white/30 hover:text-white/60 transition-colors w-fit"
           >
             {isThoughtOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <span className="uppercase tracking-widest">Neural Processing</span>
+            <span className="uppercase tracking-widest flex items-center gap-2">
+              <Info size={12} /> Thought <span className="text-white/10 font-medium normal-case">Addressing the request</span>
+            </span>
           </button>
           
           <AnimatePresence>
@@ -125,60 +113,83 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </div>
       )}
 
-      <div className="text-sm text-white/90 leading-relaxed bg-white/5 p-6 rounded-2xl border border-white/5">
+      {/* Main Content */}
+      <div className="text-sm text-white/90 leading-relaxed">
         {renderContent(content)}
       </div>
 
+      {/* File Change Card */}
       {fileChange && (
-        <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-4 flex flex-col gap-3">
+        <div className="bg-[#1a1a1a] border border-white/10 rounded-xl p-4 flex flex-col gap-3 shadow-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center text-indigo-400">
+              <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
                 <FileCode size={20} />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white">{fileChange.name}</h4>
-                <p className="text-[10px] text-white/30 font-medium">{fileChange.path}</p>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  {fileChange.name}
+                  <span className="text-[10px] font-medium text-white/20">{fileChange.path}</span>
+                </h4>
+                <p className="text-[11px] text-white/40 font-medium mt-0.5">
+                  Summary: {fileChange.summary}
+                </p>
               </div>
             </div>
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60 transition-all">
-              <Edit2 size={14} /> Edit <ChevronRight size={14} />
+            <button className="p-2 text-white/20 hover:text-white transition-colors">
+              <Edit2 size={16} />
             </button>
           </div>
-          <p className="text-[11px] text-white/40 font-medium leading-relaxed">
-            {fileChange.summary}
-          </p>
+          
+          {/* Approval Workflow */}
+          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleApprove}
+                disabled={isApproved}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all",
+                  isApproved 
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                    : "bg-white/5 hover:bg-white/10 text-white border border-white/10"
+                )}
+              >
+                <Check size={14} /> {isApproved ? "Approved" : "Approve"}
+              </button>
+              <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white border border-white/10 transition-all">
+                <X size={14} /> Reject
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="auto-approve" 
+                checked={autoApprove} 
+                onCheckedChange={setAutoApprove}
+                className="scale-75"
+              />
+              <Label htmlFor="auto-approve" className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Auto-approve</Label>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Footer Actions */}
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-4">
+          <span className="text-[10px] font-medium text-white/20 flex items-center gap-2">
+            <Clock size={12} /> {new Date(timestamp).toLocaleTimeString()} • {model || 'Auto'}
+          </span>
           <button onClick={handleCopy} className="text-white/20 hover:text-white transition-colors">
             {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
           </button>
-          
-          {isApproved ? (
-            <div className="flex items-center gap-2 text-emerald-400 text-[11px] font-bold animate-in fade-in zoom-in duration-300">
-              <CheckCircle2 size={14} />
-              <span>Approved</span>
-              <span className="text-white/10 ml-1">auto</span>
-            </div>
-          ) : (
-            <button 
-              onClick={handleApprove}
-              className="flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
-            >
-              <CheckCircle size={12} />
-              Approve
-            </button>
-          )}
         </div>
         
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60">
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60 border border-white/5">
             <Undo2 size={14} /> Undo
           </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60">
+          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-bold text-white/60 border border-white/5">
             <RotateCcw size={14} /> Retry
           </button>
         </div>
@@ -187,4 +198,5 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   );
 };
 
+import { Clock } from 'lucide-react';
 export default ChatMessage;

@@ -52,9 +52,6 @@ const NeuralLab = () => {
   const [activeTab, setActiveTab] = useState('code');
   const [mainMode, setMainMode] = useState<'dashboard' | 'workspace'>('dashboard');
   const [editorContent, setEditorContent] = useState('');
-  const [isChecking, setIsChecking] = useState(false);
-  const [checkResults, setCheckResults] = useState<any>(null);
-  const [isRestarting, setIsRestarting] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -94,46 +91,19 @@ const NeuralLab = () => {
   const handleBuild = () => {
     setIsBuilding(true);
     addLog('info', 'Starting production build...');
-    addLog('info', 'Optimizing neural assets...');
     setTimeout(() => {
-      addLog('info', 'Compiling cognitive scripts...');
-      setTimeout(() => {
-        addLog('info', 'Build successful. Artifacts ready for deployment.');
-        setIsBuilding(false);
-        showSuccess("Build complete.");
-      }, 1500);
-    }, 1000);
-  };
-
-  const handleRestart = () => {
-    setIsRestarting(true);
-    addLog('warn', 'Restarting neural server...');
-    setTimeout(() => {
-      setIsRestarting(false);
-      addLog('info', 'Neural server restarted successfully.');
-      showSuccess("Server restarted.");
-      updatePreview();
-    }, 1500);
+      addLog('info', 'Build successful. Artifacts ready.');
+      setIsBuilding(false);
+      showSuccess("Build complete.");
+    }, 2000);
   };
 
   const handleSave = async () => {
     if (!selectedProject || !user) return;
-    addLog('info', `Saving ${selectedProject.title}...`);
+    addLog('info', `Saving ${selectedProject.title} to Supabase...`);
     await storage.update('scripts', user.id, selectedProject.id, { content: editorContent });
-    showSuccess("Project saved.");
+    showSuccess("Project saved to cloud.");
     updatePreview();
-  };
-
-  const handleRunChecks = () => {
-    setIsChecking(true);
-    setCheckResults(null);
-    addLog('info', 'Running neural checks...');
-    setTimeout(() => {
-      setIsChecking(false);
-      setCheckResults({ errors: 0, warnings: 0, status: 'Optimal' });
-      addLog('info', 'Checks complete. 0 errors, 0 warnings found.');
-      showSuccess("Neural checks passed.");
-    }, 2000);
   };
 
   const handleCreateProject = async (project: { title: string; description: string; template: string }) => {
@@ -154,7 +124,7 @@ const NeuralLab = () => {
   const handleApplyCode = (code: string) => {
     setEditorContent(prev => prev + "\n\n" + code);
     addLog('info', 'Applied AI code block to editor.');
-    showSuccess("Code applied to editor.");
+    showSuccess("Code applied.");
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -364,6 +334,7 @@ const NeuralLab = () => {
                     { id: 'preview', label: 'Preview', icon: Eye },
                     { id: 'problems', label: 'Problems', icon: AlertTriangle },
                     { id: 'code', label: 'Code', icon: CodeIcon },
+                    { id: 'publish', label: 'Publish', icon: Globe },
                     { id: 'configure', label: 'Configure', icon: Settings },
                   ].map((btn) => (
                     <button 
@@ -411,7 +382,46 @@ const NeuralLab = () => {
                                     <iframe ref={previewRef} title="Live Preview" className="w-full h-full border-none" onLoad={updatePreview} />
                                   </motion.div>
                                 )}
-                                {/* ... other tabs ... */}
+                                {activeTab === 'publish' && (
+                                  <motion.div key="publish" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 overflow-y-auto custom-scrollbar">
+                                    <div className="max-w-2xl mx-auto space-y-12">
+                                      <div className="pill-nav p-10 bg-white/5 border-white/10">
+                                        <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
+                                          <Github className="text-white" />
+                                          Connect to GitHub
+                                        </h3>
+                                        <p className="text-white/40 font-medium mb-8">Push your site scripts directly to a GitHub repository.</p>
+                                        <button className="auron-button w-full h-14 flex items-center justify-center gap-3">
+                                          <Github size={20} /> Connect Repository
+                                        </button>
+                                      </div>
+
+                                      <div className="pill-nav p-10 bg-white/5 border-white/10">
+                                        <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
+                                          <Globe className="text-indigo-400" />
+                                          Custom Domains
+                                        </h3>
+                                        <p className="text-white/40 font-medium mb-8">Run your site on a custom domain or a Yobest subdomain.</p>
+                                        <div className="flex gap-4">
+                                          <input type="text" placeholder="your-site.yobest.ai" className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm outline-none focus:border-indigo-500" />
+                                          <button className="bg-indigo-600 px-6 rounded-xl font-bold text-sm">Deploy</button>
+                                        </div>
+                                      </div>
+
+                                      <div className="pill-nav p-10 bg-white/5 border-white/10">
+                                        <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
+                                          <Database className="text-emerald-400" />
+                                          Supabase Storage
+                                        </h3>
+                                        <p className="text-white/40 font-medium mb-8">Your site scripts are automatically backed up to Supabase.</p>
+                                        <div className="flex items-center justify-between p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                          <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Cloud Sync Active</span>
+                                          <CheckCircle2 size={16} className="text-emerald-400" />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                )}
                               </AnimatePresence>
                             </div>
                           </div>

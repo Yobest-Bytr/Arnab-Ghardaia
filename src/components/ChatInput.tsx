@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useRef, useState } from 'react';
-import { Send, Plus, ChevronDown, Sparkles, ImageIcon, X, Cpu, Zap, Layers, CheckCircle2, FileUp, Box, Wand2 } from 'lucide-react';
+import { 
+  Send, Plus, ChevronDown, Sparkles, X, Cpu, Zap, 
+  Layers, FileUp, Box, Wand2, MessageSquare, ArrowRight 
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,16 +56,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        <button type="button" className="whitespace-nowrap px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/10 transition-all">
-          Explain Code
+    <div className="flex flex-col gap-4">
+      {/* Quick Actions */}
+      <div className="flex gap-2">
+        <button type="button" className="px-4 py-2 rounded-xl bg-[#1a1a1a] border border-white/10 text-[11px] font-bold text-white hover:bg-white/5 transition-all flex items-center gap-2">
+          Summarize to new chat
         </button>
-        <button type="button" className="whitespace-nowrap px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/10 transition-all">
-          Fix Errors
-        </button>
-        <button type="button" className="whitespace-nowrap px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/10 transition-all">
-          Optimize
+        <button type="button" className="px-4 py-2 rounded-xl bg-[#1a1a1a] border border-white/10 text-[11px] font-bold text-white hover:bg-white/5 transition-all flex items-center gap-2">
+          Keep going
         </button>
       </div>
 
@@ -84,30 +85,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Ask Yobest AI to build or modify..."
-            className="w-full bg-transparent p-4 pr-14 text-sm text-white outline-none resize-none min-h-[80px] max-h-[200px] custom-scrollbar"
+            className="w-full bg-transparent p-4 pr-14 text-sm text-white outline-none resize-none min-h-[100px] max-h-[300px] custom-scrollbar"
           />
           <button 
             type="submit" 
             disabled={isGenerating || !value.trim()}
-            className="absolute right-3 bottom-3 w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-500 transition-all disabled:opacity-30"
+            className="absolute right-4 top-4 w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30"
           >
-            {isGenerating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send size={18} />}
+            {isGenerating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ArrowRight size={20} />}
           </button>
         </form>
 
-        <div className="px-4 py-2 bg-white/5 border-t border-white/5 flex items-center justify-between">
+        {/* Bottom Toolbar */}
+        <div className="px-4 py-3 bg-white/5 border-t border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button 
               onClick={onBuild}
-              className="flex items-center gap-2 px-3 py-1 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[#1a1a1a] border border-white/10 text-[11px] font-bold text-white hover:bg-white/5 transition-all"
             >
-              <Box size={12} />
               Build
             </button>
+            
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all outline-none">
-                <selectedModel.icon size={12} className="text-indigo-400" />
-                {selectedModel.name}
+              <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[#1a1a1a] border border-white/10 text-[11px] font-bold text-white hover:bg-white/5 transition-all outline-none">
+                Model: <span className="text-indigo-400">{selectedModel.name}</span>
                 <ChevronDown size={12} />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-64 p-2 z-[110]">
@@ -122,6 +123,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <button className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-[11px] font-bold text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all">
+              <Sparkles size={14} /> Pro
+            </button>
           </div>
           
           <div className="flex items-center gap-1">
@@ -134,9 +139,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <button 
               type="button" 
               onClick={() => fileInputRef.current?.click()}
-              className="p-1.5 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-all"
+              className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
             >
-              <Plus size={18} />
+              <Plus size={20} />
             </button>
           </div>
         </div>
