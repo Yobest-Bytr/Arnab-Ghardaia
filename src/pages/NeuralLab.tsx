@@ -108,17 +108,34 @@ const NeuralLab = () => {
 
   const handleCreateProject = async (project: { title: string; description: string; template: string }) => {
     if (!user) return;
-    const newProject = {
-      title: project.title,
-      content: project.template === 'react' 
-        ? `"use client";\n\nimport React from 'react';\n\nexport default function ${project.title.replace(/\s+/g, '')}() {\n  return (\n    <div className="min-h-screen bg-[#020408] text-white flex items-center justify-center">\n      <h1 className="text-6xl font-black dopamine-text">${project.title}</h1>\n    </div>\n  );\n}`
-        : `<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { background: #020408; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }\n    h1 { color: #99f6ff; text-shadow: 0 0 20px rgba(153,246,255,0.5); }\n  </style>\n</head>\n<body>\n  <h1>${project.title} Initialized</h1>\n</body>\n</html>`
-    };
-    const data = await storage.insert('scripts', user.id, newProject);
-    setProjects([data, ...projects]);
-    setSelectedProject(data);
+    
+    addLog('info', `Initializing full-stack boilerplate for: ${project.title}`);
+    
+    const boilerplate = [
+      {
+        title: 'vite.config.ts',
+        content: `import { defineConfig } from "vite";\nimport dyadComponentTagger from "@dyad-sh/react-vite-component-tagger";\nimport react from "@vitejs/plugin-react-swc";\nimport path from "path";\n\nexport default defineConfig(() => ({\n  server: {\n    host: "::",\n    port: 8080,\n  },\n  plugins: [dyadComponentTagger(), react()],\n  resolve: {\n    alias: {\n      "@": path.resolve(__dirname, "./src"),\n    },\n  },\n}));`
+      },
+      {
+        title: 'vercel.json',
+        content: `{\n  "$schema": "https://openapi.vercel.sh/vercel.json",\n  "rewrites": [\n    {\n      "source": "/(.*)",\n      "destination": "/index.html"\n    }\n  ]\n}`
+      },
+      {
+        title: 'App.tsx',
+        content: `"use client";\n\nimport React from 'react';\n\nexport default function App() {\n  return (\n    <div className="min-h-screen bg-[#020408] text-white flex flex-col items-center justify-center p-8">\n      <h1 className="text-7xl font-black dopamine-text mb-4">${project.title}</h1>\n      <p className="text-xl text-white/40 font-medium">${project.description}</p>\n    </div>\n  );\n}`
+      }
+    ];
+
+    let firstScript = null;
+    for (const script of boilerplate) {
+      const data = await storage.insert('scripts', user.id, script);
+      if (!firstScript) firstScript = data;
+    }
+
+    await fetchProjects();
+    setSelectedProject(firstScript);
     setMainMode('workspace');
-    addLog('info', `Created new script: ${project.title}`);
+    showSuccess("Full-stack workspace initialized.");
   };
 
   const handleQuickCreate = async () => {
@@ -214,13 +231,17 @@ const NeuralLab = () => {
       const fileList = projects.map(p => p.title).join(', ');
       const projectContext = selectedProject ? `Current File: ${selectedProject.title}\nSource Code:\n${editorContent}` : '';
       
-      const systemPrompt = `You are the Yobest AI Assistant. You MUST follow this response format strictly:
+      const systemPrompt = `You are the Yobest AI Assistant, a world-class full-stack engineer. 
+You MUST follow this response format strictly:
 1. Start with "### Thinking" followed by your reasoning.
 2. Provide a brief summary of the changes.
 3. For each file you want to create or edit, use the header "### File: path/to/filename" followed by the code block.
-4. Ensure your code is complete and functional. DO NOT TRUNCATE.
+4. Use TypeScript (.ts, .tsx) for all logic and components.
+5. Ensure your code is complete, functional, and follows modern React/Vite/Tailwind patterns.
+6. DO NOT TRUNCATE CODE. Provide the full file content every time.
 
 Workspace Map: [${fileList}]
+Environment: Vite + React + Tailwind CSS
 ${projectContext}
 
 Conversation History:
