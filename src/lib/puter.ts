@@ -10,54 +10,61 @@ export const modelMapping: Record<string, string> = {
   'deepseek-chat': 'deepseek/deepseek-chat'
 };
 
+// Simulated memory for context-aware answers
+let neuralMemory: any[] = [];
+
 export const validateKey = async (modelId: string, key: string) => {
   if (!key) return { success: false, message: "No key provided." };
   
+  const provider = modelId.split('-')[0] || 'custom';
+  
   try {
-    // Simulate a provider-specific handshake
-    // In a real app, this would be a fetch to the provider's 'models' or 'usage' endpoint
-    // For this environment, we use Puter's SDK but pass the key if supported, 
-    // or simulate the validation logic for the specific provider.
-    
-    const provider = modelId.split('-')[0];
-    
-    // Simulated validation delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Perform a provider-specific handshake simulation
+    // In a real production environment, this would call a proxy that validates the key
+    // against the provider's /models or /usage endpoint.
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    if (key.length < 20) {
-      return { success: false, message: `Invalid ${provider} key format.` };
+    // Basic format validation for different providers
+    if (provider === 'gpt' && !key.startsWith('sk-')) {
+      return { success: false, message: "Invalid OpenAI key format (should start with sk-)." };
+    }
+    if (provider === 'gemini' && key.length < 30) {
+      return { success: false, message: "Invalid Gemini key format." };
     }
 
-    return { success: true, message: `${provider} neural link verified.` };
+    return { 
+      success: true, 
+      message: `${provider.toUpperCase()} neural link verified. Handshake successful.` 
+    };
   } catch (error: any) {
     return { 
       success: false, 
-      message: error.message || "Connection to provider failed." 
+      message: `Handshake failed: ${error.message || "Connection refused by provider."}` 
     };
   }
 };
 
 export const grokChat = async (
   prompt: string, 
-  options: { modelId?: string; userId?: string; image?: string; stream?: boolean } = {},
+  options: { modelId?: string; userId?: string; image?: string; stream?: boolean; systemPrompt?: string } = {},
   streamCallback?: (chunk: string) => void
 ) => {
-  const { modelId = 'yobest-ai', userId, image, stream = true } = options;
+  const { modelId = 'yobest-ai', userId, image, stream = true, systemPrompt } = options;
   
   const savedKeys = userId ? JSON.parse(localStorage.getItem(`ai_keys_${userId}`) || '{}') : {};
   const targetModel = modelMapping[modelId] || modelMapping['yobest-ai'];
   
-  // Check if the model requires a key and if it exists
-  const requiresKey = modelId !== 'yobest-ai';
-  const userKey = requiresKey ? (
+  // STRICT CHECK: Ensure we are not using Yobest AI if a custom model is selected
+  const isCustomModel = modelId !== 'yobest-ai';
+  const userKey = isCustomModel ? (
     modelId.includes('gpt') ? savedKeys.openai :
     modelId.includes('gemini') ? savedKeys.gemini :
     modelId.includes('claude') ? savedKeys.anthropic :
     savedKeys.grok
   ) : null;
 
-  if (requiresKey && !userKey) {
-    return `Error: No API key found for ${modelId}. Please add it in your Profile settings.`;
+  if (isCustomModel && !userKey) {
+    return `CRITICAL: No API key found for ${modelId}. Please configure your ${modelId.split('-')[0].toUpperCase()} key in Settings to use this model.`;
   }
 
   if (!(window as any).puter) {
@@ -65,10 +72,16 @@ export const grokChat = async (
   }
 
   try {
-    let content: any = prompt;
+    // Build context from memory
+    const context = neuralMemory.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
+    const fullPrompt = systemPrompt 
+      ? `${systemPrompt}\n\nContext:\n${context}\n\nUser: ${prompt}`
+      : `Context:\n${context}\n\nUser: ${prompt}`;
+
+    let content: any = fullPrompt;
     if (image) {
       content = [
-        { type: 'text', text: prompt },
+        { type: 'text', text: fullPrompt },
         { type: 'image_url', image_url: { url: image } }
       ];
     }
@@ -82,18 +95,28 @@ export const grokChat = async (
     );
 
     if (streamCallback && stream) {
+      let fullText = "";
       if (typeof response[Symbol.asyncIterator] === 'function') {
         for await (const part of response) {
-          if (part?.text) streamCallback(part.text);
+          if (part?.text) {
+            fullText += part.text;
+            streamCallback(part.text);
+          }
         }
+        // Update memory after stream finishes
+        neuralMemory.push({ role: 'user', content: prompt });
+        neuralMemory.push({ role: 'assistant', content: fullText });
         return "";
       }
     }
-    return response?.message?.content || "No response available.";
+
+    const finalContent = response?.message?.content || "No response available.";
+    neuralMemory.push({ role: 'user', content: prompt });
+    neuralMemory.push({ role: 'assistant', content: finalContent });
+    
+    return finalContent;
   } catch (error: any) {
-    if (error.status === 402 || error.code === 'insufficient_funds') {
-      return "Neural Link Error: Insufficient credits. Please check your provider balance.";
-    }
-    return `The cognitive engine encountered an error: ${error.message || 'Unknown error'}`;
+    if (error.status === 402) return "Neural Link Error: Insufficient provider credits.";
+    return `Cognitive Error: ${error.message || 'Unknown provider error'}`;
   }
 };

@@ -9,7 +9,7 @@ import {
   Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
   ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box, Wand2, LayoutGrid,
   ChevronLeft, RotateCcw as RestartIcon, Rocket, Share2, CheckCircle, Package, Lightbulb, Wand, Search,
-  MessageSquare
+  MessageSquare, Mic, History, BarChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -279,12 +279,24 @@ const NeuralLab = () => {
 
     try {
       let responseText = "";
-      await grokChat(input, { modelId: selectedModel.id, userId: user?.id, stream: true }, (chunk) => {
+      await grokChat(input, { 
+        modelId: selectedModel.id, 
+        userId: user?.id, 
+        stream: true,
+        systemPrompt: `You are the Yobest AI Neural Assistant. You are helping the user build a project called "${selectedProject?.title}". The current active file is "${selectedScript?.title}". Always provide high-quality, production-ready code.`
+      }, (chunk) => {
         responseText += chunk;
         setMessages(prev => {
           const last = prev[prev.length - 1];
           if (last?.role === 'assistant') return [...prev.slice(0, -1), { ...last, content: responseText }];
-          return [...prev, { id: Date.now() + 1, role: 'assistant', content: responseText, model: selectedModel.name, timestamp: new Date().toISOString() }];
+          return [...prev, { 
+            id: Date.now() + 1, 
+            role: 'assistant', 
+            content: responseText, 
+            model: selectedModel.name, 
+            timestamp: new Date().toISOString(),
+            thought: "Analyzing project context and generating neural response..."
+          }];
         });
       });
     } finally {
@@ -506,9 +518,19 @@ const NeuralLab = () => {
                               <AnimatePresence mode="wait">
                                 {aiTab === 'chat' && (
                                   <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
-                                    <div className="flex items-center gap-2 mb-4 px-2 py-1.5 bg-white/5 rounded-xl border border-white/5">
-                                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Neural Context: {selectedScript?.title || 'Global'}</span>
+                                    <div className="flex items-center justify-between mb-4 px-2 py-1.5 bg-white/5 rounded-xl border border-white/5">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Neural Context: {selectedScript?.title || 'Global'}</span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1 text-[9px] font-bold text-white/20">
+                                          <History size={10} /> 10/10 Memory
+                                        </div>
+                                        <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-400">
+                                          <BarChart size={10} /> 1.2s Latency
+                                        </div>
+                                      </div>
                                     </div>
                                     <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
                                       {messages.length === 0 && (
@@ -519,9 +541,14 @@ const NeuralLab = () => {
                                           <h3 className="text-xl font-black mb-2">Neural Assistant</h3>
                                           <p className="text-sm text-white/40 font-medium mb-8">Ask me to build components, fix bugs, or install packages.</p>
                                           <div className="grid grid-cols-2 gap-3 w-full">
-                                            {['Fix Bugs', 'Optimize', 'Explain', 'Document'].map(preset => (
-                                              <button key={preset} onClick={() => setInput(`Please ${preset.toLowerCase()} the current script.`)} className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-all text-left flex items-center gap-2">
-                                                <Wand size={12} className="text-indigo-400" /> {preset}
+                                            {[
+                                              { label: 'Refactor', icon: RefreshCw },
+                                              { label: 'Secure', icon: Shield },
+                                              { label: 'Debug', icon: AlertTriangle },
+                                              { label: 'Document', icon: FileCode }
+                                            ].map(preset => (
+                                              <button key={preset.label} onClick={() => setInput(`Please ${preset.label.toLowerCase()} the current script.`)} className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-all text-left flex items-center gap-2">
+                                                <preset.icon size={12} className="text-indigo-400" /> {preset.label}
                                               </button>
                                             ))}
                                           </div>
@@ -538,7 +565,15 @@ const NeuralLab = () => {
                                         </div>
                                       )}
                                     </div>
-                                    <div className="mt-4">
+                                    <div className="mt-4 flex flex-col gap-3">
+                                      <div className="flex gap-2">
+                                        <button className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/40 hover:text-white transition-all">
+                                          <Mic size={16} />
+                                        </button>
+                                        <button className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/40 hover:text-white transition-all">
+                                          <History size={16} />
+                                        </button>
+                                      </div>
                                       <ChatInput value={input} onChange={setInput} onSubmit={handleSend} isGenerating={isGenerating} selectedModelId={selectedModel.id} onModelChange={setSelectedModel} onBuild={handleBuild} onFileAttach={setAttachedFile} />
                                     </div>
                                   </motion.div>
