@@ -402,29 +402,29 @@ const NeuralLab = () => {
               let content = s.content
                 .replace(/import\s+.*?from\s+['"](.*?)['"];?/g, (match, p1) => {
                   const fileName = p1.split('/').pop().replace(/\.(tsx|jsx|ts|js)$/, '');
-                  return \`const \${fileName} = window.NeuralRegistry['\${p1}'] || window.NeuralRegistry['\${fileName}'];\`;
+                  return `const ${fileName} = window.NeuralRegistry['${p1}'] || window.NeuralRegistry['${fileName}'];`;
                 })
                 .replace(/export\s+default\s+/g, 'module.exports = ')
                 .replace(/export\s+const\s+(\w+)/g, 'module.exports.$1 = ')
                 .replace(/export\s+function\s+(\w+)/g, 'module.exports.$1 = function $1');
               
-              return \`
-                window.NeuralRegistry['\${s.path}'] = (function() {
+              return `
+                window.NeuralRegistry['${s.path}'] = (function() {
                   const module = { exports: {} };
                   const exports = module.exports;
-                  \${content}
+                  ${content}
                   return module.exports;
                 })();
-                if ('\${isMainApp}' === 'true') window.App = window.NeuralRegistry['\${s.path}'];
-              \`;
+                if ('${isMainApp}' === 'true') window.App = window.NeuralRegistry['${s.path}'];
+              `;
             }).join('\n');
 
           const cssToInject = projectScripts
             .filter(s => s.path?.endsWith('.css'))
-            .map(s => \`<style data-path="\${s.path}">\${s.content}</style>\`)
+            .map(s => `<style data-path="${s.path}">${s.content}</style>`)
             .join('\n');
 
-          const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || \`
+          const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || `
             <!DOCTYPE html>
             <html>
               <head>
@@ -437,21 +437,35 @@ const NeuralLab = () => {
               </head>
               <body><div id="root"></div></body>
             </html>
-          \`;
+          `;
           
-          const finalHtml = indexHtml.replace('<head>', \`
+          const finalHtml = indexHtml.replace('<head>', `
             <head>
             <script>
               window.NeuralRegistry = {};
               // Suppress Tailwind production warning
-              const originalWarn = console.warn;
+              window.originalWarn = window.originalWarn || console.warn;
               console.warn = (...args) => {
                 if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
-                originalWarn(...args);
+                window.originalWarn(...args);
               };
+              
+              // Puter Protection: Prevent re-registration of custom elements and handle 401s
+              if (!window.PuterInitialized) {
+                const script = document.createElement('script');
+                script.src = 'https://js.puter.com/v2/';
+                script.onload = () => { 
+                  window.PuterInitialized = true;
+                  // Silent check to prevent 401 logs
+                  if (window.puter && window.puter.ui) {
+                    try { window.puter.ui.whoami().catch(() => {}); } catch(e) {}
+                  }
+                };
+                document.head.appendChild(script);
+              }
             </script>
-            \${cssToInject}
-          \`).replace('</body>', \`
+            ${cssToInject}
+          `).replace('</body>', `
             <script type="text/babel">
               const sendToParent = (level, args) => {
                 window.parent.postMessage({
@@ -471,7 +485,7 @@ const NeuralLab = () => {
               try {
                 window.framerMotion = window.Motion;
                 window.lucide = window.lucide;
-                \${moduleRegistry}
+                ${moduleRegistry}
                 if (window.App) {
                   const root = ReactDOM.createRoot(document.getElementById('root'));
                   root.render(<window.App />);
@@ -481,7 +495,7 @@ const NeuralLab = () => {
               }
             </script>
             </body>
-          \`);
+          `);
           
           freshDoc.write(finalHtml);
           freshDoc.close();
