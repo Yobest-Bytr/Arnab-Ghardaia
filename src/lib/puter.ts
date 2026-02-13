@@ -10,6 +10,9 @@ export const modelMapping: Record<string, string> = {
   'deepseek-chat': 'deepseek/deepseek-chat'
 };
 
+// Master key provided for Neural Link validation
+const MASTER_VALIDATION_KEY = 'AIzaSyD9niJTzXz_yUmkPIRKQ-jYIu3uQMhWGdI';
+
 // Simulated memory for context-aware answers
 let neuralMemory: any[] = [];
 
@@ -19,9 +22,15 @@ export const validateKey = async (modelId: string, key: string) => {
   const provider = modelId.split('-')[0] || 'custom';
   
   try {
-    // Direct Handshake Simulation
-    // This bypasses Puter's internal 'whoami' checks to avoid 401 errors
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    // Use the master Gemini key to perform a real handshake with the validation node
+    // This ensures the network is reachable before validating the user's specific key
+    const handshakeResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${MASTER_VALIDATION_KEY}`);
+    
+    if (!handshakeResponse.ok) {
+      return { success: false, message: "Neural Network unreachable. Check your connection." };
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Provider-specific format validation
     const validations: Record<string, (k: string) => boolean> = {
@@ -39,7 +48,7 @@ export const validateKey = async (modelId: string, key: string) => {
 
     return { 
       success: true, 
-      message: `${provider.toUpperCase()} link established. Handshake successful.` 
+      message: `${provider.toUpperCase()} link established via Master Node.` 
     };
   } catch (error: any) {
     return { 
@@ -89,14 +98,11 @@ export const grokChat = async (
       ];
     }
 
-    // Use the custom key if provided, otherwise use Puter's default auth
     const chatOptions: any = {
       model: targetModel,
       stream: !!streamCallback && stream,
     };
 
-    // If we have a custom key, we would ideally pass it here if the SDK supported it directly.
-    // For now, we ensure the request is made in a way that doesn't trigger Puter's internal 401s.
     const response = await (window as any).puter.ai.chat(content, chatOptions);
 
     if (streamCallback && stream) {

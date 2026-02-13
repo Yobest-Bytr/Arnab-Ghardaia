@@ -237,12 +237,20 @@ const NeuralLab = () => {
       {
         title: 'index.html',
         project_id: newProject.id,
+        path: 'index.html',
         content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script src="https://cdn.tailwindcss.com"></script>\n  </head>\n  <body class="bg-slate-950 text-white">\n    <div id="root"></div>\n  </body>\n</html>`
       },
       {
         title: 'App.tsx',
         project_id: newProject.id,
+        path: 'src/App.tsx',
         content: `import React from 'react';\n\nexport default function App() {\n  return (\n    <div className="p-20 text-center">\n      <h1 className="text-6xl font-black mb-4">${project.title}</h1>\n      <p className="text-xl opacity-50">${project.description}</p>\n    </div>\n  );\n}`
+      },
+      {
+        title: 'main.tsx',
+        project_id: newProject.id,
+        path: 'src/main.tsx',
+        content: `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\n\nReactDOM.createRoot(document.getElementById('root')).render(<App />);`
       }
     ];
 
@@ -258,9 +266,10 @@ const NeuralLab = () => {
 
   const handleQuickCreate = async () => {
     if (!user || !selectedProject) return;
-    const name = prompt("Enter script name:");
+    const name = prompt("Enter script name (e.g., src/components/Button.tsx):");
     if (!name) return;
-    const data = await storage.insert('scripts', user.id, { title: name, project_id: selectedProject.id, content: '' });
+    const title = name.split('/').pop() || name;
+    const data = await storage.insert('scripts', user.id, { title, path: name, project_id: selectedProject.id, content: '' });
     setProjectScripts([data, ...projectScripts]);
     setSelectedScript(data);
   };
@@ -276,7 +285,7 @@ const NeuralLab = () => {
   const handleApplyCode = async (code: string, path: string, mode: 'replace' | 'append') => {
     if (!user || !selectedProject) return;
     const fileName = path.split('/').pop() || path;
-    const existingFile = projectScripts.find(p => p.title === fileName);
+    const existingFile = projectScripts.find(p => p.path === path || p.title === fileName);
 
     if (existingFile) {
       const newContent = mode === 'replace' ? code : existingFile.content + "\n\n" + code;
@@ -284,7 +293,7 @@ const NeuralLab = () => {
       if (selectedScript?.id === existingFile.id) setEditorContent(newContent);
       setProjectScripts(prev => prev.map(p => p.id === existingFile.id ? { ...p, content: newContent } : p));
     } else {
-      const data = await storage.insert('scripts', user.id, { title: fileName, project_id: selectedProject.id, content: code });
+      const data = await storage.insert('scripts', user.id, { title: fileName, path, project_id: selectedProject.id, content: code });
       setProjectScripts([data, ...projectScripts]);
       setSelectedScript(data);
     }
@@ -335,7 +344,6 @@ const NeuralLab = () => {
       const doc = previewRef.current.contentDocument;
       if (doc) {
         doc.open();
-        const indexHtml = projectScripts.find(s => s.title === 'index.html')?.content || '<h1>No index.html</h1>';
         const appTsx = projectScripts.find(s => s.title === 'App.tsx')?.content || '';
         
         const finalHtml = `
