@@ -116,7 +116,7 @@ const NeuralLab = () => {
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
       updateTimeoutRef.current = setTimeout(() => {
         updatePreview();
-      }, 800); // 800ms debounce to prevent flickering
+      }, 800);
     }
     return () => {
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
@@ -185,7 +185,6 @@ const NeuralLab = () => {
     addLog('info', `Saving ${selectedScript.path || selectedScript.title} locally...`);
     await storage.update('scripts', user.id, selectedScript.id, { content: editorContent });
     showSuccess("Script saved locally.");
-    // updatePreview is handled by useEffect
   };
 
   const handleDownload = async () => {
@@ -220,7 +219,6 @@ const NeuralLab = () => {
     addLog('info', `Installing package: ${pkg}...`);
     setInstalledPackages(prev => [...prev, pkg]);
     showSuccess(`Package ${pkg} installed successfully.`);
-    // updatePreview is handled by useEffect
   };
 
   const handleRunChecks = () => {
@@ -237,10 +235,6 @@ const NeuralLab = () => {
         }
         if (script.title.endsWith('.tsx') && !script.content.includes('import React')) {
           newProblems.push({ type: 'error', file: script.path || script.title, message: 'Missing React import in TSX file.' });
-        }
-        // Check for Tailwind CDN in scripts (should only be in index.html)
-        if (script.content.includes('cdn.tailwindcss.com') && script.path !== 'index.html') {
-          newProblems.push({ type: 'warn', file: script.path || script.title, message: 'Tailwind CDN script found inside a JS/TS file. Move this to index.html.' });
         }
       });
 
@@ -332,7 +326,6 @@ const NeuralLab = () => {
       setProjectScripts(prev => [data, ...prev]);
       setSelectedScript(data);
     }
-    // updatePreview is handled by useEffect
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -353,27 +346,22 @@ const NeuralLab = () => {
         modelId: selectedModel.id, 
         userId: user?.id, 
         stream: true,
-        systemPrompt: `You are the Yobest AI Neural Assistant. You are helping the user build a project called "${selectedProject?.title}". 
+        systemPrompt: `You are the Yobest AI Neural Architect. You are building "${selectedProject?.title}".
         
-        CRITICAL INSTRUCTIONS:
-        1. Always provide code in the following format:
-           ### Thinking
-           [Your cognitive process here]
-           
-           ### File: path/to/file.tsx
-           \`\`\`typescript
-           [Code here]
-           \`\`\`
-        2. You MUST generate complete, production-ready scripts.
-        3. Organize files into a professional directory structure:
-           - Pages go in 'src/pages/'
-           - Components go in 'src/components/'
-           - Hooks go in 'src/hooks/'
-           - Contexts go in 'src/contexts/'
-           - Utilities go in 'src/utils/' or 'src/lib/'
-           - Styles go in 'src/styles/' or 'src/globals.css'
-        4. If the user asks for a feature, generate ALL necessary files (pages, components, hooks, etc.) to make it fully functional.
-        5. The current active file is "${selectedScript?.path || selectedScript?.title}".`
+        CRITICAL COGNITIVE RULES:
+        1. NEURAL PRE-SCAN: Before suggesting any code, analyze the entire project structure.
+        2. VIRTUAL LINKING: Ensure all files you create are correctly imported by other files.
+        3. COMPLETE SOLUTIONS: Never provide partial code. If you add a component, update the parent file to use it.
+        4. ERROR PREVENTION: Check for common React/Tailwind pitfalls before outputting.
+        
+        FORMAT:
+        ### Thinking
+        [Detailed architectural plan]
+        
+        ### File: path/to/file.tsx
+        \`\`\`typescript
+        [Production-ready code]
+        \`\`\``
       }, (chunk) => {
         responseText += chunk;
         setMessages(prev => {
@@ -385,7 +373,7 @@ const NeuralLab = () => {
             content: responseText, 
             model: selectedModel.name, 
             timestamp: new Date().toISOString(),
-            thought: "Analyzing project context and generating neural response..."
+            thought: "Performing neural pre-scan of project architecture..."
           }];
         });
       });
@@ -398,7 +386,6 @@ const NeuralLab = () => {
     if (previewRef.current) {
       const doc = previewRef.current.contentDocument;
       if (doc) {
-        // Reset iframe to clear memory and context
         previewRef.current.src = 'about:blank';
         
         setTimeout(() => {
@@ -407,23 +394,37 @@ const NeuralLab = () => {
           
           freshDoc.open();
           
-          const scriptsToInject = projectScripts
+          // Virtual Module Registry
+          const moduleRegistry = projectScripts
             .filter(s => s.path?.endsWith('.tsx') || s.path?.endsWith('.jsx') || s.path?.endsWith('.js'))
             .map(s => {
               const isMainApp = s.path === 'src/App.tsx' || s.path === 'App.tsx';
               let content = s.content
-                .replace(/import\s+(['"].*?['"]|.*?\s+from\s+['"].*?['"]);?/g, '')
-                .replace(/export\s+default\s+/g, isMainApp ? 'window.App = ' : 'window._lastExport = ')
-                .replace(/export\s+/g, '');
-              return `// File: ${s.path}\n${content}`;
+                .replace(/import\s+.*?from\s+['"](.*?)['"];?/g, (match, p1) => {
+                  const fileName = p1.split('/').pop().replace(/\.(tsx|jsx|ts|js)$/, '');
+                  return \`const \${fileName} = window.NeuralRegistry['\${p1}'] || window.NeuralRegistry['\${fileName}'];\`;
+                })
+                .replace(/export\s+default\s+/g, 'module.exports = ')
+                .replace(/export\s+const\s+(\w+)/g, 'module.exports.$1 = ')
+                .replace(/export\s+function\s+(\w+)/g, 'module.exports.$1 = function $1');
+              
+              return \`
+                window.NeuralRegistry['\${s.path}'] = (function() {
+                  const module = { exports: {} };
+                  const exports = module.exports;
+                  \${content}
+                  return module.exports;
+                })();
+                if ('\${isMainApp}' === 'true') window.App = window.NeuralRegistry['\${s.path}'];
+              \`;
             }).join('\n');
 
           const cssToInject = projectScripts
             .filter(s => s.path?.endsWith('.css'))
-            .map(s => `<style data-path="${s.path}">${s.content}</style>`)
+            .map(s => \`<style data-path="\${s.path}">\${s.content}</style>\`)
             .join('\n');
 
-          const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || `
+          const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || \`
             <!DOCTYPE html>
             <html>
               <head>
@@ -436,35 +437,21 @@ const NeuralLab = () => {
               </head>
               <body><div id="root"></div></body>
             </html>
-          `;
+          \`;
           
-          const cleanedHtml = indexHtml.replace(/<script.*?src=["'].*?main\.tsx["'].*?><\/script>/g, '');
-
-          const finalHtml = cleanedHtml.replace('<head>', `
+          const finalHtml = indexHtml.replace('<head>', \`
             <head>
             <script>
-              // Neural Suppression & Puter Protection
-              if (!window.NeuralInitialized) {
-                const originalWarn = console.warn;
-                console.warn = (...args) => {
-                  if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
-                  originalWarn(...args);
-                };
-                
-                // Puter Loader with retry
-                const loadPuter = () => {
-                  if (window.puter) return;
-                  const s = document.createElement('script');
-                  s.src = 'https://js.puter.com/v2/';
-                  s.onerror = () => setTimeout(loadPuter, 2000);
-                  document.head.appendChild(s);
-                };
-                loadPuter();
-                window.NeuralInitialized = true;
-              }
+              window.NeuralRegistry = {};
+              // Suppress Tailwind production warning
+              const originalWarn = console.warn;
+              console.warn = (...args) => {
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+                originalWarn(...args);
+              };
             </script>
-            ${cssToInject}
-          `).replace('</body>', `
+            \${cssToInject}
+          \`).replace('</body>', \`
             <script type="text/babel">
               const sendToParent = (level, args) => {
                 window.parent.postMessage({
@@ -481,15 +468,10 @@ const NeuralLab = () => {
               };
               console.error = (...args) => sendToParent('error', args);
 
-              window.onerror = (msg, url, line, col) => {
-                sendToParent('error', [\`Runtime Error: \${msg} at line \${line}\`]);
-                return false;
-              };
-
               try {
                 window.framerMotion = window.Motion;
                 window.lucide = window.lucide;
-                ${scriptsToInject}
+                \${moduleRegistry}
                 if (window.App) {
                   const root = ReactDOM.createRoot(document.getElementById('root'));
                   root.render(<window.App />);
@@ -499,7 +481,7 @@ const NeuralLab = () => {
               }
             </script>
             </body>
-          `);
+          \`);
           
           freshDoc.write(finalHtml);
           freshDoc.close();
@@ -727,7 +709,7 @@ const NeuralLab = () => {
                                               { label: 'Debug', icon: AlertTriangle },
                                               { label: 'Document', icon: FileCode }
                                             ].map(preset => (
-                                              <button key={preset.label} onClick={() => setInput(`Please ${preset.label.toLowerCase()} the current script.`)} className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-all text-left flex items-center gap-2">
+                                              <button key={preset.label} onClick={() => setInput(`Please \${preset.label.toLowerCase()} the current script.`)} className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-all text-left flex items-center gap-2">
                                                 <preset.icon size={12} className="text-indigo-400" /> {preset.label}
                                               </button>
                                             ))}
