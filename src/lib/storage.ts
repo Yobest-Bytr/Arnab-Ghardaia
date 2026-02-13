@@ -19,7 +19,7 @@ export const storage = {
     const localData = localStorage.getItem(`${table}_${userId}`);
     if (localData) return JSON.parse(localData);
 
-    // Hard bypass if offline or table known to be missing
+    // Hard bypass: If offline or table is known to be missing, return empty immediately
     if (isMasterOffline || failedTables.has(table)) return [];
 
     try {
@@ -60,6 +60,7 @@ export const storage = {
     const updatedData = [newItem, ...localData];
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
+    // Only attempt network if not in hard-bypass mode
     if (!isMasterOffline && !failedTables.has(table)) {
       supabase.from(table).insert([newItem]).then(({ status }) => {
         if (status === 404 || status === 401) {
