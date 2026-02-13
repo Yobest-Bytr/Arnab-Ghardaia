@@ -10,7 +10,7 @@ import {
   Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
   ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box, Wand2, LayoutGrid,
   ChevronLeft, RotateCcw as RestartIcon, Rocket, Share2, CheckCircle, Package, Lightbulb, Wand, Search,
-  MessageSquare, Mic, History, BarChart, Smartphone, Tablet, Monitor, Download
+  MessageSquare, Mic, History, BarChart, Smartphone, Tablet, Monitor, Download, Wifi, WifiOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat, validateKey } from '@/lib/puter';
@@ -101,8 +101,7 @@ const NeuralLab = () => {
   }, [user]);
 
   const checkCloudTables = async () => {
-    // Check if we already know Supabase is offline
-    if (localStorage.getItem('supabase_master_offline') === 'true') {
+    if (storage.isOffline()) {
       setCloudStatus('missing');
       return;
     }
@@ -430,32 +429,39 @@ const NeuralLab = () => {
           
           freshDoc.open();
           
-          // Virtual Module Registry 2.0 - CommonJS Style for better Hook support
+          // Virtual Module System 4.0 - Recursive Dependency Resolution
           const moduleRegistry = projectScripts
             .filter(s => s.path?.endsWith('.tsx') || s.path?.endsWith('.jsx') || s.path?.endsWith('.js'))
             .map(s => {
               const isMainApp = s.path === 'src/App.tsx' || s.path === 'App.tsx';
+              
+              // Transpile imports to neuralRequire calls
               let content = s.content
-                .replace(/import\s+.*?from\s+['"](.*?)['"];?/g, (match, p1) => {
-                  const fileName = p1.split('/').pop().replace(/\.(tsx|jsx|ts|js)$/, '');
-                  return `const ${fileName} = window.NeuralRegistry['${p1}'] || window.NeuralRegistry['${fileName}'];`;
+                .replace(/import\s+(?:(\w+)|\{(.*?)\})\s+from\s+['"](.*?)['"];?/g, (match, defaultImport, namedImports, path) => {
+                  const varName = defaultImport || `__imports_${Math.random().toString(36).substr(2, 5)}`;
+                  let result = `const ${varName} = neuralRequire('${path}');`;
+                  if (namedImports) {
+                    const imports = namedImports.split(',').map(i => i.trim());
+                    imports.forEach(imp => {
+                      const [orig, alias] = imp.split(/\s+as\s+/);
+                      result += `\nconst ${alias || orig} = ${varName}.${orig};`;
+                    });
+                  }
+                  return result;
                 })
-                .replace(/export\s+default\s+/g, 'module.exports = ')
+                .replace(/export\s+default\s+/g, 'module.exports.default = ')
                 .replace(/export\s+const\s+(\w+)/g, 'module.exports.$1 = ')
                 .replace(/export\s+function\s+(\w+)/g, 'module.exports.$1 = function $1');
               
               return `
-                window.NeuralRegistry['${s.path}'] = (function() {
-                  const module = { exports: {} };
-                  const exports = module.exports;
+                window.NeuralModules['${s.path}'] = function(require, module, exports) {
                   try {
                     ${content}
                   } catch (e) {
-                    console.error("Module Load Error [${s.path}]: " + e.message);
+                    console.error("Module Runtime Error [${s.path}]: " + e.message);
                   }
-                  return module.exports;
-                })();
-                if ('${isMainApp}' === 'true') window.App = window.NeuralRegistry['${s.path}'];
+                };
+                if ('${isMainApp}' === 'true') window.AppPath = '${s.path}';
               `;
             }).join('\n');
 
@@ -483,9 +489,36 @@ const NeuralLab = () => {
           const finalHtml = indexHtml.replace('<head>', `
             <head>
             <script>
-              window.NeuralRegistry = {};
+              window.NeuralModules = {};
+              window.NeuralCache = {};
               
-              // Puter Protection: Prevent re-registration of custom elements
+              window.neuralRequire = function(path) {
+                if (window.NeuralCache[path]) return window.NeuralCache[path].exports;
+                
+                // Handle external libraries
+                if (path === 'react') return window.React;
+                if (path === 'react-dom') return window.ReactDOM;
+                if (path === 'framer-motion') return window.Motion;
+                if (path === 'lucide-react') return window.lucide;
+                if (path === 'react-router-dom') return window.ReactRouterDOM;
+
+                const moduleFn = window.NeuralModules[path] || 
+                               window.NeuralModules['src/' + path] || 
+                               window.NeuralModules[path + '.tsx'] ||
+                               window.NeuralModules[path + '.jsx'];
+
+                if (!moduleFn) {
+                  console.warn("Neural Link Warning: Could not resolve module '" + path + "'");
+                  return {};
+                }
+
+                const module = { exports: {} };
+                window.NeuralCache[path] = module;
+                moduleFn(window.neuralRequire, module, module.exports);
+                return module.exports;
+              };
+
+              // Puter Protection
               if (!window.customElements.originalDefine) {
                 window.customElements.originalDefine = window.customElements.define;
                 window.customElements.define = function(name, constructor, options) {
@@ -493,21 +526,6 @@ const NeuralLab = () => {
                     window.customElements.originalDefine(name, constructor, options);
                   }
                 };
-              }
-
-              // Suppress React DevTools and Tailwind warnings
-              const originalConsoleWarn = console.warn;
-              console.warn = (...args) => {
-                if (args[0] && typeof args[0] === 'string' && (
-                  args[0].includes('react-devtools') || 
-                  args[0].includes('cdn.tailwindcss.com')
-                )) return;
-                originalConsoleWarn(...args);
-              };
-              
-              // Puter Protection: Handle 401s silently
-              if (typeof puter !== 'undefined' && puter.ui) {
-                try { puter.ui.whoami().catch(() => {}); } catch(e) {}
               }
             </script>
             ${cssToInject}
@@ -529,18 +547,17 @@ const NeuralLab = () => {
               console.error = (...args) => sendToParent('error', args);
 
               try {
-                window.framerMotion = window.Motion;
-                window.lucide = window.lucide;
-                window.ReactRouterDOM = window.ReactRouterDOM;
                 ${moduleRegistry}
-                if (window.App) {
+                if (window.AppPath) {
+                  const AppExport = window.neuralRequire(window.AppPath);
+                  const AppComponent = AppExport.default || AppExport;
                   const root = ReactDOM.createRoot(document.getElementById('root'));
-                  root.render(<window.App />);
+                  root.render(<AppComponent />);
                 } else {
-                  console.error("Neural Link Error: Entry point 'src/App.tsx' not found or failed to load.");
+                  console.error("Neural Link Error: Entry point 'src/App.tsx' not found.");
                 }
               } catch (err) {
-                console.error("Preview Error: " + err.message + "\\nStack: " + err.stack);
+                console.error("Preview Runtime Error: " + err.message);
               }
             </script>
             </body>
@@ -557,26 +574,44 @@ const NeuralLab = () => {
     <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
       <Navbar />
       
-      <div className="mt-24 px-6 h-16 border-b border-white/5 flex items-center justify-between bg-[#0a0a0a] relative z-30">
-        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
-          <button onClick={() => setMainMode('dashboard')} className={cn("flex items-center gap-2 px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all", mainMode === 'dashboard' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white")}>
-            <LayoutGrid size={14} /> Dashboard
-          </button>
-          <button onClick={() => selectedProject && setMainMode('workspace')} disabled={!selectedProject} className={cn("flex items-center gap-2 px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all", mainMode === 'workspace' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white disabled:opacity-30")}>
-            <CodeIcon size={14} /> Workspace
-          </button>
+      {/* Neural Status Bar */}
+      <div className="mt-24 px-6 h-16 border-b border-white/5 flex items-center justify-between bg-[#0a0a0a]/80 backdrop-blur-xl relative z-30">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
+            <button onClick={() => setMainMode('dashboard')} className={cn("flex items-center gap-2 px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all", mainMode === 'dashboard' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white")}>
+              <LayoutGrid size={14} /> Dashboard
+            </button>
+            <button onClick={() => selectedProject && setMainMode('workspace')} disabled={!selectedProject} className={cn("flex items-center gap-2 px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all", mainMode === 'workspace' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white disabled:opacity-30")}>
+              <CodeIcon size={14} /> Workspace
+            </button>
+          </div>
+          
+          {mainMode === 'workspace' && (
+            <div className="hidden lg:flex items-center gap-6 border-l border-white/10 pl-6">
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2 h-2 rounded-full animate-pulse", storage.isOffline() ? "bg-rose-500" : "bg-emerald-500")} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                  {storage.isOffline() ? "Local Mode" : "Neural Link Active"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Activity size={14} className="text-indigo-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Load: 12%</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {mainMode === 'workspace' && (
           <div className="flex items-center gap-3">
             <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-              <Download size={14} /> Download Project
+              <Download size={14} /> Export
             </button>
             <button onClick={handleSyncCloud} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-              <Cloud size={14} /> Sync Cloud
+              <Cloud size={14} /> Sync
             </button>
             <button onClick={handlePublish} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20">
-              <Rocket size={14} /> Publish Site
+              <Rocket size={14} /> Deploy
             </button>
           </div>
         )}

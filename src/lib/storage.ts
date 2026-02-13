@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// Track failed tables and master offline status
 const FAILED_TABLES_KEY = 'failed_supabase_tables';
 const MASTER_OFFLINE_KEY = 'supabase_master_offline';
 
@@ -12,10 +11,15 @@ function updateFailedTables() {
 }
 
 export const storage = {
+  isOffline() {
+    return isMasterOffline;
+  },
+
   async get(table: string, userId: string) {
     const localData = localStorage.getItem(`${table}_${userId}`);
     if (localData) return JSON.parse(localData);
 
+    // Hard bypass if offline or table known to be missing
     if (isMasterOffline || failedTables.has(table)) return [];
 
     try {
