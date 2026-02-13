@@ -349,14 +349,15 @@ const NeuralLab = () => {
         systemPrompt: `You are the Yobest AI Neural Architect. You are building "${selectedProject?.title}".
         
         CRITICAL COGNITIVE RULES:
-        1. TECH STACK: You are strictly using VITE + REACT + TAILWIND. Do NOT use Next.js.
-        2. FOLDER STRUCTURE: 
+        1. TECH STACK: You are strictly using VITE + REACT + TAILWIND.
+        2. NO CONFIG FILES: Do NOT generate package.json, vite.config.ts, tsconfig.json, or .gitkeep. These are handled by the platform.
+        3. FOLDER STRUCTURE: 
            - Pages MUST go in 'src/pages/'
            - Components MUST go in 'src/components/'
            - Entry point is 'src/App.tsx'
-        3. NEURAL PRE-SCAN: Before suggesting any code, analyze the entire project structure.
-        4. VIRTUAL LINKING: Ensure all files you create are correctly imported by other files.
-        5. COMPLETE SOLUTIONS: Never provide partial code. If you add a component, update the parent file to use it.
+        4. NEURAL PRE-SCAN: Before suggesting any code, analyze the entire project structure.
+        5. VIRTUAL LINKING: Ensure all files you create are correctly imported by other files.
+        6. COMPLETE SOLUTIONS: Never provide partial code. If you add a component, update the parent file to use it.
         
         FORMAT:
         ### Thinking
@@ -435,6 +436,7 @@ const NeuralLab = () => {
                 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
                 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
                 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+                <script src="https://unpkg.com/react-router-dom@6.21.3/dist/umd/react-router-dom.production.min.js"></script>
                 <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
                 <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
                 <script src="https://cdn.tailwindcss.com/3.4.1"></script>
@@ -447,6 +449,17 @@ const NeuralLab = () => {
             <head>
             <script>
               window.NeuralRegistry = {};
+              
+              // Puter Protection: Prevent re-registration of custom elements
+              if (!window.customElements.originalDefine) {
+                window.customElements.originalDefine = window.customElements.define;
+                window.customElements.define = function(name, constructor, options) {
+                  if (!window.customElements.get(name)) {
+                    window.customElements.originalDefine(name, constructor, options);
+                  }
+                };
+              }
+
               // Suppress Tailwind production warning
               window.originalWarn = window.originalWarn || console.warn;
               console.warn = (...args) => {
@@ -454,13 +467,12 @@ const NeuralLab = () => {
                 window.originalWarn(...args);
               };
               
-              // Puter Protection: Prevent re-registration of custom elements and handle 401s
+              // Puter Protection: Handle 401s silently
               if (!window.PuterInitialized) {
                 const script = document.createElement('script');
                 script.src = 'https://js.puter.com/v2/';
                 script.onload = () => { 
                   window.PuterInitialized = true;
-                  // Silent check to prevent 401 logs
                   if (window.puter && window.puter.ui) {
                     try { window.puter.ui.whoami().catch(() => {}); } catch(e) {}
                   }
@@ -489,6 +501,7 @@ const NeuralLab = () => {
               try {
                 window.framerMotion = window.Motion;
                 window.lucide = window.lucide;
+                window.ReactRouterDOM = window.ReactRouterDOM;
                 ${moduleRegistry}
                 if (window.App) {
                   const root = ReactDOM.createRoot(document.getElementById('root'));

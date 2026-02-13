@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// Track failed tables to avoid repeated 404s
+// Track failed tables to avoid repeated 404s and console spam
 const failedTables = new Set<string>();
 
 export const storage = {
@@ -17,7 +17,7 @@ export const storage = {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
-      if (status === 404) {
+      if (status === 404 || status === 401) {
         failedTables.add(table);
         return [];
       }
@@ -44,10 +44,11 @@ export const storage = {
     const updatedData = [newItem, ...localData];
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
+    // Only attempt sync if table hasn't failed before
     if (!failedTables.has(table)) {
       supabase.from(table).insert([newItem]).then(({ status }) => {
-        if (status === 404) failedTables.add(table);
-      });
+        if (status === 404 || status === 401) failedTables.add(table);
+      }).catch(() => failedTables.add(table));
     }
 
     return newItem;
@@ -62,8 +63,8 @@ export const storage = {
     
     if (!failedTables.has(table)) {
       supabase.from(table).update(updates).eq('id', id).then(({ status }) => {
-        if (status === 404) failedTables.add(table);
-      });
+        if (status === 404 || status === 401) failedTables.add(table);
+      }).catch(() => failedTables.add(table));
     }
 
     return updates;
@@ -76,8 +77,8 @@ export const storage = {
     
     if (!failedTables.has(table)) {
       supabase.from(table).delete().eq('id', id).then(({ status }) => {
-        if (status === 404) failedTables.add(table);
-      });
+        if (status === 404 || status === 401) failedTables.add(table);
+      }).catch(() => failedTables.add(table));
     }
   },
 
@@ -90,9 +91,9 @@ export const storage = {
         .from(table)
         .upsert(localData.map(item => ({ ...item, user_id: userId })));
       
-      if (status === 404) {
+      if (status === 404 || status === 401) {
         failedTables.add(table);
-        return { success: false, message: "Table does not exist in Supabase." };
+        return { success: false, message: "Cloud sync unavailable (Table missing)." };
       }
 
       if (error) throw error;
