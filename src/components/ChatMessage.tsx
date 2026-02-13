@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, 
   Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, 
   Activity, X, Info, CornerDownRight, Clock, FileEdit, FilePlus,
-  Check as CheckIcon, X as CloseIcon, Trash2
+  Check as CheckIcon, X as CloseIcon, Trash2, Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,26 +34,33 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const [fileStates, setFileStates] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({});
 
   // Parse the content for Thinking and File sections
-  const parseContent = (text: string) => {
+  const { thought, fileSections, files } = useMemo(() => {
     let thought = initialThought || "";
-    let mainContent = text;
+    let mainContent = content;
 
-    if (text.includes('### Thinking')) {
-      const parts = text.split(/### Thinking/i);
+    if (content.includes('### Thinking')) {
+      const parts = content.split(/### Thinking/i);
       if (parts.length > 1) {
         const thoughtPart = parts[1].split(/### File|# |## |### /)[0];
         thought = thoughtPart.trim();
-        mainContent = text.replace(`### Thinking${thoughtPart}`, "").trim();
+        mainContent = content.replace(`### Thinking${thoughtPart}`, "").trim();
       }
     }
 
-    // Split by file headers: ### File: path/to/file
-    const fileSections = mainContent.split(/### File:?\s*([^\n]+)/g);
-    
-    return { thought, fileSections };
-  };
+    const sections = mainContent.split(/### File:?\s*([^\n]+)/g);
+    const extractedFiles: { path: string; code: string }[] = [];
 
-  const { thought, fileSections } = parseContent(content);
+    for (let i = 1; i < sections.length; i += 2) {
+      const path = sections[i].trim();
+      const sectionContent = sections[i + 1] || "";
+      const codeMatch = sectionContent.match(/```(?:\w+)?\n([\s\S]*?)```/);
+      if (codeMatch) {
+        extractedFiles.push({ path, code: codeMatch[1] });
+      }
+    }
+    
+    return { thought, fileSections: sections, files: extractedFiles };
+  }, [content, initialThought]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -61,26 +68,27 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const extractCode = (text: string) => {
-    const completeMatch = text.match(/```(?:\w+)?\n([\s\S]*?)```/);
-    if (completeMatch) return completeMatch[1];
-    const unclosedMatch = text.match(/```(?:\w+)?\n([\s\S]*)$/);
-    if (unclosedMatch) return unclosedMatch[1];
-    return null;
-  };
-
   const handleAction = (path: string, code: string, action: 'approved' | 'rejected') => {
     if (action === 'approved' && onApplyCode) {
       onApplyCode(code, path, 'replace');
-      showSuccess(`Script integrated: ${path}`);
-    } else if (action === 'rejected') {
-      showError(`Proposal rejected: ${path}`);
     }
     setFileStates(prev => ({ ...prev, [path]: action }));
   };
 
+  const handleApproveAll = () => {
+    files.forEach(file => {
+      if (!fileStates[file.path] || fileStates[file.path] === 'pending') {
+        handleAction(file.path, file.code, 'approved');
+      }
+    });
+    showSuccess(`Integrated ${files.length} files into workspace.`);
+  };
+
+  const pendingFilesCount = files.filter(f => !fileStates[f.path] || fileStates[f.path] === 'pending').length;
+
   const renderFileSection = (path: string, sectionContent: string, index: number) => {
-    const code = extractCode(sectionContent);
+    const codeMatch = sectionContent.match(/```(?:\w+)?\n([\s\S]*?)```/);
+    const code = codeMatch ? codeMatch[1] : null;
     const fileName = path.split('/').pop() || path;
     const state = fileStates[path] || 'pending';
 
@@ -222,7 +230,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex items-center justify-between mt-2">
+      <div className="flex items-center justify-between mt-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-[10px] font-bold text-white/20">
             <Clock size={12} /> {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -234,7 +242,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           </button>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {files.length > 1 && pendingFilesCount > 0 && (
+            <button 
+              onClick={handleApproveAll}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 transition-all border border-indigo-400/30"
+            >
+              <Sparkles size={14} /> Approve All ({pendingFilesCount})
+            </button>
+          )}
           <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[11px] font-black uppercase tracking-widest text-white/40 border border-white/5 transition-all">
             <RotateCcw size={14} /> Retry
           </button>
