@@ -224,6 +224,10 @@ const NeuralLab = () => {
         if (script.title.endsWith('.tsx') && !script.content.includes('import React')) {
           newProblems.push({ type: 'error', file: script.path || script.title, message: 'Missing React import in TSX file.' });
         }
+        // Check for Tailwind CDN in scripts (should only be in index.html)
+        if (script.content.includes('cdn.tailwindcss.com') && script.path !== 'index.html') {
+          newProblems.push({ type: 'warn', file: script.path || script.title, message: 'Tailwind CDN script found inside a JS/TS file. Move this to index.html.' });
+        }
       });
 
       setProblems(newProblems);
@@ -242,11 +246,6 @@ const NeuralLab = () => {
     showSuccess("Project published to: " + selectedProject.title.toLowerCase().replace(/\s+/g, '-') + ".yobest.ai");
   };
 
-  const handleGithubSync = () => {
-    addLog('info', 'Connecting to GitHub repository...');
-    showSuccess("Scripts synced with GitHub.");
-  };
-
   const handleCreateProject = async (project: { title: string; description: string; template: string }) => {
     if (!user) return;
     const newProject = await storage.insert('projects', user.id, {
@@ -260,13 +259,13 @@ const NeuralLab = () => {
         title: 'index.html',
         project_id: newProject.id,
         path: 'index.html',
-        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script src="https://cdn.tailwindcss.com"></script>\n  </head>\n  <body class="bg-slate-950 text-white">\n    <div id="root"></div>\n  </body>\n</html>`
+        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
       },
       {
         title: 'App.tsx',
         project_id: newProject.id,
         path: 'src/App.tsx',
-        content: `import React from 'react';\n\nexport default function App() {\n  return (\n    <div className="p-20 text-center">\n      <h1 className="text-6xl font-black mb-4">${project.title}</h1>\n      <p className="text-xl opacity-50">${project.description}</p>\n    </div>\n  );\n}`
+        content: `import React from 'react';\n\nexport default function App() {\n  return (\n    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">\n      <div className="w-24 h-24 bg-indigo-500/20 rounded-3xl flex items-center justify-center text-indigo-400 mb-8 border border-indigo-500/20 animate-pulse">\n        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>\n      </div>\n      <h1 className="text-6xl font-black mb-4 tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40">${project.title}</h1>\n      <p className="text-xl text-white/40 max-w-md font-medium">${project.description}</p>\n      <button className="mt-12 px-8 py-3 bg-[#99f6ff] text-[#020408] font-bold rounded-full hover:scale-105 transition-transform shadow-[0_0_30px_rgba(153,246,255,0.3)]">\n        Initialize Neural Link\n      </button>\n    </div>\n  );\n}`
       },
       {
         title: 'main.tsx',
@@ -409,7 +408,7 @@ const NeuralLab = () => {
               <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
               <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
               <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
-              <script src="https://cdn.tailwindcss.com"></script>
+              <script src="https://cdn.tailwindcss.com/3.4.1"></script>
               <style>
                 body { margin: 0; background: #020408; color: white; font-family: sans-serif; overflow-x: hidden; }
                 #root { min-height: 100vh; }
@@ -442,7 +441,12 @@ const NeuralLab = () => {
             };
 
             console.log = (...args) => { sendToParent('info', args); originalLog(...args); };
-            console.warn = (...args) => { sendToParent('warn', args); originalWarn(...args); };
+            console.warn = (...args) => { 
+              // Suppress Tailwind production warning in preview
+              if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+              sendToParent('warn', args); 
+              originalWarn(...args); 
+            };
             console.error = (...args) => { sendToParent('error', args); originalError(...args); };
 
             window.onerror = (msg, url, line, col, error) => {
@@ -466,12 +470,12 @@ const NeuralLab = () => {
 
               ${scriptsToInject}
               
-              // Entry Point
+              // Entry Point Detection
               if (window.App) {
                 const root = ReactDOM.createRoot(document.getElementById('root'));
                 root.render(<window.App />);
               } else {
-                console.error("Neural Bundler Error: No 'App' component found. Ensure your main file exports a default component.");
+                console.error("Neural Bundler Error: No 'App' component found. Ensure your main file (src/App.tsx) exports a default component.");
               }
             } catch (err) {
               console.error("Neural Bundler Error: " + err.message);
