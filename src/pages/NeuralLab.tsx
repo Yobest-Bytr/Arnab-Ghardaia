@@ -39,15 +39,6 @@ const MODELS = [
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Layers, desc: 'Google Flash Pro' },
 ];
 
-const ROUTES = [
-  { path: '/', label: 'Home' },
-  { path: '/about', label: 'About' },
-  { path: '/login', label: 'Login' },
-  { path: '/signup', label: 'Signup' },
-  { path: '/dashboard', label: 'Dashboard' },
-  { path: '/profile', label: 'Profile' },
-];
-
 const NeuralLab = () => {
   const { user } = useAuth();
   const [input, setInput] = useState('');
@@ -103,9 +94,18 @@ const NeuralLab = () => {
   useEffect(() => {
     if (selectedScript) {
       setEditorContent(selectedScript.content);
-      addLog('info', `Switched to script: ${selectedScript.title}`);
+      addLog('info', `Switched to script: ${selectedScript.path || selectedScript.title}`);
     }
   }, [selectedScript]);
+
+  // Derive routes from project scripts
+  const dynamicRoutes = projectScripts
+    .filter(s => s.path?.startsWith('src/pages/'))
+    .map(s => {
+      const name = s.title.replace(/\.(tsx|jsx|ts|js)$/, '');
+      const path = name === 'Index' ? '/' : `/${name.toLowerCase()}`;
+      return { path, label: name };
+    });
 
   const checkModelKey = (modelId: string) => {
     if (!user || modelId === 'yobest-ai' || modelId === 'auto') {
@@ -139,7 +139,10 @@ const NeuralLab = () => {
     const data = await storage.get('scripts', user.id);
     const filtered = data.filter((s: any) => s.project_id === projectId);
     setProjectScripts(filtered);
-    if (filtered.length > 0) setSelectedScript(filtered[0]);
+    if (filtered.length > 0) {
+      const entry = filtered.find((s: any) => s.path === 'src/App.tsx') || filtered[0];
+      setSelectedScript(entry);
+    }
   };
 
   const handleBuild = () => {
@@ -154,7 +157,7 @@ const NeuralLab = () => {
 
   const handleSave = async () => {
     if (!selectedScript || !user) return;
-    addLog('info', `Saving ${selectedScript.title} locally...`);
+    addLog('info', `Saving ${selectedScript.path || selectedScript.title} locally...`);
     await storage.update('scripts', user.id, selectedScript.id, { content: editorContent });
     showSuccess("Script saved locally.");
     updatePreview();
@@ -194,13 +197,10 @@ const NeuralLab = () => {
       
       projectScripts.forEach(script => {
         if (script.content.length < 10) {
-          newProblems.push({ type: 'warn', file: script.title, message: 'File is unusually small. Possible missing logic.' });
+          newProblems.push({ type: 'warn', file: script.path || script.title, message: 'File is unusually small. Possible missing logic.' });
         }
         if (script.title.endsWith('.tsx') && !script.content.includes('import React')) {
-          newProblems.push({ type: 'error', file: script.title, message: 'Missing React import in TSX file.' });
-        }
-        if (script.content.includes('TODO')) {
-          newProblems.push({ type: 'info', file: script.title, message: 'Unresolved TODO found.' });
+          newProblems.push({ type: 'error', file: script.path || script.title, message: 'Missing React import in TSX file.' });
         }
       });
 
@@ -266,11 +266,11 @@ const NeuralLab = () => {
 
   const handleQuickCreate = async () => {
     if (!user || !selectedProject) return;
-    const name = prompt("Enter script name (e.g., src/components/Button.tsx):");
+    const name = prompt("Enter script path (e.g., src/components/Button.tsx):");
     if (!name) return;
     const title = name.split('/').pop() || name;
     const data = await storage.insert('scripts', user.id, { title, path: name, project_id: selectedProject.id, content: '' });
-    setProjectScripts([data, ...projectScripts]);
+    setProjectScripts(prev => [data, ...prev]);
     setSelectedScript(data);
   };
 
@@ -285,7 +285,7 @@ const NeuralLab = () => {
   const handleApplyCode = async (code: string, path: string, mode: 'replace' | 'append') => {
     if (!user || !selectedProject) return;
     const fileName = path.split('/').pop() || path;
-    const existingFile = projectScripts.find(p => p.path === path || p.title === fileName);
+    const existingFile = projectScripts.find(p => p.path === path);
 
     if (existingFile) {
       const newContent = mode === 'replace' ? code : existingFile.content + "\n\n" + code;
@@ -294,7 +294,7 @@ const NeuralLab = () => {
       setProjectScripts(prev => prev.map(p => p.id === existingFile.id ? { ...p, content: newContent } : p));
     } else {
       const data = await storage.insert('scripts', user.id, { title: fileName, path, project_id: selectedProject.id, content: code });
-      setProjectScripts([data, ...projectScripts]);
+      setProjectScripts(prev => [data, ...prev]);
       setSelectedScript(data);
     }
     updatePreview();
@@ -331,7 +331,7 @@ const NeuralLab = () => {
            \`\`\`
         2. You MUST generate complete, production-ready scripts.
         3. If the user asks for a site or component, create the necessary files using the ### File: format.
-        4. The current active file is "${selectedScript?.title}".`
+        4. The current active file is "${selectedScript?.path || selectedScript?.title}".`
       }, (chunk) => {
         responseText += chunk;
         setMessages(prev => {
@@ -357,9 +357,16 @@ const NeuralLab = () => {
       const doc = previewRef.current.contentDocument;
       if (doc) {
         doc.open();
-        const appTsx = projectScripts.find(s => s.title === 'App.tsx')?.content || '';
         
-        const finalHtml = `
+        // Collect all scripts to inject into the preview
+        const scriptsToInject = projectScripts
+          .filter(s => s.path?.endsWith('.tsx') || s.path?.endsWith('.jsx') || s.path?.endsWith('.js'))
+          .map(s => `
+            // File: ${s.path}
+            ${s.content.replace(/import.*from.*;/g, '')}
+          `).join('\n');
+
+        const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || `
           <!DOCTYPE html>
           <html>
             <head>
@@ -367,24 +374,28 @@ const NeuralLab = () => {
               <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
               <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
               <script src="https://cdn.tailwindcss.com"></script>
-              ${installedPackages.map(pkg => `<script src="https://esm.sh/${pkg}"></script>`).join('\n')}
               <style>body { margin: 0; background: #020408; color: white; font-family: sans-serif; }</style>
             </head>
             <body>
               <div id="root"></div>
-              <script type="text/babel">
-                ${appTsx.replace(/import.*from.*;/g, '')}
-                
-                const root = ReactDOM.createRoot(document.getElementById('root'));
-                root.render(<App />);
-              </script>
             </body>
           </html>
         `;
         
+        const finalHtml = indexHtml.replace('</body>', `
+          <script type="text/babel">
+            ${scriptsToInject}
+            
+            // Entry Point
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+          </script>
+          </body>
+        `);
+        
         doc.write(finalHtml);
         doc.close();
-        addLog('info', 'Live preview updated with Babel transpilation.');
+        addLog('info', 'Live preview updated with dynamic project scripts.');
       }
     }
   };
@@ -471,12 +482,14 @@ const NeuralLab = () => {
                                     <ChevronDown size={12} />
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent className="bg-[#020408] border-white/10 text-white w-[400px] p-2 z-[110]">
-                                    {ROUTES.map(route => (
+                                    {dynamicRoutes.length > 0 ? dynamicRoutes.map(route => (
                                       <DropdownMenuItem key={route.path} onClick={() => setCurrentPath(route.path)} className="flex items-center justify-between p-3 cursor-pointer rounded-xl hover:bg-white/5">
                                         <span className="font-bold text-xs">{route.label}</span>
                                         <span className="text-[10px] text-white/20 font-mono">{route.path}</span>
                                       </DropdownMenuItem>
-                                    ))}
+                                    )) : (
+                                      <div className="p-4 text-center text-[10px] text-white/20 font-black uppercase tracking-widest">No routes detected</div>
+                                    )}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
@@ -567,7 +580,7 @@ const NeuralLab = () => {
                                     <div className="flex items-center justify-between mb-4 px-2 py-1.5 bg-white/5 rounded-xl border border-white/5">
                                       <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Neural Context: {selectedScript?.title || 'Global'}</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Neural Context: {selectedScript?.path || 'Global'}</span>
                                       </div>
                                       <div className="flex items-center gap-3">
                                         <div className="flex items-center gap-1 text-[9px] font-bold text-white/20">
