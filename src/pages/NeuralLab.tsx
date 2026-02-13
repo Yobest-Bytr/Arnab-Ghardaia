@@ -330,8 +330,15 @@ const NeuralLab = () => {
            [Code here]
            \`\`\`
         2. You MUST generate complete, production-ready scripts.
-        3. If the user asks for a site or component, create the necessary files using the ### File: format.
-        4. The current active file is "${selectedScript?.path || selectedScript?.title}".`
+        3. Organize files into a professional directory structure:
+           - Pages go in 'src/pages/'
+           - Components go in 'src/components/'
+           - Hooks go in 'src/hooks/'
+           - Contexts go in 'src/contexts/'
+           - Utilities go in 'src/utils/' or 'src/lib/'
+           - Styles go in 'src/styles/' or 'src/globals.css'
+        4. If the user asks for a feature, generate ALL necessary files (pages, components, hooks, etc.) to make it fully functional.
+        5. The current active file is "${selectedScript?.path || selectedScript?.title}".`
       }, (chunk) => {
         responseText += chunk;
         setMessages(prev => {

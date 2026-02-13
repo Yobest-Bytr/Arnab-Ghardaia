@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Folder, FileCode, ChevronRight, ChevronDown, Search, Plus, Trash2, RefreshCw, FileText, Settings, Database, Layout, Box, Code } from 'lucide-react';
+import { Folder, FileCode, ChevronRight, ChevronDown, Search, Plus, Trash2, RefreshCw, FileText, Settings, Database, Layout, Box, Code, Shield, Zap, Layers, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileExplorerProps {
@@ -19,7 +19,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   onFileDelete,
   selectedFileId 
 }) => {
-  const [openFolders, setOpenFolders] = useState<string[]>(['src', 'public', 'components']);
+  const [openFolders, setOpenFolders] = useState<string[]>(['src', 'public', 'src/components', 'src/pages']);
   const [searchQuery, setSearchQuery] = useState('');
 
   const toggleFolder = (folder: string) => {
@@ -55,6 +55,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   const renderFolder = (name: string, icon: any, children: any[], path: string) => {
     const isOpen = openFolders.includes(path);
+    if (children.length === 0 && path !== 'src' && path !== 'public') return null;
+
     return (
       <div key={path} className="mb-1">
         <button 
@@ -74,14 +76,18 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     );
   };
 
-  // Organize files into the structure seen in images
+  // Organize files into the structure
   const publicFiles = files.filter(f => f.path?.startsWith('public/') || f.title === 'favicon.ico' || f.title === 'robots.txt');
   const srcFiles = files.filter(f => f.path?.startsWith('src/') || ['App.tsx', 'main.tsx', 'globals.css'].includes(f.title));
   const rootFiles = files.filter(f => !publicFiles.includes(f) && !srcFiles.includes(f));
 
   const componentsFiles = srcFiles.filter(f => f.path?.includes('components/'));
   const pagesFiles = srcFiles.filter(f => f.path?.includes('pages/'));
+  const hooksFiles = srcFiles.filter(f => f.path?.includes('hooks/'));
+  const contextsFiles = srcFiles.filter(f => f.path?.includes('contexts/'));
+  const libFiles = srcFiles.filter(f => f.path?.includes('lib/'));
   const utilsFiles = srcFiles.filter(f => f.path?.includes('utils/'));
+  const integrationsFiles = srcFiles.filter(f => f.path?.includes('integrations/'));
 
   return (
     <div className="h-full flex flex-col bg-[#0a0a0a] border-r border-white/5 select-none">
@@ -112,10 +118,14 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         {renderFolder('public', Folder, publicFiles.map(renderFile), 'public')}
         
         {renderFolder('src', Folder, [
-          renderFolder('components', Folder, componentsFiles.map(renderFile), 'src/components'),
+          renderFolder('components', Box, componentsFiles.map(renderFile), 'src/components'),
           renderFolder('pages', Layout, pagesFiles.map(renderFile), 'src/pages'),
+          renderFolder('hooks', Zap, hooksFiles.map(renderFile), 'src/hooks'),
+          renderFolder('contexts', Share2, contextsFiles.map(renderFile), 'src/contexts'),
+          renderFolder('lib', Database, libFiles.map(renderFile), 'src/lib'),
           renderFolder('utils', Settings, utilsFiles.map(renderFile), 'src/utils'),
-          ...srcFiles.filter(f => !f.path?.includes('/')).map(renderFile)
+          renderFolder('integrations', Layers, integrationsFiles.map(renderFile), 'src/integrations'),
+          ...srcFiles.filter(f => !f.path?.includes('/') || f.path === 'src/App.tsx' || f.path === 'src/main.tsx' || f.path === 'src/globals.css').map(renderFile)
         ], 'src')}
 
         <div className="mt-4 pt-4 border-t border-white/5">
