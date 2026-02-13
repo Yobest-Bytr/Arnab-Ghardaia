@@ -259,7 +259,7 @@ const NeuralLab = () => {
         title: 'index.html',
         project_id: newProject.id,
         path: 'index.html',
-        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
+        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script>\n      // Suppress Tailwind production warning\n      const originalWarn = console.warn;\n      console.warn = (...args) => {\n        if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;\n        originalWarn(...args);\n      };\n    </script>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
       },
       {
         title: 'App.tsx',
@@ -403,6 +403,14 @@ const NeuralLab = () => {
           <!DOCTYPE html>
           <html>
             <head>
+              <script>
+                // Neural Suppression: Must run before Tailwind
+                const originalWarn = console.warn;
+                console.warn = (...args) => {
+                  if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+                  originalWarn(...args);
+                };
+              </script>
               <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
               <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
               <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -442,7 +450,6 @@ const NeuralLab = () => {
 
             console.log = (...args) => { sendToParent('info', args); originalLog(...args); };
             console.warn = (...args) => { 
-              // Suppress Tailwind production warning in preview
               if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
               sendToParent('warn', args); 
               originalWarn(...args); 
