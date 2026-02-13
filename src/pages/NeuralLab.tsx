@@ -259,7 +259,7 @@ const NeuralLab = () => {
         title: 'index.html',
         project_id: newProject.id,
         path: 'index.html',
-        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script src="https://js.puter.com/v2/"></script>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
+        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script>\n      // Suppress Tailwind production warning\n      window.originalWarn = window.originalWarn || console.warn;\n      console.warn = (...args) => {\n        if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;\n        window.originalWarn(...args);\n      };\n    </script>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
       },
       {
         title: 'App.tsx',
@@ -384,139 +384,154 @@ const NeuralLab = () => {
     if (previewRef.current) {
       const doc = previewRef.current.contentDocument;
       if (doc) {
-        doc.open();
+        // Force a clean context reset
+        previewRef.current.src = 'about:blank';
         
-        // Collect all scripts to inject into the preview
-        const scriptsToInject = projectScripts
-          .filter(s => s.path?.endsWith('.tsx') || s.path?.endsWith('.jsx') || s.path?.endsWith('.js'))
-          .map(s => {
-            const isMainApp = s.path === 'src/App.tsx' || s.path === 'App.tsx';
-            
-            // Strip imports and exports for browser execution
-            // We use a more robust regex to handle side-effect imports like CSS
-            let content = s.content
-              .replace(/import\s+(['"].*?['"]|.*?\s+from\s+['"].*?['"]);?/g, '')
-              .replace(/export\s+default\s+/g, isMainApp ? 'window.App = ' : 'window._lastExport = ')
-              .replace(/export\s+/g, '');
-            
-            return `// File: ${s.path}\n${content}`;
-          }).join('\n');
-
-        // Collect CSS files
-        const cssToInject = projectScripts
-          .filter(s => s.path?.endsWith('.css'))
-          .map(s => `<style data-path="${s.path}">${s.content}</style>`)
-          .join('\n');
-
-        const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <script src="https://js.puter.com/v2/"></script>
-              <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-              <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-              <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-              <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
-              <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
-              <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-              <style>
-                body { margin: 0; background: #020408; color: white; font-family: sans-serif; overflow-x: hidden; }
-                #root { min-height: 100vh; }
-                .neural-error-overlay {
-                  position: fixed; inset: 0; background: rgba(2, 4, 8, 0.95); z-index: 9999;
-                  display: flex; flex-direction: column; align-items: center; justify-content: center;
-                  padding: 2rem; text-align: center; color: #fb7185; font-family: monospace;
-                }
-              </style>
-            </head>
-            <body>
-              <div id="root"></div>
-            </body>
-          </html>
-        `;
-        
-        // Clean up the user's index.html if it has hardcoded script tags for main.tsx
-        const cleanedHtml = indexHtml.replace(/<script.*?src=["'].*?main\.tsx["'].*?><\/script>/g, '');
-
-        const finalHtml = cleanedHtml.replace('</head>', `
-          <script>
-            // Neural Suppression: Must run before Tailwind
-            const originalWarn = console.warn;
-            console.warn = (...args) => {
-              if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
-              originalWarn(...args);
-            };
-          </script>
-          ${cssToInject}
-          </head>
-        `).replace('</body>', `
-          <script type="text/babel">
-            // Neural Console Bridge
-            const originalLog = console.log;
-            const originalWarn = console.warn;
-            const originalError = console.error;
-
-            const sendToParent = (level, args) => {
-              window.parent.postMessage({
-                type: 'neural-log',
-                level,
-                message: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ')
-              }, '*');
-            };
-
-            console.log = (...args) => { sendToParent('info', args); originalLog(...args); };
-            console.warn = (...args) => { 
-              if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
-              sendToParent('warn', args); 
-              originalWarn(...args); 
-            };
-            console.error = (...args) => { sendToParent('error', args); originalError(...args); };
-
-            window.onerror = (msg, url, line, col, error) => {
-              const overlay = document.createElement('div');
-              overlay.className = 'neural-error-overlay';
-              overlay.innerHTML = \`
-                <h2 style="font-size: 2rem; margin-bottom: 1rem;">Neural Diagnostic Error</h2>
-                <p style="font-size: 1.2rem; opacity: 0.8;">\${msg}</p>
-                <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.5;">Line \${line}, Column \${col}</p>
-                <button onclick="location.reload()" style="margin-top: 2rem; padding: 0.5rem 2rem; background: #fb7185; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">Retry Link</button>
-              \`;
-              document.body.appendChild(overlay);
-              sendToParent('error', [\`Runtime Error: \${msg} at line \${line}\`]);
-              return false;
-            };
-
-            try {
-              // Mocking common libraries for the browser environment
-              window.framerMotion = window.Motion;
-              window.lucide = window.lucide;
-
-              ${scriptsToInject}
+        // Wait for about:blank to load before writing
+        setTimeout(() => {
+          const freshDoc = previewRef.current?.contentDocument;
+          if (!freshDoc) return;
+          
+          freshDoc.open();
+          
+          // Collect all scripts to inject into the preview
+          const scriptsToInject = projectScripts
+            .filter(s => s.path?.endsWith('.tsx') || s.path?.endsWith('.jsx') || s.path?.endsWith('.js'))
+            .map(s => {
+              const isMainApp = s.path === 'src/App.tsx' || s.path === 'App.tsx';
               
-              // Entry Point Detection
-              if (window.App) {
-                const root = ReactDOM.createRoot(document.getElementById('root'));
-                root.render(<window.App />);
-              } else {
-                // Fallback: Try to find any component named App in the global scope
-                if (window.App) {
-                   const root = ReactDOM.createRoot(document.getElementById('root'));
-                   root.render(<window.App />);
-                } else {
-                   console.error("Neural Bundler Error: No 'App' component found. Ensure your main file (src/App.tsx) exports a default component.");
-                }
+              // Strip imports and exports for browser execution
+              let content = s.content
+                .replace(/import\s+(['"].*?['"]|.*?\s+from\s+['"].*?['"]);?/g, '')
+                .replace(/export\s+default\s+/g, isMainApp ? 'window.App = ' : 'window._lastExport = ')
+                .replace(/export\s+/g, '');
+              
+              return `// File: ${s.path}\n${content}`;
+            }).join('\n');
+
+          // Collect CSS files
+          const cssToInject = projectScripts
+            .filter(s => s.path?.endsWith('.css'))
+            .map(s => `<style data-path="${s.path}">${s.content}</style>`)
+            .join('\n');
+
+          const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+                <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+                <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+                <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+                <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+                <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+                <style>
+                  body { margin: 0; background: #020408; color: white; font-family: sans-serif; overflow-x: hidden; }
+                  #root { min-height: 100vh; }
+                  .neural-error-overlay {
+                    position: fixed; inset: 0; background: rgba(2, 4, 8, 0.95); z-index: 9999;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    padding: 2rem; text-align: center; color: #fb7185; font-family: monospace;
+                  }
+                </style>
+              </head>
+              <body>
+                <div id="root"></div>
+              </body>
+            </html>
+          `;
+          
+          // Clean up the user's index.html if it has hardcoded script tags for main.tsx
+          const cleanedHtml = indexHtml.replace(/<script.*?src=["'].*?main\.tsx["'].*?><\/script>/g, '');
+
+          const finalHtml = cleanedHtml.replace('<head>', `
+            <head>
+            <script>
+              // Neural Suppression: Must run before Tailwind and Puter
+              window.originalWarn = window.originalWarn || console.warn;
+              console.warn = (...args) => {
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+                window.originalWarn(...args);
+              };
+              
+              // Puter Protection: Prevent re-registration of custom elements
+              if (!window.PuterInitialized) {
+                const script = document.createElement('script');
+                script.src = 'https://js.puter.com/v2/';
+                script.onload = () => { window.PuterInitialized = true; };
+                document.head.appendChild(script);
               }
-            } catch (err) {
-              console.error("Neural Bundler Error: " + err.message);
-              window.onerror(err.message, '', 0, 0, err);
-            }
-          </script>
-          </body>
-        `);
-        
-        doc.write(finalHtml);
-        doc.close();
-        addLog('info', 'Live preview updated with dynamic project scripts.');
+            </script>
+            ${cssToInject}
+          `).replace('</body>', `
+            <script type="text/babel">
+              // Neural Console Bridge
+              const originalLog = console.log;
+              const originalWarn = console.warn;
+              const originalError = console.error;
+
+              const sendToParent = (level, args) => {
+                window.parent.postMessage({
+                  type: 'neural-log',
+                  level,
+                  message: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ')
+                }, '*');
+              };
+
+              console.log = (...args) => { sendToParent('info', args); originalLog(...args); };
+              console.warn = (...args) => { 
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+                sendToParent('warn', args); 
+                originalWarn(...args); 
+              };
+              console.error = (...args) => { sendToParent('error', args); originalError(...args); };
+
+              window.onerror = (msg, url, line, col, error) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'neural-error-overlay';
+                overlay.innerHTML = \`
+                  <h2 style="font-size: 2rem; margin-bottom: 1rem;">Neural Diagnostic Error</h2>
+                  <p style="font-size: 1.2rem; opacity: 0.8;">\${msg}</p>
+                  <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.5;">Line \${line}, Column \${col}</p>
+                  <button onclick="location.reload()" style="margin-top: 2rem; padding: 0.5rem 2rem; background: #fb7185; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">Retry Link</button>
+                \`;
+                document.body.appendChild(overlay);
+                sendToParent('error', [\`Runtime Error: \${msg} at line \${line}\`]);
+                return false;
+              };
+
+              try {
+                // Mocking common libraries for the browser environment
+                window.framerMotion = window.Motion;
+                window.lucide = window.lucide;
+
+                ${scriptsToInject}
+                
+                // Entry Point Detection
+                if (window.App) {
+                  const root = ReactDOM.createRoot(document.getElementById('root'));
+                  root.render(<window.App />);
+                } else {
+                  // Fallback: Try to find any component named App in the global scope
+                  if (window.App) {
+                     const root = ReactDOM.createRoot(document.getElementById('root'));
+                     root.render(<window.App />);
+                  } else {
+                     console.error("Neural Bundler Error: No 'App' component found. Ensure your main file (src/App.tsx) exports a default component.");
+                  }
+                }
+              } catch (err) {
+                console.error("Neural Bundler Error: " + err.message);
+                window.onerror(err.message, '', 0, 0, err);
+              }
+            </script>
+            </body>
+          `);
+          
+          freshDoc.write(finalHtml);
+          freshDoc.close();
+          addLog('info', 'Live preview updated with dynamic project scripts.');
+        }, 50);
       }
     }
   };
