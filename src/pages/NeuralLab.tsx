@@ -9,7 +9,7 @@ import {
   Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
   ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box, Wand2, LayoutGrid,
   ChevronLeft, RotateCcw as RestartIcon, Rocket, Share2, CheckCircle, Package, Lightbulb, Wand, Search,
-  MessageSquare, Mic, History, BarChart
+  MessageSquare, Mic, History, BarChart, Smartphone, Tablet, Monitor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat, validateKey } from '@/lib/puter';
@@ -62,6 +62,7 @@ const NeuralLab = () => {
   const [editorContent, setEditorContent] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
   const [currentPath, setCurrentPath] = useState('/');
+  const [viewportSize, setViewportSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   
   // Package Management
   const [installedPackages, setInstalledPackages] = useState<string[]>(['react', 'react-dom', 'lucide-react', 'framer-motion']);
@@ -80,7 +81,6 @@ const NeuralLab = () => {
       addLog('info', 'Neural Lab initialized. Neural link established.');
     }
 
-    // Listen for logs from the preview iframe
     const handleIframeMessage = (event: MessageEvent) => {
       if (event.data.type === 'neural-log') {
         addLog(event.data.level, event.data.message);
@@ -390,8 +390,18 @@ const NeuralLab = () => {
               <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
               <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
               <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+              <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+              <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
               <script src="https://cdn.tailwindcss.com"></script>
-              <style>body { margin: 0; background: #020408; color: white; font-family: sans-serif; }</style>
+              <style>
+                body { margin: 0; background: #020408; color: white; font-family: sans-serif; overflow-x: hidden; }
+                #root { min-height: 100vh; }
+                .neural-error-overlay {
+                  position: fixed; inset: 0; background: rgba(2, 4, 8, 0.95); z-index: 9999;
+                  display: flex; flex-direction: column; align-items: center; justify-content: center;
+                  padding: 2rem; text-align: center; color: #fb7185; font-family: monospace;
+                }
+              </style>
             </head>
             <body>
               <div id="root"></div>
@@ -419,11 +429,24 @@ const NeuralLab = () => {
             console.error = (...args) => { sendToParent('error', args); originalError(...args); };
 
             window.onerror = (msg, url, line, col, error) => {
+              const overlay = document.createElement('div');
+              overlay.className = 'neural-error-overlay';
+              overlay.innerHTML = \`
+                <h2 style="font-size: 2rem; margin-bottom: 1rem;">Neural Diagnostic Error</h2>
+                <p style="font-size: 1.2rem; opacity: 0.8;">\${msg}</p>
+                <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.5;">Line \${line}, Column \${col}</p>
+                <button onclick="location.reload()" style="margin-top: 2rem; padding: 0.5rem 2rem; background: #fb7185; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">Retry Link</button>
+              \`;
+              document.body.appendChild(overlay);
               sendToParent('error', [\`Runtime Error: \${msg} at line \${line}\`]);
               return false;
             };
 
             try {
+              // Mocking common libraries for the browser environment
+              window.framerMotion = window.Motion;
+              window.lucide = window.lucide;
+
               ${scriptsToInject}
               
               // Entry Point
@@ -431,6 +454,7 @@ const NeuralLab = () => {
               root.render(<App />);
             } catch (err) {
               console.error("Neural Bundler Error: " + err.message);
+              window.onerror(err.message, '', 0, 0, err);
             }
           </script>
           </body>
@@ -514,8 +538,10 @@ const NeuralLab = () => {
                           <div className="h-full flex flex-col bg-[#010204]">
                             <div className="h-12 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-4 shrink-0">
                               <div className="flex items-center gap-2">
-                                <button className="p-1.5 text-white/40 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
-                                <button className="p-1.5 text-white/40 hover:text-white transition-colors rotate-180"><ChevronLeft size={16} /></button>
+                                <button onClick={() => setViewportSize('mobile')} className={cn("p-1.5 transition-colors", viewportSize === 'mobile' ? "text-indigo-400" : "text-white/40 hover:text-white")}><Smartphone size={16} /></button>
+                                <button onClick={() => setViewportSize('tablet')} className={cn("p-1.5 transition-colors", viewportSize === 'tablet' ? "text-indigo-400" : "text-white/40 hover:text-white")}><Tablet size={16} /></button>
+                                <button onClick={() => setViewportSize('desktop')} className={cn("p-1.5 transition-colors", viewportSize === 'desktop' ? "text-indigo-400" : "text-white/40 hover:text-white")}><Monitor size={16} /></button>
+                                <div className="w-[1px] h-4 bg-white/10 mx-1" />
                                 <button onClick={updatePreview} className="p-1.5 text-white/40 hover:text-white transition-colors"><RefreshCw size={14} /></button>
                               </div>
                               <div className="flex-1 relative group">
@@ -541,20 +567,31 @@ const NeuralLab = () => {
                                 <button className="p-1.5 text-white/40 hover:text-white transition-colors"><Maximize2 size={14} /></button>
                               </div>
                             </div>
-                            <div className="flex-1 relative overflow-hidden">
+                            <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#0a0a0a]">
                               <AnimatePresence mode="wait">
                                 {activeTab === 'code' && (
-                                  <motion.div key="code" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                                  <motion.div key="code" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
                                     <textarea value={editorContent} onChange={(e) => setEditorContent(e.target.value)} className="w-full h-full bg-transparent p-8 font-mono text-sm text-indigo-300 outline-none resize-none custom-scrollbar leading-relaxed" spellCheck={false} />
                                   </motion.div>
                                 )}
                                 {activeTab === 'preview' && (
-                                  <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full bg-white">
+                                  <motion.div 
+                                    key="preview" 
+                                    initial={{ opacity: 0, scale: 0.95 }} 
+                                    animate={{ opacity: 1, scale: 1 }} 
+                                    exit={{ opacity: 0, scale: 0.95 }} 
+                                    className={cn(
+                                      "bg-white shadow-2xl transition-all duration-500 overflow-hidden",
+                                      viewportSize === 'mobile' ? "w-[375px] h-[667px] rounded-[3rem] border-[8px] border-black" :
+                                      viewportSize === 'tablet' ? "w-[768px] h-[1024px] rounded-[2rem] border-[8px] border-black" :
+                                      "w-full h-full"
+                                    )}
+                                  >
                                     <iframe ref={previewRef} title="Live Preview" className="w-full h-full border-none" onLoad={updatePreview} />
                                   </motion.div>
                                 )}
                                 {activeTab === 'problems' && (
-                                  <motion.div key="problems" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full p-12 bg-[#0a0a0a]">
+                                  <motion.div key="problems" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full p-12 bg-[#0a0a0a]">
                                     <div className="max-w-3xl mx-auto">
                                       <div className="flex items-center justify-between mb-8">
                                         <h3 className="text-2xl font-black flex items-center gap-3"><AlertTriangle className="text-amber-400" /> Problems Report</h3>
