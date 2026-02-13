@@ -101,16 +101,25 @@ const NeuralLab = () => {
   }, [user]);
 
   const checkCloudTables = async () => {
+    // Check if we already know Supabase is offline
+    if (localStorage.getItem('supabase_master_offline') === 'true') {
+      setCloudStatus('missing');
+      return;
+    }
+
     setCloudStatus('checking');
     try {
       const { status } = await supabase.from('projects').select('id', { count: 'exact', head: true }).limit(1);
-      if (status === 404) {
+      if (status === 404 || status === 401) {
         setCloudStatus('missing');
+        storage.setMasterOffline(true);
       } else {
         setCloudStatus('ready');
+        storage.setMasterOffline(false);
       }
     } catch {
       setCloudStatus('missing');
+      storage.setMasterOffline(true);
     }
   };
 
@@ -379,6 +388,7 @@ const NeuralLab = () => {
         4. NEURAL PRE-SCAN: Before suggesting any code, analyze the entire project structure.
         5. VIRTUAL LINKING: Ensure all files you create are correctly imported by other files.
         6. COMPLETE SOLUTIONS: Never provide partial code. If you add a component, update the parent file to use it.
+        7. INTEGRATION: Whenever you create a new page or component, you MUST update 'src/App.tsx' to import and use it.
         
         FORMAT:
         ### Thinking
@@ -420,7 +430,7 @@ const NeuralLab = () => {
           
           freshDoc.open();
           
-          // Virtual Module Registry
+          // Virtual Module Registry 2.0 - CommonJS Style for better Hook support
           const moduleRegistry = projectScripts
             .filter(s => s.path?.endsWith('.tsx') || s.path?.endsWith('.jsx') || s.path?.endsWith('.js'))
             .map(s => {
@@ -438,7 +448,11 @@ const NeuralLab = () => {
                 window.NeuralRegistry['${s.path}'] = (function() {
                   const module = { exports: {} };
                   const exports = module.exports;
-                  ${content}
+                  try {
+                    ${content}
+                  } catch (e) {
+                    console.error("Module Load Error [${s.path}]: " + e.message);
+                  }
                   return module.exports;
                 })();
                 if ('${isMainApp}' === 'true') window.App = window.NeuralRegistry['${s.path}'];
@@ -477,8 +491,6 @@ const NeuralLab = () => {
                 window.customElements.define = function(name, constructor, options) {
                   if (!window.customElements.get(name)) {
                     window.customElements.originalDefine(name, constructor, options);
-                  } else {
-                    console.warn('Skipping re-definition of ' + name);
                   }
                 };
               }
@@ -524,6 +536,8 @@ const NeuralLab = () => {
                 if (window.App) {
                   const root = ReactDOM.createRoot(document.getElementById('root'));
                   root.render(<window.App />);
+                } else {
+                  console.error("Neural Link Error: Entry point 'src/App.tsx' not found or failed to load.");
                 }
               } catch (err) {
                 console.error("Preview Error: " + err.message + "\\nStack: " + err.stack);

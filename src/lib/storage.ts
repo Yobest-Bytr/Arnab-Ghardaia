@@ -1,8 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// Track failed tables globally and persist in localStorage
+// Track failed tables and master offline status
 const FAILED_TABLES_KEY = 'failed_supabase_tables';
+const MASTER_OFFLINE_KEY = 'supabase_master_offline';
+
 let failedTables = new Set<string>(JSON.parse(localStorage.getItem(FAILED_TABLES_KEY) || '[]'));
+let isMasterOffline = localStorage.getItem(MASTER_OFFLINE_KEY) === 'true';
 
 function updateFailedTables() {
   localStorage.setItem(FAILED_TABLES_KEY, JSON.stringify(Array.from(failedTables)));
@@ -13,7 +16,7 @@ export const storage = {
     const localData = localStorage.getItem(`${table}_${userId}`);
     if (localData) return JSON.parse(localData);
 
-    if (failedTables.has(table)) return [];
+    if (isMasterOffline || failedTables.has(table)) return [];
 
     try {
       const { data, error, status } = await supabase
@@ -53,7 +56,7 @@ export const storage = {
     const updatedData = [newItem, ...localData];
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
-    if (!failedTables.has(table)) {
+    if (!isMasterOffline && !failedTables.has(table)) {
       supabase.from(table).insert([newItem]).then(({ status }) => {
         if (status === 404 || status === 401) {
           failedTables.add(table);
@@ -75,7 +78,7 @@ export const storage = {
     );
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
-    if (!failedTables.has(table)) {
+    if (!isMasterOffline && !failedTables.has(table)) {
       supabase.from(table).update(updates).eq('id', id).then(({ status }) => {
         if (status === 404 || status === 401) {
           failedTables.add(table);
@@ -95,7 +98,7 @@ export const storage = {
     const filteredData = localData.filter((item: any) => item.id !== id);
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(filteredData));
     
-    if (!failedTables.has(table)) {
+    if (!isMasterOffline && !failedTables.has(table)) {
       supabase.from(table).delete().eq('id', id).then(({ status }) => {
         if (status === 404 || status === 401) {
           failedTables.add(table);
@@ -106,6 +109,11 @@ export const storage = {
         updateFailedTables();
       });
     }
+  },
+
+  setMasterOffline(status: boolean) {
+    isMasterOffline = status;
+    localStorage.setItem(MASTER_OFFLINE_KEY, String(status));
   },
 
   async syncToCloud(table: string, userId: string) {
