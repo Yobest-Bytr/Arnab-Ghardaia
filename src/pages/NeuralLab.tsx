@@ -9,7 +9,7 @@ import {
   Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
   ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box, Wand2, LayoutGrid,
   ChevronLeft, RotateCcw as RestartIcon, Rocket, Share2, CheckCircle, Package, Lightbulb, Wand, Search,
-  MessageSquare, Mic, History, BarChart, Smartphone, Tablet, Monitor
+  MessageSquare, Mic, History, BarChart, Smartphone, Tablet, Monitor, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat, validateKey } from '@/lib/puter';
@@ -22,6 +22,7 @@ import SystemMessages from '@/components/SystemMessages';
 import { ChatMessage } from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 import { cn } from "@/lib/utils";
+import { downloadProject } from '@/utils/download';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -171,6 +172,17 @@ const NeuralLab = () => {
     await storage.update('scripts', user.id, selectedScript.id, { content: editorContent });
     showSuccess("Script saved locally.");
     updatePreview();
+  };
+
+  const handleDownload = async () => {
+    if (!selectedProject || projectScripts.length === 0) return;
+    addLog('info', 'Bundling project for download...');
+    try {
+      await downloadProject(selectedProject, projectScripts);
+      showSuccess("Project downloaded successfully.");
+    } catch (err) {
+      showError("Failed to bundle project.");
+    }
   };
 
   const handleSyncCloud = async () => {
@@ -378,10 +390,15 @@ const NeuralLab = () => {
         // Collect all scripts to inject into the preview
         const scriptsToInject = projectScripts
           .filter(s => s.path?.endsWith('.tsx') || s.path?.endsWith('.jsx') || s.path?.endsWith('.js'))
-          .map(s => `
-            // File: ${s.path}
-            ${s.content.replace(/import.*from.*;/g, '')}
-          `).join('\n');
+          .map(s => {
+            // Strip imports and exports for browser execution
+            let content = s.content
+              .replace(/import\s+.*?\s+from\s+['"].*?['"];?/g, '')
+              .replace(/export\s+default\s+/g, 'window.App = ')
+              .replace(/export\s+/g, '');
+            
+            return `// File: ${s.path}\n${content}`;
+          }).join('\n');
 
         const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || `
           <!DOCTYPE html>
@@ -450,8 +467,12 @@ const NeuralLab = () => {
               ${scriptsToInject}
               
               // Entry Point
-              const root = ReactDOM.createRoot(document.getElementById('root'));
-              root.render(<App />);
+              if (window.App) {
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(<window.App />);
+              } else {
+                console.error("Neural Bundler Error: No 'App' component found. Ensure your main file exports a default component.");
+              }
             } catch (err) {
               console.error("Neural Bundler Error: " + err.message);
               window.onerror(err.message, '', 0, 0, err);
@@ -483,11 +504,11 @@ const NeuralLab = () => {
 
         {mainMode === 'workspace' && (
           <div className="flex items-center gap-3">
+            <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
+              <Download size={14} /> Download Project
+            </button>
             <button onClick={handleSyncCloud} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
               <Cloud size={14} /> Sync Cloud
-            </button>
-            <button onClick={handleGithubSync} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-              <Github size={14} /> Sync GitHub
             </button>
             <button onClick={handlePublish} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20">
               <Rocket size={14} /> Publish Site
