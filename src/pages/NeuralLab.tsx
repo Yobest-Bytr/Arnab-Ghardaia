@@ -259,7 +259,7 @@ const NeuralLab = () => {
         title: 'index.html',
         project_id: newProject.id,
         path: 'index.html',
-        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script>\n      // Suppress Tailwind production warning\n      const originalWarn = console.warn;\n      console.warn = (...args) => {\n        if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;\n        originalWarn(...args);\n      };\n    </script>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
+        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script src="https://js.puter.com/v2/"></script>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
       },
       {
         title: 'App.tsx',
@@ -390,27 +390,29 @@ const NeuralLab = () => {
         const scriptsToInject = projectScripts
           .filter(s => s.path?.endsWith('.tsx') || s.path?.endsWith('.jsx') || s.path?.endsWith('.js'))
           .map(s => {
+            const isMainApp = s.path === 'src/App.tsx' || s.path === 'App.tsx';
+            
             // Strip imports and exports for browser execution
+            // We use a more robust regex to handle side-effect imports like CSS
             let content = s.content
-              .replace(/import\s+.*?\s+from\s+['"].*?['"];?/g, '')
-              .replace(/export\s+default\s+/g, 'window.App = ')
+              .replace(/import\s+(['"].*?['"]|.*?\s+from\s+['"].*?['"]);?/g, '')
+              .replace(/export\s+default\s+/g, isMainApp ? 'window.App = ' : 'window._lastExport = ')
               .replace(/export\s+/g, '');
             
             return `// File: ${s.path}\n${content}`;
           }).join('\n');
 
+        // Collect CSS files
+        const cssToInject = projectScripts
+          .filter(s => s.path?.endsWith('.css'))
+          .map(s => `<style data-path="${s.path}">${s.content}</style>`)
+          .join('\n');
+
         const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || `
           <!DOCTYPE html>
           <html>
             <head>
-              <script>
-                // Neural Suppression: Must run before Tailwind
-                const originalWarn = console.warn;
-                console.warn = (...args) => {
-                  if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
-                  originalWarn(...args);
-                };
-              </script>
+              <script src="https://js.puter.com/v2/"></script>
               <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
               <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
               <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -433,7 +435,21 @@ const NeuralLab = () => {
           </html>
         `;
         
-        const finalHtml = indexHtml.replace('</body>', `
+        // Clean up the user's index.html if it has hardcoded script tags for main.tsx
+        const cleanedHtml = indexHtml.replace(/<script.*?src=["'].*?main\.tsx["'].*?><\/script>/g, '');
+
+        const finalHtml = cleanedHtml.replace('</head>', `
+          <script>
+            // Neural Suppression: Must run before Tailwind
+            const originalWarn = console.warn;
+            console.warn = (...args) => {
+              if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+              originalWarn(...args);
+            };
+          </script>
+          ${cssToInject}
+          </head>
+        `).replace('</body>', `
           <script type="text/babel">
             // Neural Console Bridge
             const originalLog = console.log;
@@ -482,7 +498,13 @@ const NeuralLab = () => {
                 const root = ReactDOM.createRoot(document.getElementById('root'));
                 root.render(<window.App />);
               } else {
-                console.error("Neural Bundler Error: No 'App' component found. Ensure your main file (src/App.tsx) exports a default component.");
+                // Fallback: Try to find any component named App in the global scope
+                if (window.App) {
+                   const root = ReactDOM.createRoot(document.getElementById('root'));
+                   root.render(<window.App />);
+                } else {
+                   console.error("Neural Bundler Error: No 'App' component found. Ensure your main file (src/App.tsx) exports a default component.");
+                }
               }
             } catch (err) {
               console.error("Neural Bundler Error: " + err.message);
