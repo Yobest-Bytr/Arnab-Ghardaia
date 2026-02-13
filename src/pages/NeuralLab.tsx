@@ -79,6 +79,16 @@ const NeuralLab = () => {
       fetchProjects();
       addLog('info', 'Neural Lab initialized. Neural link established.');
     }
+
+    // Listen for logs from the preview iframe
+    const handleIframeMessage = (event: MessageEvent) => {
+      if (event.data.type === 'neural-log') {
+        addLog(event.data.level, event.data.message);
+      }
+    };
+
+    window.addEventListener('message', handleIframeMessage);
+    return () => window.removeEventListener('message', handleIframeMessage);
   }, [user]);
 
   useEffect(() => {
@@ -391,11 +401,37 @@ const NeuralLab = () => {
         
         const finalHtml = indexHtml.replace('</body>', `
           <script type="text/babel">
-            ${scriptsToInject}
-            
-            // Entry Point
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
+            // Neural Console Bridge
+            const originalLog = console.log;
+            const originalWarn = console.warn;
+            const originalError = console.error;
+
+            const sendToParent = (level, args) => {
+              window.parent.postMessage({
+                type: 'neural-log',
+                level,
+                message: args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ')
+              }, '*');
+            };
+
+            console.log = (...args) => { sendToParent('info', args); originalLog(...args); };
+            console.warn = (...args) => { sendToParent('warn', args); originalWarn(...args); };
+            console.error = (...args) => { sendToParent('error', args); originalError(...args); };
+
+            window.onerror = (msg, url, line, col, error) => {
+              sendToParent('error', [\`Runtime Error: \${msg} at line \${line}\`]);
+              return false;
+            };
+
+            try {
+              ${scriptsToInject}
+              
+              // Entry Point
+              const root = ReactDOM.createRoot(document.getElementById('root'));
+              root.render(<App />);
+            } catch (err) {
+              console.error("Neural Bundler Error: " + err.message);
+            }
           </script>
           </body>
         `);
