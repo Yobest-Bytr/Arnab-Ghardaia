@@ -12,7 +12,7 @@ import {
   MessageSquare, Mic, History, BarChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { grokChat } from '@/lib/puter';
+import { grokChat, validateKey } from '@/lib/puter';
 import { storage } from '@/lib/storage';
 import { showSuccess, showError } from '@/utils/toast';
 import ProjectModal from '@/components/ProjectModal';
@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/resizable";
 
 const MODELS = [
   { id: 'auto', name: 'Auto', icon: Wand2, desc: 'Automatic Model Selection' },
@@ -55,6 +55,7 @@ const NeuralLab = () => {
   const [systemLogs, setSystemLogs] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+  const [hasKey, setHasKey] = useState(true);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   
   const [projects, setProjects] = useState<any[]>([]);
@@ -90,6 +91,10 @@ const NeuralLab = () => {
   }, [user]);
 
   useEffect(() => {
+    checkModelKey(selectedModel.id);
+  }, [selectedModel, user]);
+
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -101,6 +106,23 @@ const NeuralLab = () => {
       addLog('info', `Switched to script: ${selectedScript.title}`);
     }
   }, [selectedScript]);
+
+  const checkModelKey = (modelId: string) => {
+    if (!user || modelId === 'yobest-ai' || modelId === 'auto') {
+      setHasKey(true);
+      return;
+    }
+    const savedKeys = JSON.parse(localStorage.getItem(`ai_keys_${user.id}`) || '{}');
+    const key = modelId.includes('gpt') ? savedKeys.openai :
+                modelId.includes('gemini') ? savedKeys.gemini :
+                modelId.includes('claude') ? savedKeys.anthropic :
+                savedKeys.grok;
+    
+    setHasKey(!!key);
+    if (!key) {
+      addLog('warn', `Missing API key for ${modelId}. Please configure in Settings.`);
+    }
+  };
 
   const addLog = (type: 'info' | 'warn' | 'error', text: string) => {
     setSystemLogs(prev => [{ type, text, timestamp: new Date().toISOString() }, ...prev].slice(0, 100));
@@ -272,6 +294,10 @@ const NeuralLab = () => {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isGenerating) return;
+    if (!hasKey) {
+      showError(`Please configure your API key for ${selectedModel.name} in Settings.`);
+      return;
+    }
     const userMsg = { id: Date.now(), role: 'user', content: input, timestamp: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -312,7 +338,6 @@ const NeuralLab = () => {
         const indexHtml = projectScripts.find(s => s.title === 'index.html')?.content || '<h1>No index.html</h1>';
         const appTsx = projectScripts.find(s => s.title === 'App.tsx')?.content || '';
         
-        // Advanced Preview: Inject Babel and React for live transpilation
         const finalHtml = `
           <!DOCTYPE html>
           <html>
@@ -566,6 +591,15 @@ const NeuralLab = () => {
                                       )}
                                     </div>
                                     <div className="mt-4 flex flex-col gap-3">
+                                      {!hasKey && (
+                                        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-between">
+                                          <div className="flex items-center gap-2 text-[10px] font-bold text-rose-400">
+                                            <AlertTriangle size={14} />
+                                            <span>Key Required for {selectedModel.name}</span>
+                                          </div>
+                                          <a href="/profile" className="text-[10px] font-black uppercase tracking-widest text-white hover:underline">Configure</a>
+                                        </div>
+                                      )}
                                       <div className="flex gap-2">
                                         <button className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/40 hover:text-white transition-all">
                                           <Mic size={16} />
