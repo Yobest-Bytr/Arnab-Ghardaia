@@ -1,13 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// Track failed tables to avoid repeated 404s and console spam
-const failedTables = new Set<string>();
+// Track failed tables globally and persist in localStorage
+const FAILED_TABLES_KEY = 'failed_supabase_tables';
+let failedTables = new Set<string>(JSON.parse(localStorage.getItem(FAILED_TABLES_KEY) || '[]'));
+
+function updateFailedTables() {
+  localStorage.setItem(FAILED_TABLES_KEY, JSON.stringify(Array.from(failedTables)));
+}
 
 export const storage = {
   async get(table: string, userId: string) {
     const localData = localStorage.getItem(`${table}_${userId}`);
     if (localData) return JSON.parse(localData);
-    
+
     if (failedTables.has(table)) return [];
 
     try {
@@ -16,18 +21,22 @@ export const storage = {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      
+
       if (status === 404 || status === 401) {
         failedTables.add(table);
+        updateFailedTables();
         return [];
       }
-
-      if (!error && data) {
+      
+      if (error) throw error;
+      
+      if (data) {
         localStorage.setItem(`${table}_${userId}`, JSON.stringify(data));
         return data;
       }
     } catch (err) {
       failedTables.add(table);
+      updateFailedTables();
     }
     return [];
   },
@@ -44,11 +53,16 @@ export const storage = {
     const updatedData = [newItem, ...localData];
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
-    // Only attempt sync if table hasn't failed before
     if (!failedTables.has(table)) {
       supabase.from(table).insert([newItem]).then(({ status }) => {
-        if (status === 404 || status === 401) failedTables.add(table);
-      }).catch(() => failedTables.add(table));
+        if (status === 404 || status === 401) {
+          failedTables.add(table);
+          updateFailedTables();
+        }
+      }).catch(() => {
+        failedTables.add(table);
+        updateFailedTables();
+      });
     }
 
     return newItem;
@@ -63,8 +77,14 @@ export const storage = {
     
     if (!failedTables.has(table)) {
       supabase.from(table).update(updates).eq('id', id).then(({ status }) => {
-        if (status === 404 || status === 401) failedTables.add(table);
-      }).catch(() => failedTables.add(table));
+        if (status === 404 || status === 401) {
+          failedTables.add(table);
+          updateFailedTables();
+        }
+      }).catch(() => {
+        failedTables.add(table);
+        updateFailedTables();
+      });
     }
 
     return updates;
@@ -77,8 +97,14 @@ export const storage = {
     
     if (!failedTables.has(table)) {
       supabase.from(table).delete().eq('id', id).then(({ status }) => {
-        if (status === 404 || status === 401) failedTables.add(table);
-      }).catch(() => failedTables.add(table));
+        if (status === 404 || status === 401) {
+          failedTables.add(table);
+          updateFailedTables();
+        }
+      }).catch(() => {
+        failedTables.add(table);
+        updateFailedTables();
+      });
     }
   },
 
@@ -93,6 +119,7 @@ export const storage = {
       
       if (status === 404 || status === 401) {
         failedTables.add(table);
+        updateFailedTables();
         return { success: false, message: "Cloud sync unavailable (Table missing)." };
       }
 

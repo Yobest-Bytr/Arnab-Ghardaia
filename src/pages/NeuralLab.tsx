@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
@@ -31,6 +32,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const MODELS = [
   { id: 'auto', name: 'Auto', icon: Wand2, desc: 'Automatic Model Selection' },
@@ -65,6 +67,10 @@ const NeuralLab = () => {
   const [currentPath, setCurrentPath] = useState('/');
   const [viewportSize, setViewportSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   
+  // Cloud Setup State
+  const [cloudStatus, setCloudStatus] = useState<'checking' | 'ready' | 'missing'>('checking');
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+
   // Package Management
   const [installedPackages, setInstalledPackages] = useState<string[]>(['react', 'react-dom', 'lucide-react', 'framer-motion']);
   const [packageSearch, setPackageSearch] = useState('');
@@ -80,6 +86,7 @@ const NeuralLab = () => {
   useEffect(() => {
     if (user) {
       fetchProjects();
+      checkCloudTables();
       addLog('info', 'Neural Lab initialized. Neural link established.');
     }
 
@@ -92,6 +99,20 @@ const NeuralLab = () => {
     window.addEventListener('message', handleIframeMessage);
     return () => window.removeEventListener('message', handleIframeMessage);
   }, [user]);
+
+  const checkCloudTables = async () => {
+    setCloudStatus('checking');
+    try {
+      const { status } = await supabase.from('projects').select('id', { count: 'exact', head: true }).limit(1);
+      if (status === 404) {
+        setCloudStatus('missing');
+      } else {
+        setCloudStatus('ready');
+      }
+    } catch {
+      setCloudStatus('missing');
+    }
+  };
 
   useEffect(() => {
     checkModelKey(selectedModel.id);
@@ -456,28 +477,25 @@ const NeuralLab = () => {
                 window.customElements.define = function(name, constructor, options) {
                   if (!window.customElements.get(name)) {
                     window.customElements.originalDefine(name, constructor, options);
+                  } else {
+                    console.warn('Skipping re-definition of ' + name);
                   }
                 };
               }
 
-              // Suppress Tailwind production warning
-              window.originalWarn = window.originalWarn || console.warn;
+              // Suppress React DevTools and Tailwind warnings
+              const originalConsoleWarn = console.warn;
               console.warn = (...args) => {
-                if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
-                window.originalWarn(...args);
+                if (args[0] && typeof args[0] === 'string' && (
+                  args[0].includes('react-devtools') || 
+                  args[0].includes('cdn.tailwindcss.com')
+                )) return;
+                originalConsoleWarn(...args);
               };
               
               // Puter Protection: Handle 401s silently
-              if (!window.PuterInitialized) {
-                const script = document.createElement('script');
-                script.src = 'https://js.puter.com/v2/';
-                script.onload = () => { 
-                  window.PuterInitialized = true;
-                  if (window.puter && window.puter.ui) {
-                    try { window.puter.ui.whoami().catch(() => {}); } catch(e) {}
-                  }
-                };
-                document.head.appendChild(script);
+              if (typeof puter !== 'undefined' && puter.ui) {
+                try { puter.ui.whoami().catch(() => {}); } catch(e) {}
               }
             </script>
             ${cssToInject}
@@ -508,7 +526,7 @@ const NeuralLab = () => {
                   root.render(<window.App />);
                 }
               } catch (err) {
-                console.error("Neural Bundler Error: " + err.message);
+                console.error("Preview Error: " + err.message + "\\nStack: " + err.stack);
               }
             </script>
             </body>
@@ -560,7 +578,14 @@ const NeuralLab = () => {
                     <h1 className="text-5xl font-black tracking-tighter dopamine-text">Project Dashboard</h1>
                     <p className="text-white/40 font-medium mt-2">Select a project to enter the neural workspace.</p>
                   </div>
-                  <button onClick={() => setIsProjectModalOpen(true)} className="auron-button h-14 px-8 flex items-center gap-3"><Plus size={20} /> New Project</button>
+                  <div className="flex items-center gap-4">
+                    {cloudStatus === 'missing' && (
+                      <button onClick={() => setIsSetupModalOpen(true)} className="flex items-center gap-2 px-6 py-3 rounded-full bg-rose-500/20 text-rose-400 text-sm font-bold border border-rose-500/20 hover:bg-rose-500/30 transition-all">
+                        <AlertTriangle size={16} /> Setup Cloud Storage
+                      </button>
+                    )}
+                    <button onClick={() => setIsProjectModalOpen(true)} className="auron-button h-14 px-8 flex items-center gap-3"><Plus size={20} /> New Project</button>
+                  </div>
                 </div>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {projects.map((project) => (
@@ -861,7 +886,73 @@ const NeuralLab = () => {
           )}
         </AnimatePresence>
       </main>
+      
       <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSave={handleCreateProject} />
+      
+      <Dialog open={isSetupModalOpen} onOpenChange={setIsSetupModalOpen}>
+        <DialogContent className="bg-[#020408] border-white/10 text-white max-w-2xl max-h-[80vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black flex items-center gap-3">
+              <Database className="text-indigo-400" />
+              Setup Supabase Tables
+            </DialogTitle>
+            <DialogDescription className="text-white/40 font-medium">
+              Your Supabase tables are missing. Follow these steps to enable cloud storage.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <ol className="list-decimal pl-6 space-y-6 text-sm font-medium text-white/60">
+              <li>
+                Go to your Supabase dashboard: 
+                <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline ml-2 inline-flex items-center gap-1">
+                  supabase.com/dashboard <ExternalLink size={12} />
+                </a>
+              </li>
+              <li>Select your project (URL: <code className="text-indigo-300">kyzjxatlcfypghkianon.supabase.co</code>)</li>
+              <li>
+                Open the <span className="text-white font-bold">SQL Editor</span> and run the following script:
+                <div className="mt-4 bg-black/40 p-6 rounded-2xl border border-white/5 font-mono text-[11px] text-indigo-300 overflow-x-auto">
+                  <pre>{`CREATE TABLE projects (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  description text,
+  template text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE scripts (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  project_id uuid REFERENCES projects(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  path text,
+  content text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scripts ENABLE ROW LEVEL SECURITY;
+
+-- Create Policies
+CREATE POLICY "Users can manage their own projects" ON projects
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own scripts" ON scripts
+  FOR ALL USING (auth.uid() = user_id);`}</pre>
+                </div>
+              </li>
+              <li>Reload this page after the tables are created.</li>
+            </ol>
+          </div>
+          
+          <div className="flex justify-end mt-6">
+            <button onClick={() => setIsSetupModalOpen(false)} className="auron-button h-12 px-8">I've Created the Tables</button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
