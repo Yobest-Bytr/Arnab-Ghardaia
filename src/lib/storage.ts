@@ -1,33 +1,37 @@
 import { supabase } from '@/integrations/supabase/client';
 
+// Track failed tables to avoid repeated 404s
+const failedTables = new Set<string>();
+
 export const storage = {
-  // Get data from local storage first
   async get(table: string, userId: string) {
     const localData = localStorage.getItem(`${table}_${userId}`);
-    if (localData) {
-      return JSON.parse(localData);
-    }
+    if (localData) return JSON.parse(localData);
     
-    // Fallback to Supabase only if local is empty
+    if (failedTables.has(table)) return [];
+
     try {
-      const { data, error } = await supabase
+      const { data, error, status } = await supabase
         .from(table)
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
+      if (status === 404) {
+        failedTables.add(table);
+        return [];
+      }
+
       if (!error && data) {
         localStorage.setItem(`${table}_${userId}`, JSON.stringify(data));
         return data;
       }
     } catch (err) {
-      // Silently fail and return empty array to prevent UI crashes
-      console.warn(`Supabase ${table} fetch failed. Using local storage.`);
+      failedTables.add(table);
     }
     return [];
   },
 
-  // Save locally by default
   async insert(table: string, userId: string, item: any) {
     const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
     const newItem = { 
@@ -40,10 +44,11 @@ export const storage = {
     const updatedData = [newItem, ...localData];
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
-    // Attempt background sync but don't wait for it
-    supabase.from(table).insert([newItem]).then(({ error }) => {
-      if (error) console.warn(`Background sync failed for ${table}`);
-    });
+    if (!failedTables.has(table)) {
+      supabase.from(table).insert([newItem]).then(({ status }) => {
+        if (status === 404) failedTables.add(table);
+      });
+    }
 
     return newItem;
   },
@@ -55,10 +60,11 @@ export const storage = {
     );
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
-    // Background sync
-    supabase.from(table).update(updates).eq('id', id).then(({ error }) => {
-      if (error) console.warn(`Background update failed for ${table}`);
-    });
+    if (!failedTables.has(table)) {
+      supabase.from(table).update(updates).eq('id', id).then(({ status }) => {
+        if (status === 404) failedTables.add(table);
+      });
+    }
 
     return updates;
   },
@@ -68,26 +74,31 @@ export const storage = {
     const filteredData = localData.filter((item: any) => item.id !== id);
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(filteredData));
     
-    // Background sync
-    supabase.from(table).delete().eq('id', id).then(({ error }) => {
-      if (error) console.warn(`Background delete failed for ${table}`);
-    });
+    if (!failedTables.has(table)) {
+      supabase.from(table).delete().eq('id', id).then(({ status }) => {
+        if (status === 404) failedTables.add(table);
+      });
+    }
   },
 
-  // Manual sync to Supabase
   async syncToCloud(table: string, userId: string) {
     const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
     if (localData.length === 0) return { success: false, message: "No local data to sync." };
 
     try {
-      const { error } = await supabase
+      const { error, status } = await supabase
         .from(table)
         .upsert(localData.map(item => ({ ...item, user_id: userId })));
       
+      if (status === 404) {
+        failedTables.add(table);
+        return { success: false, message: "Table does not exist in Supabase." };
+      }
+
       if (error) throw error;
       return { success: true, message: "Cloud sync complete." };
     } catch (err: any) {
-      return { success: false, message: "Sync failed. Table might not exist in Supabase." };
+      return { success: false, message: "Sync failed. Check connection." };
     }
   }
 };
