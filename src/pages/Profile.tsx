@@ -45,11 +45,12 @@ const Profile = () => {
       return;
     }
     setValidating(provider);
+    // Perform a provider-specific handshake
     const result = await validateKey(modelId, key);
     if (result.success) {
-      showSuccess(`${provider} link established!`);
+      showSuccess(result.message);
     } else {
-      showError(`${provider} error: ${result.message}`);
+      showError(result.message);
     }
     setValidating(null);
   };

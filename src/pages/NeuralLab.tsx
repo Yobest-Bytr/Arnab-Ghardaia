@@ -8,7 +8,7 @@ import {
   AlertTriangle, Shield, Settings, Globe, Bell, MoreHorizontal, Maximize2, RefreshCw,
   Github, Database, ExternalLink, CheckCircle2, Info, Folder, RotateCcw, Trash2,
   ArrowLeft, ArrowRight, MousePointer2, Pencil, Maximize, Lock, Key, Cloud, Activity, Box, Wand2, LayoutGrid,
-  ChevronLeft, RotateCcw as RestartIcon, Rocket, Share2, CheckCircle
+  ChevronLeft, RotateCcw as RestartIcon, Rocket, Share2, CheckCircle, Package, Lightbulb, Wand, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -64,11 +64,16 @@ const NeuralLab = () => {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isConsoleOpen, setIsConsoleOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('preview');
+  const [aiTab, setAiTab] = useState<'chat' | 'packages' | 'insights'>('chat');
   const [mainMode, setMainMode] = useState<'dashboard' | 'workspace'>('dashboard');
   const [editorContent, setEditorContent] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
   const [currentPath, setCurrentPath] = useState('/');
   
+  // Package Management
+  const [installedPackages, setInstalledPackages] = useState<string[]>(['react', 'react-dom', 'lucide-react', 'framer-motion']);
+  const [packageSearch, setPackageSearch] = useState('');
+
   // Problems State
   const [problems, setProblems] = useState<any[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -143,6 +148,17 @@ const NeuralLab = () => {
     } else {
       showError(result.message);
     }
+  };
+
+  const handleInstallPackage = (pkg: string) => {
+    if (installedPackages.includes(pkg)) {
+      showError(`${pkg} is already installed.`);
+      return;
+    }
+    addLog('info', `Installing package: ${pkg}...`);
+    setInstalledPackages(prev => [...prev, pkg]);
+    showSuccess(`Package ${pkg} installed successfully.`);
+    updatePreview();
   };
 
   const handleRunChecks = () => {
@@ -292,6 +308,7 @@ const NeuralLab = () => {
               <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
               <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
               <script src="https://cdn.tailwindcss.com"></script>
+              ${installedPackages.map(pkg => `<script src="https://esm.sh/${pkg}"></script>`).join('\n')}
               <style>body { margin: 0; background: #020408; color: white; font-family: sans-serif; }</style>
             </head>
             <body>
@@ -470,15 +487,127 @@ const NeuralLab = () => {
                         </ResizablePanel>
                         <ResizableHandle className="w-1 bg-white/5 hover:bg-indigo-500/30 transition-colors" />
                         <ResizablePanel defaultSize={40}>
-                          <div className="h-full flex flex-col p-6 gap-6 bg-[#0a0a0a] border-l border-white/5">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3"><BrainCircuit size={20} className="text-indigo-400" /><h2 className="text-xs font-black uppercase tracking-widest">AI Assistant</h2></div>
+                          <div className="h-full flex flex-col bg-[#0a0a0a] border-l border-white/5">
+                            {/* AI Assistant Header Tabs */}
+                            <div className="flex items-center border-b border-white/5 bg-black/20">
+                              <button onClick={() => setAiTab('chat')} className={cn("flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2", aiTab === 'chat' ? "text-indigo-400 border-indigo-500 bg-white/5" : "text-white/20 border-transparent hover:text-white/40")}>
+                                <MessageSquare size={14} /> Chat
+                              </button>
+                              <button onClick={() => setAiTab('packages')} className={cn("flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2", aiTab === 'packages' ? "text-indigo-400 border-indigo-500 bg-white/5" : "text-white/20 border-transparent hover:text-white/40")}>
+                                <Package size={14} /> Packages
+                              </button>
+                              <button onClick={() => setAiTab('insights')} className={cn("flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest transition-all border-b-2", aiTab === 'insights' ? "text-indigo-400 border-indigo-500 bg-white/5" : "text-white/20 border-transparent hover:text-white/40")}>
+                                <Lightbulb size={14} /> Insights
+                              </button>
                             </div>
-                            <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                              {messages.map((msg) => <ChatMessage key={msg.id} {...msg} onApplyCode={handleApplyCode} />)}
-                              {isGenerating && <Loader2 className="animate-spin text-indigo-400 mx-auto" size={20} />}
+
+                            <div className="flex-1 overflow-hidden flex flex-col p-6">
+                              <AnimatePresence mode="wait">
+                                {aiTab === 'chat' && (
+                                  <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                                    <div className="flex items-center gap-2 mb-4 px-2 py-1.5 bg-white/5 rounded-xl border border-white/5">
+                                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Neural Context: {selectedScript?.title || 'Global'}</span>
+                                    </div>
+                                    <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
+                                      {messages.length === 0 && (
+                                        <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                                          <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6 border border-indigo-500/20">
+                                            <BrainCircuit size={32} />
+                                          </div>
+                                          <h3 className="text-xl font-black mb-2">Neural Assistant</h3>
+                                          <p className="text-sm text-white/40 font-medium mb-8">Ask me to build components, fix bugs, or install packages.</p>
+                                          <div className="grid grid-cols-2 gap-3 w-full">
+                                            {['Fix Bugs', 'Optimize', 'Explain', 'Document'].map(preset => (
+                                              <button key={preset} onClick={() => setInput(`Please ${preset.toLowerCase()} the current script.`)} className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-all text-left flex items-center gap-2">
+                                                <Wand size={12} className="text-indigo-400" /> {preset}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {messages.map((msg) => <ChatMessage key={msg.id} {...msg} onApplyCode={handleApplyCode} />)}
+                                      {isGenerating && (
+                                        <div className="flex gap-3 animate-pulse">
+                                          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 shrink-0" />
+                                          <div className="space-y-2 flex-1">
+                                            <div className="h-4 bg-white/5 rounded w-3/4" />
+                                            <div className="h-4 bg-white/5 rounded w-1/2" />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="mt-4">
+                                      <ChatInput value={input} onChange={setInput} onSubmit={handleSend} isGenerating={isGenerating} selectedModelId={selectedModel.id} onModelChange={setSelectedModel} onBuild={handleBuild} onFileAttach={setAttachedFile} />
+                                    </div>
+                                  </motion.div>
+                                )}
+
+                                {aiTab === 'packages' && (
+                                  <motion.div key="packages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                                    <div className="relative mb-6">
+                                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                                      <input 
+                                        type="text" 
+                                        placeholder="Search npm packages..." 
+                                        value={packageSearch}
+                                        onChange={(e) => setPackageSearch(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleInstallPackage(packageSearch)}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:border-indigo-500/50 transition-all"
+                                      />
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                                      <h4 className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-4">Installed Modules</h4>
+                                      {installedPackages.map(pkg => (
+                                        <div key={pkg} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl group">
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                              <Box size={16} />
+                                            </div>
+                                            <div>
+                                              <p className="text-sm font-bold">{pkg}</p>
+                                              <p className="text-[9px] text-white/20 font-mono">latest</p>
+                                            </div>
+                                          </div>
+                                          <button onClick={() => setInstalledPackages(prev => prev.filter(p => p !== pkg))} className="opacity-0 group-hover:opacity-100 p-2 text-white/20 hover:text-rose-400 transition-all">
+                                            <Trash2 size={14} />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </motion.div>
+                                )}
+
+                                {aiTab === 'insights' && (
+                                  <motion.div key="insights" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col overflow-hidden">
+                                    <div className="space-y-6 overflow-y-auto custom-scrollbar pr-2">
+                                      <div className="p-6 bg-indigo-500/10 border border-indigo-500/20 rounded-[2rem]">
+                                        <div className="flex items-center gap-3 mb-4">
+                                          <Sparkles className="text-indigo-400" size={20} />
+                                          <h3 className="text-lg font-black">Neural Optimization</h3>
+                                        </div>
+                                        <p className="text-sm text-white/60 leading-relaxed mb-6">I've analyzed your current script and found 3 potential improvements.</p>
+                                        <div className="space-y-3">
+                                          {[
+                                            { title: 'Memoize Callbacks', desc: 'Use useCallback for event handlers to prevent re-renders.' },
+                                            { title: 'Extract Constants', desc: 'Move static configuration outside the component body.' },
+                                            { title: 'Add Error Boundary', desc: 'Wrap the main view to handle runtime exceptions.' }
+                                          ].map((insight, i) => (
+                                            <div key={i} className="p-4 bg-black/40 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer group">
+                                              <div className="flex items-center justify-between mb-1">
+                                                <p className="text-xs font-black text-indigo-400">{insight.title}</p>
+                                                <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all" />
+                                              </div>
+                                              <p className="text-[11px] text-white/40 font-medium">{insight.desc}</p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
-                            <ChatInput value={input} onChange={setInput} onSubmit={handleSend} isGenerating={isGenerating} selectedModelId={selectedModel.id} onModelChange={setSelectedModel} onBuild={handleBuild} onFileAttach={setAttachedFile} />
                           </div>
                         </ResizablePanel>
                       </ResizablePanelGroup>
