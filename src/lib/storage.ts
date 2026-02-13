@@ -21,7 +21,8 @@ export const storage = {
         return data;
       }
     } catch (err) {
-      console.warn(`Supabase ${table} fetch failed.`);
+      // Silently fail and return empty array to prevent UI crashes
+      console.warn(`Supabase ${table} fetch failed. Using local storage.`);
     }
     return [];
   },
@@ -38,6 +39,12 @@ export const storage = {
     
     const updatedData = [newItem, ...localData];
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
+    
+    // Attempt background sync but don't wait for it
+    supabase.from(table).insert([newItem]).then(({ error }) => {
+      if (error) console.warn(`Background sync failed for ${table}`);
+    });
+
     return newItem;
   },
 
@@ -47,6 +54,12 @@ export const storage = {
       item.id === id ? { ...item, ...updates, updated_at: new Date().toISOString() } : item
     );
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
+    
+    // Background sync
+    supabase.from(table).update(updates).eq('id', id).then(({ error }) => {
+      if (error) console.warn(`Background update failed for ${table}`);
+    });
+
     return updates;
   },
 
@@ -54,6 +67,11 @@ export const storage = {
     const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
     const filteredData = localData.filter((item: any) => item.id !== id);
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(filteredData));
+    
+    // Background sync
+    supabase.from(table).delete().eq('id', id).then(({ error }) => {
+      if (error) console.warn(`Background delete failed for ${table}`);
+    });
   },
 
   // Manual sync to Supabase
@@ -69,7 +87,7 @@ export const storage = {
       if (error) throw error;
       return { success: true, message: "Cloud sync complete." };
     } catch (err: any) {
-      return { success: false, message: err.message || "Sync failed. Table might not exist." };
+      return { success: false, message: "Sync failed. Table might not exist in Supabase." };
     }
   }
 };
