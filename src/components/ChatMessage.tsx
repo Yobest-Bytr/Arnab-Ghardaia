@@ -4,12 +4,13 @@ import React, { useState } from 'react';
 import { 
   ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, 
   Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, 
-  Activity, X, Info, CornerDownRight, Clock, FileEdit, FilePlus
+  Activity, X, Info, CornerDownRight, Clock, FileEdit, FilePlus,
+  Check as CheckIcon, X as CloseIcon, Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import CodeFrame from './CodeFrame';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -30,7 +31,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 }) => {
   const [isThoughtOpen, setIsThoughtOpen] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [approvedFiles, setApprovedFiles] = useState<string[]>([]);
+  const [fileStates, setFileStates] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({});
 
   // Parse the content for Thinking and File sections
   const parseContent = (text: string) => {
@@ -68,57 +69,94 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     return null;
   };
 
+  const handleAction = (path: string, code: string, action: 'approved' | 'rejected') => {
+    if (action === 'approved' && onApplyCode) {
+      onApplyCode(code, path, 'replace');
+      showSuccess(`Script integrated: ${path}`);
+    } else if (action === 'rejected') {
+      showError(`Proposal rejected: ${path}`);
+    }
+    setFileStates(prev => ({ ...prev, [path]: action }));
+  };
+
   const renderFileSection = (path: string, sectionContent: string, index: number) => {
     const code = extractCode(sectionContent);
     const fileName = path.split('/').pop() || path;
-    const isApproved = approvedFiles.includes(path);
+    const state = fileStates[path] || 'pending';
 
     return (
-      <div key={index} className="my-6 bg-[#121212] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+      <motion.div 
+        key={index} 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn(
+          "my-6 rounded-2xl overflow-hidden border transition-all duration-500 shadow-2xl",
+          state === 'approved' ? "border-emerald-500/30 bg-emerald-500/5" : 
+          state === 'rejected' ? "border-rose-500/30 bg-rose-500/5 opacity-60" : 
+          "border-white/10 bg-[#121212]"
+        )}
+      >
         <div className="px-5 py-4 bg-white/5 border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+            <div className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center border transition-colors",
+              state === 'approved' ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
+              state === 'rejected' ? "bg-rose-500/20 text-rose-400 border-rose-500/30" :
+              "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+            )}>
               <FileCode size={20} />
             </div>
             <div>
-              <h4 className="text-sm font-black text-white">{fileName}</h4>
+              <h4 className="text-sm font-black text-white flex items-center gap-2">
+                {fileName}
+                {state === 'approved' && <CheckCircle2 size={14} className="text-emerald-400" />}
+              </h4>
               <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{path}</p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => {
-                if (code && onApplyCode) {
-                  onApplyCode(code, path, 'replace');
-                  setApprovedFiles(prev => [...prev, path]);
-                  showSuccess(`Applied changes to ${fileName}`);
-                }
-              }}
-              disabled={isApproved || !code}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                isApproved 
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                  : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20"
-              )}
-            >
-              {isApproved ? <CheckCircle2 size={14} /> : <FilePlus size={14} />}
-              {isApproved ? "Applied" : "Apply Changes"}
-            </button>
+            {state === 'pending' ? (
+              <>
+                <button 
+                  onClick={() => code && handleAction(path, code, 'rejected')}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-white/40 hover:text-rose-400 border border-white/5 transition-all"
+                  title="Reject Proposal"
+                >
+                  <CloseIcon size={16} />
+                </button>
+                <button 
+                  onClick={() => code && handleAction(path, code, 'approved')}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all"
+                >
+                  <CheckIcon size={14} /> Approve
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={() => setFileStates(prev => {
+                  const newState = { ...prev };
+                  delete newState[path];
+                  return newState;
+                })}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 border border-white/5 transition-all"
+              >
+                <RotateCcw size={14} /> Undo
+              </button>
+            )}
           </div>
         </div>
         
         {code && (
-          <div className="p-0">
+          <div className={cn("p-0 transition-all", state === 'rejected' && "grayscale blur-[1px]")}>
             <CodeFrame 
               code={code} 
               language={path.split('.').pop() || 'typescript'} 
-              onApply={(c, mode) => onApplyCode?.(c, path, mode)} 
+              onApply={state === 'pending' ? (c, mode) => onApplyCode?.(c, path, mode) : undefined} 
             />
           </div>
         )}
-      </div>
+      </motion.div>
     );
   };
 
