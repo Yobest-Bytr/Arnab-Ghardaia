@@ -44,13 +44,12 @@ const App = () => (
       <LanguageProvider>
         <TooltipProvider>
           <Toaster />
-          <Toaster />
           <Sonner position="top-center" expand={true} richColors />
           <AIEntryModal />
           <div className="relative min-h-screen overflow-hidden">
             <SpaceBackground />
             <MouseTrail />
-            <BrowserRouter>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />

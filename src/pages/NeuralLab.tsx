@@ -283,10 +283,32 @@ const NeuralLab = () => {
         const indexHtml = projectScripts.find(s => s.title === 'index.html')?.content || '<h1>No index.html</h1>';
         const appTsx = projectScripts.find(s => s.title === 'App.tsx')?.content || '';
         
-        const finalHtml = indexHtml.replace('<div id="root"></div>', `<div id="root">${appTsx.includes('return') ? '<div class="p-10">Rendering App Component...</div>' : ''}</div>`);
+        // Advanced Preview: Inject Babel and React for live transpilation
+        const finalHtml = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+              <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+              <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <style>body { margin: 0; background: #020408; color: white; font-family: sans-serif; }</style>
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="text/babel">
+                ${appTsx.replace(/import.*from.*;/g, '')}
+                
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(<App />);
+              </script>
+            </body>
+          </html>
+        `;
         
         doc.write(finalHtml);
         doc.close();
+        addLog('info', 'Live preview updated with Babel transpilation.');
       }
     }
   };
