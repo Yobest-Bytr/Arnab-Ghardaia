@@ -19,16 +19,12 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('https://kyzjxatlcfypghkianon.supabase.co/functions/v1/send-verification-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer sb_publishable_G-9Txvs0NUn5FYDsTK7_BA_NLA0LFt4`
-        },
-        body: JSON.stringify({ email, userId: 'reset-request' })
+      // Correctly invoke the Supabase Edge Function
+      const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
+        body: { email, userId: 'reset-request' }
       });
 
-      if (!response.ok) {
+      if (funcError) {
         showError('Neural link delayed. Use 123456 for demo.');
       } else {
         showSuccess('Reset code sent to your Gmail.');

@@ -41,8 +41,7 @@ const Signup = () => {
       if (data.user) {
         setUserId(data.user.id);
         
-        // Attempt to call the Edge Function
-        // Note: This will fail with 401 if the key in client.ts is a Stripe key
+        // Correctly invoke the Supabase Edge Function
         const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
           body: { email, userId: data.user.id }
         });
@@ -67,7 +66,6 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // If the user enters the demo code, we skip the DB check
       if (verificationCode === '123456') {
         setSuccess(true);
         showSuccess('Neural identity confirmed (Demo Mode).');
@@ -75,7 +73,6 @@ const Signup = () => {
         return;
       }
 
-      // Otherwise, check the database
       const { data, error } = await supabase
         .from('auth_codes')
         .select('*')
