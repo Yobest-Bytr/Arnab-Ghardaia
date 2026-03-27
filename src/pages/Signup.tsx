@@ -34,56 +34,21 @@ const Signup = () => {
     }
     setLoading(true);
     try {
-      // 1. Create the user in Supabase Auth
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            email_confirmed: false
-          }
-        }
-      });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       
       if (error) throw error;
 
       if (data.user) {
         setUserId(data.user.id);
-        
-        // 2. Generate a 6-digit code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // 3. Store the code in the database (ensure 'auth_codes' table exists)
-        const { error: dbError } = await supabase
-          .from('auth_codes')
-          .insert([{ 
-            user_id: data.user.id, 
-            code: code,
-            email: email,
-            type: 'signup'
-          }]);
-
-        if (dbError) {
-          console.error("Database error:", dbError);
-          // If table doesn't exist, we'll use the demo code 123456
-        }
-
-        // 4. Call the Edge Function to send the email via Gmail SMTP
         try {
+          // Calling the Edge Function with the new signature
           await supabase.functions.invoke('send-verification-code', {
-            body: { 
-              email, 
-              code,
-              subject: "Your Aranib Farm Verification Code",
-              smtp_user: "yobest.bytr47@gmail.com",
-              smtp_pass: "rwnjbedwmqqrysrj"
-            },
+            body: { email, userId: data.user.id },
           });
-          showSuccess('Verification code sent to your Gmail.');
+          showSuccess('Verification code transmitted.');
         } catch (fErr) {
           console.warn("Edge Function error, use 123456 for demo if needed.");
         }
-        
         setStep('verify');
       }
     } catch (error: any) {
@@ -109,12 +74,11 @@ const Signup = () => {
         throw new Error('Invalid verification code.');
       }
 
-      // Mark user as confirmed in your own logic or via another function
       setSuccess(true);
       showSuccess('Email verified successfully.');
       setTimeout(() => navigate('/dashboard'), 3000);
     } catch (error: any) {
-      showError(error.message || 'Verification failed.');
+      showError(error.message || 'Verification failed. Use 123456 for demo.');
     } finally {
       setLoading(false);
     }
@@ -137,7 +101,7 @@ const Signup = () => {
             {step === 'signup' ? 'Join Aranib Farm' : 'Verify Your Email'}
           </h1>
           <p className="text-slate-500 font-medium mt-2">
-            {step === 'signup' ? 'Start managing your rabbit business today.' : `Enter the 6-digit code sent to ${email}`}
+            {step === 'signup' ? 'Start managing your rabbit business today.' : `Enter the code sent to ${email}`}
           </p>
         </div>
 

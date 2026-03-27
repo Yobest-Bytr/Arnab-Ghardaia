@@ -19,7 +19,6 @@ export const storage = {
     const localData = localStorage.getItem(`${table}_${userId}`);
     if (localData) return JSON.parse(localData);
 
-    // Hard bypass: If offline or table is known to be missing, return empty immediately
     if (isMasterOffline || failedTables.has(table)) return [];
 
     try {
@@ -60,17 +59,20 @@ export const storage = {
     const updatedData = [newItem, ...localData];
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
-    // Only attempt network if not in hard-bypass mode
     if (!isMasterOffline && !failedTables.has(table)) {
-      supabase.from(table).insert([newItem]).then(({ status }) => {
-        if (status === 404 || status === 401) {
+      // Using async/await to avoid PromiseLike issues
+      (async () => {
+        try {
+          const { status } = await supabase.from(table).insert([newItem]);
+          if (status === 404 || status === 401) {
+            failedTables.add(table);
+            updateFailedTables();
+          }
+        } catch (e) {
           failedTables.add(table);
           updateFailedTables();
         }
-      }).catch(() => {
-        failedTables.add(table);
-        updateFailedTables();
-      });
+      })();
     }
 
     return newItem;
@@ -84,15 +86,18 @@ export const storage = {
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
     if (!isMasterOffline && !failedTables.has(table)) {
-      supabase.from(table).update(updates).eq('id', id).then(({ status }) => {
-        if (status === 404 || status === 401) {
+      (async () => {
+        try {
+          const { status } = await supabase.from(table).update(updates).eq('id', id);
+          if (status === 404 || status === 401) {
+            failedTables.add(table);
+            updateFailedTables();
+          }
+        } catch (e) {
           failedTables.add(table);
           updateFailedTables();
         }
-      }).catch(() => {
-        failedTables.add(table);
-        updateFailedTables();
-      });
+      })();
     }
 
     return updates;
@@ -104,15 +109,18 @@ export const storage = {
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(filteredData));
     
     if (!isMasterOffline && !failedTables.has(table)) {
-      supabase.from(table).delete().eq('id', id).then(({ status }) => {
-        if (status === 404 || status === 401) {
+      (async () => {
+        try {
+          const { status } = await supabase.from(table).delete().eq('id', id);
+          if (status === 404 || status === 401) {
+            failedTables.add(table);
+            updateFailedTables();
+          }
+        } catch (e) {
           failedTables.add(table);
           updateFailedTables();
         }
-      }).catch(() => {
-        failedTables.add(table);
-        updateFailedTables();
-      });
+      })();
     }
   },
 
