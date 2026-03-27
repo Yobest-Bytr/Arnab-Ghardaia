@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Sparkles, Globe, ChevronDown, Menu, X, LayoutDashboard, Code, Zap, Home, Settings } from 'lucide-react';
-import AvatarDecoration from '@/components/AvatarDecoration';
+import { Rabbit, Globe, ChevronDown, Menu, LayoutDashboard, ShoppingBag, Info, Phone } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,103 +13,78 @@ import { cn } from '@/lib/utils';
 
 const Navbar = () => {
   const { user } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
-  const [effect, setEffect] = useState<string>('none');
 
-  useEffect(() => {
-    if (user) {
-      const savedEffect = localStorage.getItem(`avatar_effect_${user.id}`);
-      if (savedEffect) setEffect(savedEffect);
-    }
-  }, [user]);
-
-  const languages = [
-    { code: 'en', label: 'English', flag: '🇺🇸' },
-    { code: 'fr', label: 'Français', flag: '🇫🇷' },
-    { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+  const navLinks = [
+    { to: '/', label: t('home'), icon: Rabbit },
+    { to: '/shop', label: t('inventory'), icon: ShoppingBag },
+    { to: '/about', label: t('about'), icon: Info },
+    { to: '/contact', label: t('contact'), icon: Phone },
   ];
 
-  const isNeuralLab = location.pathname === '/neural-lab';
-
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center p-4 md:p-8 pointer-events-none">
-      <nav className={cn(
-        "pill-nav flex items-center gap-4 md:gap-8 max-w-7xl w-full justify-between pointer-events-auto shadow-2xl transition-all duration-500",
-        isNeuralLab ? "bg-[#0a0a0a]/80 border-white/5" : "bg-white/5"
-      )}>
-        <Link to="/" className="flex items-center gap-2 group shrink-0">
-          <Sparkles className="w-5 h-5 text-[#99f6ff]" />
-          <span className="font-bold text-lg tracking-tight text-white">Yobest</span>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-emerald-50">
+      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200 group-hover:rotate-12 transition-transform">
+            <Rabbit size={24} />
+          </div>
+          <span className="font-black text-xl tracking-tight text-slate-900">Aranib <span className="text-emerald-600">Farm</span></span>
         </Link>
 
         {/* Desktop Links */}
-        <div className="hidden xl:flex items-center gap-6">
-          <Link to="/" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Home</Link>
-          <Link to="/showcase" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Showcase</Link>
-          <Link to="/pricing" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Pricing</Link>
-          <Link to="/dashboard" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Workspace</Link>
-          <Link to="/neural-lab" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">Neural Lab</Link>
+        <div className="hidden lg:flex items-center gap-8">
+          {navLinks.map((link) => (
+            <Link 
+              key={link.to} 
+              to={link.to} 
+              className={cn(
+                "text-sm font-bold transition-colors",
+                location.pathname === link.to ? "text-emerald-600" : "text-slate-500 hover:text-emerald-600"
+              )}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
-        {/* Mobile Icons / Actions */}
-        <div className="flex items-center gap-3 md:gap-6">
-          {/* Mobile Quick Access Icons */}
-          <div className="flex xl:hidden items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
-            <Link to="/" className={cn("p-2 rounded-full transition-all", location.pathname === '/' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white")}>
-              <Home size={16} />
-            </Link>
-            <Link to="/dashboard" className={cn("p-2 rounded-full transition-all", location.pathname === '/dashboard' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white")}>
-              <LayoutDashboard size={16} />
-            </Link>
-            <Link to="/neural-lab" className={cn("p-2 rounded-full transition-all", location.pathname === '/neural-lab' ? "bg-indigo-600 text-white" : "text-white/40 hover:text-white")}>
-              <Code size={16} />
-            </Link>
-          </div>
-
+        <div className="flex items-center gap-4">
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 text-[12px] font-bold text-white/50 hover:text-white transition-colors outline-none">
-              <Globe size={16} className="text-[#99f6ff]" />
-              <span className="uppercase hidden sm:inline">{language}</span>
-              <ChevronDown size={12} />
+            <DropdownMenuTrigger className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors outline-none">
+              <Globe size={18} />
+              <span className="uppercase">{language}</span>
+              <ChevronDown size={14} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-[#020408]/90 border-white/10 backdrop-blur-xl rounded-2xl p-2">
-              {languages.map((lang) => (
-                <DropdownMenuItem
-                  key={lang.code}
-                  onClick={() => setLanguage(lang.code as any)}
-                  className="flex items-center gap-3 px-4 py-2 rounded-xl text-white hover:bg-white/10 cursor-pointer transition-colors"
-                >
-                  <span className="text-lg">{lang.flag}</span>
-                  <span className="text-xs font-bold">{lang.label}</span>
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent className="bg-white border-emerald-50 rounded-xl p-2">
+              <DropdownMenuItem onClick={() => setLanguage('en')} className="flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer hover:bg-emerald-50">
+                🇺🇸 English
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage('ar')} className="flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer hover:bg-emerald-50">
+                🇸🇦 العربية
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="h-4 w-[1px] bg-white/10 hidden sm:block" />
+          <div className="h-6 w-[1px] bg-emerald-100 mx-2" />
 
           {!user ? (
             <Link to="/login">
-              <button className="bg-white/10 hover:bg-white/20 text-white text-[13px] font-bold px-5 py-2 rounded-full transition-all whitespace-nowrap">
-                Login
+              <button className="farm-button h-11 px-6 text-sm">
+                {t('login')}
               </button>
             </Link>
           ) : (
-            <Link to="/profile" className="flex items-center gap-3 group">
-              <span className="text-[13px] font-bold text-white/50 group-hover:text-white transition-colors hidden sm:inline">
-                {user.email?.split('@')[0]}
-              </span>
-              <AvatarDecoration 
-                fallbackText={user.email || ''} 
-                effect={effect} 
-                size="sm" 
-              />
+            <Link to="/dashboard">
+              <button className="flex items-center gap-2 h-11 px-6 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-sm hover:bg-emerald-100 transition-all">
+                <LayoutDashboard size={18} />
+                {t('dashboard')}
+              </button>
             </Link>
           )}
         </div>
-      </nav>
-    </div>
+      </div>
+    </nav>
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type Language = 'en' | 'fr' | 'ar';
+type Language = 'en' | 'ar';
 
 interface Translations {
   [key: string]: {
@@ -9,46 +9,41 @@ interface Translations {
 }
 
 const translations: Translations = {
-  heroTitle: {
-    en: "Master Your Time With AI",
-    fr: "Maîtrisez votre temps avec l'IA",
-    ar: "تحكم في وقتك باستخدام الذكاء الاصطناعي"
-  },
-  heroSubtitle: {
-    en: "Yobest AI is a cognitive engine that learns your rhythm and optimizes your life for peak performance.",
-    fr: "Yobest AI est un moteur cognitif qui apprend votre rythme et optimise votre vie pour des performances maximales.",
-    ar: "Yobest AI هو محرك معرفي يتعلم إيقاعك ويحسن حياتك لتحقيق ذروة الأداء."
-  },
-  getStarted: {
-    en: "Get Started Free",
-    fr: "Commencer Gratuitement",
-    ar: "ابدأ مجاناً"
-  },
-  watchStory: {
-    en: "Watch Story",
-    fr: "Voir l'histoire",
-    ar: "شاهد القصة"
-  },
-  usersJoined: {
-    en: "users already joined",
-    fr: "utilisateurs ont déjà rejoint",
-    ar: "مستخدم انضموا بالفعل"
-  },
-  showcaseTitle: {
-    en: "Galactic Projects",
-    fr: "Projets Galactiques",
-    ar: "مشاريع مجرية"
-  },
-  pricingTitle: {
-    en: "Choose Your Orbit",
-    fr: "Choisissez votre orbite",
-    ar: "اختر مدارك"
-  },
-  testimonialsTitle: {
-    en: "Voices From The Void",
-    fr: "Voix du Néant",
-    ar: "أصوات من الفراغ"
-  }
+  // General
+  appName: { en: "Aranib Farm", ar: "مزرعة الأرانب" },
+  dashboard: { en: "Dashboard", ar: "لوحة التحكم" },
+  inventory: { en: "Inventory", ar: "المخزون" },
+  breeding: { en: "Breeding", ar: "التزاوج" },
+  reports: { en: "Reports", ar: "التقارير" },
+  about: { en: "About Us", ar: "من نحن" },
+  contact: { en: "Contact", ar: "اتصل بنا" },
+  login: { en: "Login", ar: "تسجيل الدخول" },
+  signup: { en: "Sign Up", ar: "إنشاء حساب" },
+  
+  // Hero
+  heroTitle: { en: "Smart Rabbit Management", ar: "الإدارة الذكية لمزارع الأرانب" },
+  heroSubtitle: { en: "Track, manage, and grow your rabbit business with real-time statistics and complete inventory control.", ar: "تتبع وإدارة وتنمية أعمال الأرانب الخاصة بك من خلال إحصائيات فورية وتحكم كامل في المخزون." },
+  goDashboard: { en: "Go to Dashboard", ar: "انتقل إلى لوحة التحكم" },
+  viewRabbits: { en: "View Our Rabbits", ar: "شاهد أرانبنا" },
+  
+  // Stats
+  totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب" },
+  males: { en: "Males", ar: "الذكور" },
+  females: { en: "Females", ar: "الإناث" },
+  newBorns: { en: "New Borns", ar: "المواليد الجدد" },
+  breeds: { en: "Breeds", ar: "السلالات" },
+  
+  // Inventory
+  addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد" },
+  searchPlaceholder: { en: "Search by name or breed...", ar: "ابحث بالاسم أو السلالة..." },
+  id: { en: "ID", ar: "المعرف" },
+  name: { en: "Name", ar: "الاسم" },
+  breed: { en: "Breed", ar: "السلالة" },
+  gender: { en: "Gender", ar: "الجنس" },
+  age: { en: "Age", ar: "العمر" },
+  status: { en: "Status", ar: "الحالة" },
+  health: { en: "Health", ar: "الصحة" },
+  actions: { en: "Actions", ar: "الإجراءات" }
 };
 
 interface LanguageContextType {
@@ -61,7 +56,7 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>('ar');
 
   const t = (key: string) => {
     return translations[key]?.[language] || key;

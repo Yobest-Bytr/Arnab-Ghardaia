@@ -1,322 +1,173 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
-import { Button } from '@/components/ui/button';
-import { Plus, MoreVertical, Calendar, CheckCircle2, Clock, BrainCircuit, Sparkles, TrendingUp, Loader2, Code, MessageSquare, Save, History, Edit2, Trash2, ExternalLink } from 'lucide-react';
-import { showSuccess, showError } from '@/utils/toast';
-import { motion, AnimatePresence } from 'framer-motion';
-import ReactConfetti from 'react-confetti';
-import { grokChat } from '@/lib/puter';
-import ScriptEditor from '@/components/ScriptEditor';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { 
+  Rabbit, Users, Activity, TrendingUp, Plus, 
+  Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
+  ArrowDownRight, PieChart as PieIcon, BarChart3 
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell 
+} from 'recharts';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [scripts, setScripts] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[]>([]);
+  const { t, isRTL } = useLanguage();
+  const [rabbits, setRabbits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAiGenerating, setIsAiGenerating] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'scripts' | 'history'>('tasks');
-  const [editingScript, setEditingScript] = useState<any>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchData();
-    }
+    if (user) fetchRabbits();
   }, [user]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Fetch Scripts
-      const { data: scriptData, error: scriptError } = await supabase
-        .from('scripts')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      
-      if (!scriptError && scriptData) {
-        setScripts(scriptData);
-      } else {
-        const localScripts = JSON.parse(localStorage.getItem(`scripts_${user?.id}`) || '[]');
-        setScripts(localScripts);
-      }
-
-      // Fetch Tasks
-      const { data: taskData, error: taskError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      
-      if (!taskError && taskData) {
-        setTasks(taskData);
-      } else {
-        const localTasks = JSON.parse(localStorage.getItem(`tasks_${user?.id}`) || '[]');
-        setTasks(localTasks);
-      }
-
-      const savedMsgs = localStorage.getItem(`messages_${user?.id}`);
-      if (savedMsgs) setMessages(JSON.parse(savedMsgs));
-    } catch (error: any) {
-      console.error("Fetch error:", error);
-    } finally {
-      setLoading(false);
-    }
+  const fetchRabbits = async () => {
+    const data = await storage.get('rabbits', user?.id || '');
+    setRabbits(data);
+    setLoading(false);
   };
 
-  const handleAiSuggest = async () => {
-    setIsAiGenerating(true);
-    try {
-      const suggestion = await grokChat("Suggest a single, highly productive task for a user today. Keep it under 10 words.", { modelId: 'yobest-ai', userId: user?.id });
-      
-      const newTask = {
-        user_id: user?.id,
-        title: suggestion,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      };
+  const stats = [
+    { label: t('totalRabbits'), val: rabbits.length, icon: Rabbit, color: "bg-emerald-500", trend: "+12%" },
+    { label: t('males'), val: rabbits.filter(r => r.gender === 'Male').length, icon: Users, color: "bg-blue-500", trend: "+5%" },
+    { label: t('females'), val: rabbits.filter(r => r.gender === 'Female').length, icon: Users, color: "bg-pink-500", trend: "+8%" },
+    { label: "Healthy", val: rabbits.filter(r => r.health_status === 'Healthy').length, icon: CheckCircle2, color: "bg-emerald-400", trend: "98%" },
+  ];
 
-      try {
-        const { data, error } = await supabase
-          .from('tasks')
-          .insert([newTask])
-          .select()
-          .single();
+  const chartData = [
+    { name: 'Jan', count: 400 },
+    { name: 'Feb', count: 300 },
+    { name: 'Mar', count: 600 },
+    { name: 'Apr', count: 800 },
+    { name: 'May', count: 700 },
+    { name: 'Jun', count: 900 },
+  ];
 
-        if (!error && data) {
-          setTasks([data, ...tasks]);
-          showSuccess('Grok suggested a new task.');
-        } else {
-          throw new Error("Supabase failed");
-        }
-      } catch (err) {
-        const localId = Date.now();
-        const localTask = { ...newTask, id: localId };
-        const updatedTasks = [localTask, ...tasks];
-        setTasks(updatedTasks);
-        localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updatedTasks));
-        showSuccess('Grok suggested a local task.');
-      }
-    } catch (error) {
-      showError('AI Engine failed to suggest.');
-    } finally {
-      setIsAiGenerating(false);
-    }
-  };
+  const genderData = [
+    { name: 'Males', value: rabbits.filter(r => r.gender === 'Male').length || 1 },
+    { name: 'Females', value: rabbits.filter(r => r.gender === 'Female').length || 1 },
+  ];
 
-  const handleDeleteScript = async (id: any) => {
-    try {
-      const { error } = await supabase
-        .from('scripts')
-        .delete()
-        .eq('id', id);
-
-      if (!error) {
-        setScripts(scripts.filter(s => s.id !== id));
-        showSuccess('Script purged from cloud.');
-      } else {
-        throw new Error("Supabase failed");
-      }
-    } catch (err) {
-      const updatedScripts = scripts.filter(s => s.id !== id);
-      setScripts(updatedScripts);
-      localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedScripts));
-      showSuccess('Script purged from local archive.');
-    }
-  };
-
-  const handleSaveScript = async (updatedScript: any) => {
-    try {
-      const { error } = await supabase
-        .from('scripts')
-        .update({ title: updatedScript.title, content: updatedScript.content })
-        .eq('id', updatedScript.id);
-
-      if (!error) {
-        setScripts(scripts.map(s => s.id === updatedScript.id ? updatedScript : s));
-        showSuccess('Script updated in cloud.');
-      } else {
-        throw new Error("Supabase failed");
-      }
-    } catch (err) {
-      const updatedScripts = scripts.map(s => s.id === updatedScript.id ? updatedScript : s);
-      setScripts(updatedScripts);
-      localStorage.setItem(`scripts_${user?.id}`, JSON.stringify(updatedScripts));
-      showSuccess('Script updated locally.');
-    }
-  };
+  const COLORS = ['#3b82f6', '#ec4899'];
 
   return (
-    <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
-      {showConfetti && <ReactConfetti numberOfPieces={200} recycle={false} />}
-      <div className="absolute inset-0 auron-radial pointer-events-none" />
+    <div className="min-h-screen bg-slate-50">
       <Navbar />
       
-      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto relative z-10">
-        <motion.header 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12"
-        >
+      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/40 mb-4 uppercase tracking-widest">
-              <Sparkles size={12} className="text-[#99f6ff]" />
-              <span>Cognitive Workspace</span>
-            </div>
-            <h1 className="text-5xl font-black tracking-tighter dopamine-text">
-              Neural Archive
-            </h1>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">{t('dashboard')}</h1>
+            <p className="text-slate-500 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
-          <div className="flex gap-4">
-            <button 
-              onClick={handleAiSuggest}
-              disabled={isAiGenerating}
-              className="pill-nav px-8 h-14 flex items-center gap-3 bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 transition-all font-bold"
-            >
-              {isAiGenerating ? <Loader2 className="animate-spin" size={20} /> : <BrainCircuit size={20} />}
-              AI Suggest
+          <div className="flex gap-3">
+            <button className="farm-button flex items-center gap-2">
+              <Plus size={20} />
+              {t('addRabbit')}
             </button>
           </div>
-        </motion.header>
+        </header>
 
-        <div className="flex gap-4 mb-12 border-b border-white/5 pb-4">
-          {[
-            { id: 'tasks', label: 'Tasks', icon: CheckCircle2 },
-            { id: 'scripts', label: 'Scripts', icon: Code },
-            { id: 'history', label: 'AI History', icon: History },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all ${
-                activeTab === tab.id ? 'bg-indigo-600 text-white' : 'text-white/40 hover:text-white'
-              }`}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {stats.map((stat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="farm-card"
             >
-              <tab.icon size={18} />
-              {tab.label}
-            </button>
+              <div className="flex items-start justify-between mb-4">
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg", stat.color)}>
+                  <stat.icon size={24} />
+                </div>
+                <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg flex items-center gap-1">
+                  <ArrowUpRight size={12} /> {stat.trend}
+                </span>
+              </div>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</h3>
+              <p className="text-4xl font-black text-slate-900">{stat.val}</p>
+            </motion.div>
           ))}
         </div>
 
-        <div className="space-y-4">
-          {loading ? (
-            <div className="py-20 text-center text-white/20 font-medium">Synchronizing neural data...</div>
-          ) : (
-            <AnimatePresence mode="wait">
-              {activeTab === 'tasks' && (
-                <motion.div key="tasks" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  {tasks.length === 0 ? (
-                    <div className="py-32 text-center pill-nav border-dashed border-white/10">
-                      <p className="text-white/40 font-medium">No active tasks. Use AI Suggest to begin.</p>
-                    </div>
-                  ) : (
-                    tasks.map((task) => (
-                      <div key={task.id} className="pill-nav p-6 flex items-center justify-between mb-4 group hover:bg-white/10 transition-all">
-                        <div className="flex items-center gap-6">
-                          <div className={`w-6 h-6 rounded-full border-2 ${task.status === 'completed' ? 'bg-[#99f6ff] border-[#99f6ff]' : 'border-white/10'}`} />
-                          <h4 className={`text-lg font-bold ${task.status === 'completed' ? 'text-white/20 line-through' : 'text-white'}`}>{task.title}</h4>
-                        </div>
-                        <Button variant="ghost" size="icon" className="text-white/20 hover:text-white"><MoreVertical size={20} /></Button>
-                      </div>
-                    ))
-                  )}
-                </motion.div>
-              )}
+        {/* Charts Section */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 farm-card">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                <TrendingUp className="text-emerald-600" size={20} />
+                Population Growth
+              </h3>
+              <select className="bg-slate-50 border-none text-xs font-bold rounded-lg px-3 py-1.5 outline-none">
+                <option>Last 6 Months</option>
+                <option>Last Year</option>
+              </select>
+            </div>
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} fontWeight="bold" tickLine={false} axisLine={false} />
+                  <YAxis hide />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #f1f5f9', borderRadius: '1rem', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Area type="monotone" dataKey="count" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorCount)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
-              {activeTab === 'scripts' && (
-                <motion.div key="scripts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {scripts.length === 0 ? (
-                      <div className="col-span-2 py-32 text-center pill-nav border-dashed border-white/10">
-                        <p className="text-white/40 font-medium">No saved scripts found.</p>
-                      </div>
-                    ) : (
-                      scripts.map((script) => (
-                        <div key={script.id} className="pill-nav p-8 bg-white/5 border-white/10 group relative">
-                          <div className="flex items-center justify-between mb-6">
-                            <h4 className="text-xl font-black">{script.title}</h4>
-                            <div className="flex items-center gap-2">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-white/20 hover:text-white">
-                                    <MoreVertical size={20} />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="bg-[#020408] border-white/10 text-white">
-                                  <DropdownMenuItem onClick={() => setEditingScript(script)} className="flex items-center gap-2 cursor-pointer">
-                                    <Edit2 size={14} /> Edit Script
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDeleteScript(script.id)} className="flex items-center gap-2 text-rose-400 cursor-pointer">
-                                    <Trash2 size={14} /> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-                          <pre className="bg-black/40 p-4 rounded-xl text-xs font-mono text-indigo-300 overflow-x-auto mb-6 max-h-40">
-                            {script.content}
-                          </pre>
-                          <div className="flex items-center justify-between text-[10px] font-black text-white/20 uppercase tracking-widest">
-                            <span>{new Date(script.created_at).toLocaleDateString()}</span>
-                            <button onClick={() => setEditingScript(script)} className="hover:text-white transition-colors flex items-center gap-1">
-                              <ExternalLink size={12} /> Open Editor
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
+          <div className="farm-card flex flex-col">
+            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-2">
+              <PieIcon className="text-emerald-600" size={20} />
+              Gender Distribution
+            </h3>
+            <div className="flex-1 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={genderData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {genderData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-4 mt-8">
+              {genderData.map((d, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+                    <span className="text-sm font-bold text-slate-600">{d.name}</span>
                   </div>
-                </motion.div>
-              )}
-
-              {activeTab === 'history' && (
-                <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <div className="space-y-4">
-                    {messages.length === 0 ? (
-                      <div className="py-32 text-center pill-nav border-dashed border-white/10">
-                        <p className="text-white/40 font-medium">No AI conversation history.</p>
-                      </div>
-                    ) : (
-                      messages.map((msg) => (
-                        <div key={msg.id} className="pill-nav p-6 bg-white/5 border-white/10">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                              <BrainCircuit size={16} />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Grok 3 Fast</span>
-                          </div>
-                          <p className="text-gray-300 font-medium leading-relaxed italic">"{msg.content}"</p>
-                          <div className="mt-4 text-[10px] font-black text-white/10 uppercase tracking-widest">
-                            {new Date(msg.timestamp).toLocaleString()}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
+                  <span className="text-sm font-black text-slate-900">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
-
-      {editingScript && (
-        <ScriptEditor 
-          script={editingScript} 
-          isOpen={!!editingScript} 
-          onClose={() => setEditingScript(null)} 
-          onSave={handleSaveScript}
-        />
-      )}
     </div>
   );
 };
