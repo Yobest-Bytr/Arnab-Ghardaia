@@ -1,43 +1,45 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Github, Twitter, Linkedin, Youtube } from 'lucide-react';
+import { Rabbit, Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="relative z-10 pt-32 pb-16 px-6 border-t border-white/5 bg-gray-950">
+    <footer className="bg-slate-900 text-white pt-32 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-4 gap-16 mb-24">
           <div className="col-span-2">
-            <Link to="/" className="flex items-center gap-2 font-extrabold text-3xl tracking-tighter mb-8">
-              <Sparkles className="w-8 h-8 text-indigo-400 fill-indigo-400" />
-              <span>Yobest AI</span>
+            <Link to="/" className="flex items-center gap-2 font-black text-3xl tracking-tighter mb-8">
+              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white">
+                <Rabbit size={24} />
+              </div>
+              <span>Aranib <span className="text-emerald-600">Farm</span></span>
             </Link>
-            <p className="text-xl text-gray-500 font-medium max-w-md leading-relaxed">
-              The world's first cognitive operating system designed for the next generation of creators and builders.
+            <p className="text-xl text-slate-400 font-medium max-w-md leading-relaxed">
+              The region's leading professional rabbit breeding facility, combining traditional care with modern technology.
             </p>
           </div>
           <div>
-            <h4 className="font-black uppercase tracking-widest text-xs text-white mb-8">Platform</h4>
-            <ul className="space-y-4 text-gray-500 font-bold">
-              <li><Link to="/ai-insights" className="hover:text-indigo-400 transition-colors">Features</Link></li>
-              <li><Link to="/shared" className="hover:text-indigo-400 transition-colors">Integrations</Link></li>
-              <li><Link to="/dashboard" className="hover:text-indigo-400 transition-colors">Pricing</Link></li>
-              <li><Link to="/changelog" className="hover:text-indigo-400 transition-colors">Changelog</Link></li>
+            <h4 className="font-black uppercase tracking-widest text-xs text-emerald-500 mb-8">Quick Links</h4>
+            <ul className="space-y-4 text-slate-400 font-bold">
+              <li><Link to="/shop" className="hover:text-emerald-500 transition-colors">Our Rabbits</Link></li>
+              <li><Link to="/about" className="hover:text-emerald-500 transition-colors">About Us</Link></li>
+              <li><Link to="/contact" className="hover:text-emerald-500 transition-colors">Contact</Link></li>
+              <li><Link to="/login" className="hover:text-emerald-500 transition-colors">Dashboard</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="font-black uppercase tracking-widest text-xs text-white mb-8">Connect</h4>
+            <h4 className="font-black uppercase tracking-widest text-xs text-emerald-500 mb-8">Connect</h4>
             <div className="flex gap-4">
-              {[Twitter, Github, Linkedin, Youtube].map((Icon, i) => (
-                <a key={i} href="#" className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 hover:bg-indigo-600 hover:text-white transition-all">
+              {[Facebook, Twitter, Instagram].map((Icon, i) => (
+                <a key={i} href="#" className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400 hover:bg-emerald-600 hover:text-white transition-all">
                   <Icon size={20} />
                 </a>
               ))}
             </div>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row items-center justify-between pt-16 border-t border-white/5 text-gray-600 text-sm font-bold">
-          <p>© 2026 Yobest AI. All rights reserved.</p>
+        <div className="flex flex-col md:flex-row items-center justify-between pt-16 border-t border-white/5 text-slate-500 text-sm font-bold">
+          <p>© 2023 Aranib Farm. All rights reserved.</p>
           <div className="flex gap-8 mt-4 md:mt-0">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
