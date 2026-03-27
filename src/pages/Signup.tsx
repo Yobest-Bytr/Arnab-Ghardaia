@@ -41,21 +41,17 @@ const Signup = () => {
       if (data.user) {
         setUserId(data.user.id);
         
-        // Call the Edge Function using direct fetch to ensure headers are clean
-        const response = await fetch('https://kyzjxatlcfypghkianon.supabase.co/functions/v1/send-verification-code', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer sb_publishable_G-9Txvs0NUn5FYDsTK7_BA_NLA0LFt4`
-          },
-          body: JSON.stringify({ email, userId: data.user.id })
+        // Attempt to call the Edge Function
+        // Note: This will fail with 401 if the key in client.ts is a Stripe key
+        const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
+          body: { email, userId: data.user.id }
         });
 
-        if (!response.ok) {
-          console.warn("Edge Function returned error, likely JWT enforcement. Use 123456 for demo.");
-          showError('Neural link delayed. Use 123456 for demo.');
+        if (funcError) {
+          console.error("Edge Function Error:", funcError);
+          showError('Verification service unavailable. Please use 123456 for this demo.');
         } else {
-          showSuccess('Verification code transmitted to your Gmail.');
+          showSuccess('Verification code sent to your email.');
         }
         
         setStep('verify');
@@ -71,7 +67,15 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Check the code against the database
+      // If the user enters the demo code, we skip the DB check
+      if (verificationCode === '123456') {
+        setSuccess(true);
+        showSuccess('Neural identity confirmed (Demo Mode).');
+        setTimeout(() => navigate('/dashboard'), 2000);
+        return;
+      }
+
+      // Otherwise, check the database
       const { data, error } = await supabase
         .from('auth_codes')
         .select('*')
@@ -80,15 +84,13 @@ const Signup = () => {
         .eq('purpose', 'email_verification')
         .single();
 
-      if (error && verificationCode !== '123456') {
-        throw new Error('Invalid or expired verification code.');
-      }
+      if (error) throw new Error('Invalid or expired verification code.');
 
       setSuccess(true);
       showSuccess('Neural identity confirmed.');
-      setTimeout(() => navigate('/dashboard'), 3000);
+      setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error: any) {
-      showError(error.message || 'Verification failed. Use 123456 for demo.');
+      showError(error.message || 'Verification failed. Try 123456.');
     } finally {
       setLoading(false);
     }
