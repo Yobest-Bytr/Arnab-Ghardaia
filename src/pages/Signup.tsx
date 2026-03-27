@@ -43,9 +43,12 @@ const Signup = () => {
         setUserId(data.user.id);
         
         // 2. Call the Edge Function. 
-        // It will generate the code, store it in 'auth_codes', and send the email.
+        // We pass the body as a plain object; supabase-js handles the JSON stringification.
         const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
-          body: { email, userId: data.user.id },
+          body: { 
+            email: email, 
+            userId: data.user.id 
+          },
         });
 
         if (funcError) {

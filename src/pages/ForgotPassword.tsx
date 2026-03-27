@@ -20,9 +20,8 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       // We use the same Edge Function for password resets. 
-      // Note: In a production app, you'd pass a 'purpose' flag to the function.
       const { error } = await supabase.functions.invoke('send-verification-code', {
-        body: { email, userId: 'reset-request' }, // Placeholder ID for reset
+        body: { email: email, userId: 'reset-request' }, 
       });
 
       if (error) throw error;
