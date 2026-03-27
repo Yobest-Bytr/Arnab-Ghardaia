@@ -5,7 +5,7 @@ import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Heart, Calendar, Plus, History, 
-  AlertCircle, CheckCircle2, ArrowRight, Rabbit
+  AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';

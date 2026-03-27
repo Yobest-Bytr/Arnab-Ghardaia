@@ -5,6 +5,7 @@ import { Rabbit, ArrowRight, CheckCircle, Users, Activity, Leaf, Phone } from 'l
 import { motion } from 'framer-motion';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const { t, isRTL } = useLanguage();
