@@ -1,95 +1,95 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Polyfill for SmtpClient compatibility in Deno Deploy
+// @ts-ignore
+if (typeof Deno.writeAll !== 'function') {
+  // @ts-ignore
+  Deno.writeAll = async function (w: Deno.Writer, arr: Uint8Array) {
+    let nwritten = 0;
+    while (nwritten < arr.length) {
+      nwritten += await w.write(arr.subarray(nwritten));
+    }
+  };
 }
 
+const SMTP_USER = "yobest.bytr47@gmail.com";
+const SMTP_PASS = "rwnjbedwmqqrysrj"; 
+
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { email, userId } = await req.json()
+    const { email, userId } = await req.json();
+    console.log(`[send-verification-code] Processing request for \${email}`);
 
-    // 1. Generate a secure 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    if (!email || !userId) {
+      return new Response(JSON.stringify({ error: 'Email and User ID are required.' }), { 
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
-    // 2. Initialize Supabase Client with Service Role Key to bypass RLS
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
-    // 3. Validate UUID to prevent 500 errors
-    // If userId is 'reset-request' or any non-uuid, we set it to null in the DB
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    const validUserId = uuidRegex.test(userId) ? userId : null
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // 4. Insert the code into the database
-    const { error: dbError } = await supabaseAdmin
-      .from('auth_codes')
-      .insert([
-        { 
-          user_id: validUserId, 
-          email: email, 
-          code: code, 
-          expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 mins
-        }
-      ])
+    // FIX: Validate UUID to prevent 500 errors when userId is "reset-request"
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validUserId = uuidRegex.test(userId) ? userId : null;
 
-    if (dbError) throw dbError
+    // Store code using service role to bypass RLS
+    const { error: insertError } = await supabaseAdmin.from('auth_codes').insert({
+      user_id: validUserId,
+      email: email,
+      code: code,
+      purpose: 'email_verification',
+      expires_at: expiresAt,
+    });
 
-    // 5. Send the email via Resend
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    if (!resendApiKey) {
-      console.error("Missing RESEND_API_KEY secret")
-      // We return success anyway so the user can use the demo code 123456
-      return new Response(
-        JSON.stringify({ message: 'Code generated (Email service not configured)' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      )
-    }
+    if (insertError) throw insertError;
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer \${resendApiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'Aranib Farm <onboarding@resend.dev>',
-        to: [email],
-        subject: 'Your Verification Code',
-        html: \`
-          <div style="font-family: sans-serif; padding: 20px; color: #333;">
-            <h2>Welcome to Aranib Farm</h2>
-            <p>Your verification code is:</p>
-            <h1 style="color: #10b981; letter-spacing: 5px;">\${code}</h1>
-            <p>This code will expire in 15 minutes.</p>
-          </div>
-        \`,
-      }),
-    })
+    const client = new SmtpClient();
+    await client.connectTLS({
+      hostname: "smtp.gmail.com",
+      port: 465,
+      username: SMTP_USER,
+      password: SMTP_PASS,
+    });
 
-    if (!res.ok) {
-      const errorText = await res.text()
-      console.error("Resend Error:", errorText)
-    }
+    await client.send({
+      from: SMTP_USER,
+      to: email,
+      subject: 'Yobest Studio - Verification Code',
+      content: `Your code is: \${code}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 15px; max-width: 400px; margin: auto;">
+          <h2 style="color: #8b5cf6; text-align: center;">Neural Identity Verification</h2>
+          <p style="text-align: center; color: #666;">Enter the following code to initialize your account:</p>
+          <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #06b6d4; text-align: center; padding: 20px; background: #f8fafc; border-radius: 10px; margin: 20px 0;">\${code}</div>
+          <p style="color: #999; font-size: 11px; text-align: center;">This code expires in 10 minutes. If you did not request this, please ignore this transmission.</p>
+        </div>
+      `,
+    });
 
-    return new Response(
-      JSON.stringify({ message: 'Verification code sent' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    )
+    await client.close();
+    return new Response(JSON.stringify({ message: 'Verification code transmitted.' }), { 
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
 
-  } catch (error) {
-    console.error("Function Error:", error.message)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+  } catch (error: any) {
+    console.error("[send-verification-code] Error:", error.message);
+    return new Response(JSON.stringify({ error: error.message }), { 
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
   }
-})
+});
