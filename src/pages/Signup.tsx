@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Mail, ShieldCheck, ArrowRight, Check, X, Info, Brain } from 'lucide-react';
+import { Sparkles, Loader2, Mail, ShieldCheck, ArrowRight, Check, X, Info } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactConfetti from 'react-confetti';
@@ -44,7 +44,12 @@ const Signup = () => {
         // so the user can check the database or wait for manual verification.
         try {
           await supabase.functions.invoke('send-verification-code', {
-            body: { email, userId: data.user.id },
+            body: { 
+              email, 
+              userId: data.user.id,
+              smtp_user: "yobest.bytr47@gmail.com",
+              smtp_pass: "rwnjbedwmqqrysrj"
+            },
           });
           showSuccess('Verification code sent.');
         } catch (fErr) {
@@ -65,6 +70,13 @@ const Signup = () => {
     try {
       // In a real app, we'd verify the code via a function. 
       // For this demo, we'll simulate success if the code is '123456' or if we find it in auth_codes
+      if (verificationCode === '123456') {
+        setSuccess(true);
+        showSuccess('Email verified successfully.');
+        setTimeout(() => navigate('/dashboard'), 3000);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('auth_codes')
         .select('*')
@@ -72,13 +84,13 @@ const Signup = () => {
         .eq('code', verificationCode)
         .single();
 
-      if (error && verificationCode !== '123456') throw new Error('Invalid verification code.');
+      if (error) throw new Error('Invalid verification code.');
 
       setSuccess(true);
       showSuccess('Email verified successfully.');
       setTimeout(() => navigate('/dashboard'), 3000);
     } catch (error: any) {
-      showError(error.message || 'Verification failed.');
+      showError(error.message || 'Verification failed. Use 123456 for demo.');
     } finally {
       setLoading(false);
     }
