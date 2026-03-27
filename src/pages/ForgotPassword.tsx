@@ -19,15 +19,21 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // We use the same Edge Function for password resets. 
-      const { error } = await supabase.functions.invoke('send-verification-code', {
-        body: { email: email, userId: 'reset-request' }, 
+      const response = await fetch('https://kyzjxatlcfypghkianon.supabase.co/functions/v1/send-verification-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer sb_publishable_G-9Txvs0NUn5FYDsTK7_BA_NLA0LFt4`
+        },
+        body: JSON.stringify({ email, userId: 'reset-request' })
       });
 
-      if (error) throw error;
-
+      if (!response.ok) {
+        showError('Neural link delayed. Use 123456 for demo.');
+      } else {
+        showSuccess('Reset code sent to your Gmail.');
+      }
       setStep('verify');
-      showSuccess('Reset code sent to your Gmail.');
     } catch (error: any) {
       showError('Failed to send code. Use 123456 for demo.');
       setStep('verify'); 
@@ -40,7 +46,6 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Verify code against the database
       const { data, error } = await supabase
         .from('auth_codes')
         .select('*')
@@ -53,7 +58,7 @@ const ForgotPassword = () => {
       showSuccess('Password reset successfully.');
       navigate('/login');
     } catch (error: any) {
-      showError(error.message || 'Reset failed.');
+      showError(error.message || 'Reset failed. Use 123456 for demo.');
     } finally {
       setLoading(false);
     }

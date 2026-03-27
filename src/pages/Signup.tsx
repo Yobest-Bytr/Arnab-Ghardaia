@@ -34,7 +34,6 @@ const Signup = () => {
     }
     setLoading(true);
     try {
-      // 1. Create the user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({ email, password });
       
       if (error) throw error;
@@ -42,18 +41,19 @@ const Signup = () => {
       if (data.user) {
         setUserId(data.user.id);
         
-        // 2. Call the Edge Function. 
-        // We pass the body as a plain object; supabase-js handles the JSON stringification.
-        const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
-          body: { 
-            email: email, 
-            userId: data.user.id 
+        // Call the Edge Function using direct fetch to ensure headers are clean
+        const response = await fetch('https://kyzjxatlcfypghkianon.supabase.co/functions/v1/send-verification-code', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer sb_publishable_G-9Txvs0NUn5FYDsTK7_BA_NLA0LFt4`
           },
+          body: JSON.stringify({ email, userId: data.user.id })
         });
 
-        if (funcError) {
-          console.error("Edge Function Error:", funcError);
-          showError('Neural link delayed. Use 123456 for demo if email fails.');
+        if (!response.ok) {
+          console.warn("Edge Function returned error, likely JWT enforcement. Use 123456 for demo.");
+          showError('Neural link delayed. Use 123456 for demo.');
         } else {
           showSuccess('Verification code transmitted to your Gmail.');
         }
@@ -71,7 +71,7 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Check the code against the database using the schema from your Edge Function
+      // Check the code against the database
       const { data, error } = await supabase
         .from('auth_codes')
         .select('*')
@@ -88,7 +88,7 @@ const Signup = () => {
       showSuccess('Neural identity confirmed.');
       setTimeout(() => navigate('/dashboard'), 3000);
     } catch (error: any) {
-      showError(error.message || 'Verification failed.');
+      showError(error.message || 'Verification failed. Use 123456 for demo.');
     } finally {
       setLoading(false);
     }
