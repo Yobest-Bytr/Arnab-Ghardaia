@@ -34,21 +34,27 @@ const Signup = () => {
     }
     setLoading(true);
     try {
+      // 1. Create the user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({ email, password });
       
       if (error) throw error;
 
       if (data.user) {
         setUserId(data.user.id);
-        try {
-          // Calling the Edge Function with the new signature
-          await supabase.functions.invoke('send-verification-code', {
-            body: { email, userId: data.user.id },
-          });
-          showSuccess('Verification code transmitted.');
-        } catch (fErr) {
-          console.warn("Edge Function error, use 123456 for demo if needed.");
+        
+        // 2. Call the Edge Function. 
+        // It will generate the code, store it in 'auth_codes', and send the email.
+        const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
+          body: { email, userId: data.user.id },
+        });
+
+        if (funcError) {
+          console.error("Edge Function Error:", funcError);
+          showError('Neural link delayed. Use 123456 for demo if email fails.');
+        } else {
+          showSuccess('Verification code transmitted to your Gmail.');
         }
+        
         setStep('verify');
       }
     } catch (error: any) {
@@ -62,23 +68,24 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Check the code against the database
+      // Check the code against the database using the schema from your Edge Function
       const { data, error } = await supabase
         .from('auth_codes')
         .select('*')
         .eq('user_id', userId)
         .eq('code', verificationCode)
+        .eq('purpose', 'email_verification')
         .single();
 
       if (error && verificationCode !== '123456') {
-        throw new Error('Invalid verification code.');
+        throw new Error('Invalid or expired verification code.');
       }
 
       setSuccess(true);
-      showSuccess('Email verified successfully.');
+      showSuccess('Neural identity confirmed.');
       setTimeout(() => navigate('/dashboard'), 3000);
     } catch (error: any) {
-      showError(error.message || 'Verification failed. Use 123456 for demo.');
+      showError(error.message || 'Verification failed.');
     } finally {
       setLoading(false);
     }
@@ -101,7 +108,7 @@ const Signup = () => {
             {step === 'signup' ? 'Join Aranib Farm' : 'Verify Your Email'}
           </h1>
           <p className="text-slate-500 font-medium mt-2">
-            {step === 'signup' ? 'Start managing your rabbit business today.' : `Enter the code sent to ${email}`}
+            {step === 'signup' ? 'Start managing your rabbit business today.' : `Enter the 6-digit code sent to ${email}`}
           </p>
         </div>
 
