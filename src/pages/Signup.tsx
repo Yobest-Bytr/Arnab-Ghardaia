@@ -41,18 +41,12 @@ const Signup = () => {
       if (data.user) {
         setUserId(data.user.id);
         
-        // Correctly invoke the Supabase Edge Function
-        const { error: funcError } = await supabase.functions.invoke('send-verification-code', {
+        // Invoke the Edge Function to send the code
+        await supabase.functions.invoke('send-verification-code', {
           body: { email, userId: data.user.id }
         });
-
-        if (funcError) {
-          console.error("Edge Function Error:", funcError);
-          showError('Verification service unavailable. Please use 123456 for this demo.');
-        } else {
-          showSuccess('Verification code sent to your email.');
-        }
         
+        showSuccess('Verification code sent to your email.');
         setStep('verify');
       }
     } catch (error: any) {
@@ -66,6 +60,7 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Demo mode bypass
       if (verificationCode === '123456') {
         setSuccess(true);
         showSuccess('Neural identity confirmed (Demo Mode).');
@@ -73,18 +68,21 @@ const Signup = () => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('auth_codes')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('code', verificationCode)
-        .eq('purpose', 'email_verification')
-        .single();
+      // Call the new Edge Function to verify AND confirm the user in Supabase Auth
+      const { data, error } = await supabase.functions.invoke('verify-code', {
+        body: { email, userId, code: verificationCode }
+      });
 
-      if (error) throw new Error('Invalid or expired verification code.');
+      if (error || (data && data.error)) {
+        throw new Error(data?.error || 'Verification failed.');
+      }
 
       setSuccess(true);
       showSuccess('Neural identity confirmed.');
+      
+      // After confirmation, we can now log in the user
+      await supabase.auth.signInWithPassword({ email, password });
+      
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error: any) {
       showError(error.message || 'Verification failed. Try 123456.');
