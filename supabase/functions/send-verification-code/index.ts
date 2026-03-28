@@ -27,7 +27,7 @@ serve(async (req) => {
 
   try {
     const { email, userId } = await req.json();
-    console.log(`[send-verification-code] Processing request for \${email}`);
+    console.log(`[send-verification-code] Processing request for ${email}`);
 
     if (!email || !userId) {
       return new Response(JSON.stringify({ error: 'Email and User ID are required.' }), { 
@@ -70,12 +70,12 @@ serve(async (req) => {
       from: SMTP_USER,
       to: email,
       subject: 'Yobest Studio - Verification Code',
-      content: `Your code is: \${code}`,
+      content: `Your code is: ${code}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 15px; max-width: 400px; margin: auto;">
           <h2 style="color: #8b5cf6; text-align: center;">Neural Identity Verification</h2>
           <p style="text-align: center; color: #666;">Enter the following code to initialize your account:</p>
-          <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #06b6d4; text-align: center; padding: 20px; background: #f8fafc; border-radius: 10px; margin: 20px 0;">\${code}</div>
+          <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #06b6d4; text-align: center; padding: 20px; background: #f8fafc; border-radius: 10px; margin: 20px 0;">${code}</div>
           <p style="color: #999; font-size: 11px; text-align: center;">This code expires in 10 minutes. If you did not request this, please ignore this transmission.</p>
         </div>
       `,
