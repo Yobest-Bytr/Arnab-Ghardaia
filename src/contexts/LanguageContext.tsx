@@ -41,7 +41,7 @@ const translations: Translations = {
   feature1Desc: { en: "Monitor every rabbit's health, weight, and growth from birth to sale with our intuitive dashboard.", ar: "راقب صحة كل أرنب ووزنه ونموه من الولادة حتى البيع من خلال لوحة التحكم البديهية الخاصة بنا.", fr: "Surveillez la santé, le poids et la croissance de chaque lapin." },
   feature2Title: { en: "Breeding Logic", ar: "منطق التزاوج", fr: "Logique d'Élevage" },
   feature2Desc: { en: "Smart suggestions for breeding pairs to maintain genetic health and maximize farm productivity.", ar: "اقتراحات ذكية لأزواج التزاوج للحفاظ على الصحة الوراثية وزيادة إنتاجية المزرعة.", fr: "Suggestions intelligentes pour les couples reproducteurs." },
-  feature3Title: { en: "Financial Insights", ar: "رؤى مالية", fr: "Aperçus Financiers" },
+  feature3Title: { en: "Financial Insights", ar: "رؤى مالية", fr: "Aperçوس مالية" },
   feature3Desc: { en: "Track sales, expenses, and market trends to understand and grow your farm's profitability.", ar: "تتبع المبيعات والمصروفات واتجاهات السوق لفهم وتنمية ربحية مزرعتك.", fr: "Suivez les ventes, les dépenses et les tendances du marché." },
 
   // Rabbit Details & Inventory
@@ -93,7 +93,24 @@ const translations: Translations = {
   quickActions: { en: "Quick Actions", ar: "إجراءات سريعة", fr: "Actions rapides" },
   populationGrowth: { en: "Population Growth", ar: "نمو القطيع", fr: "Croissance" },
   farmHealth: { en: "Farm Health", ar: "صحة المزرعة", fr: "Santé de la ferme" },
-  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir tout" }
+  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir tout" },
+
+  // About & Contact
+  aboutHero: { en: "Our Story at Arnab Ghardaia", ar: "قصتنا في أرنب غرداية", fr: "Notre histoire à Arnab Ghardaia" },
+  aboutDesc: { en: "Founded in the heart of Ghardaia, we've grown from a small family hobby into one of the region's most respected rabbit breeding facilities.", ar: "تأسست في قلب غرداية، ونمت من هواية عائلية صغيرة إلى واحدة من أكثر مرافق تربية الأرانب احتراماً في المنطقة.", fr: "Fondée au cœur de Ghardaia, nous sommes passés d'un petit passe-temps familial à l'un des centres d'élevage les plus respectés." },
+  qualityCare: { en: "Quality & Care First", ar: "الجودة والرعاية أولاً", fr: "Qualité et soins d'abord" },
+  qualityDesc: { en: "We believe that happy, healthy rabbits produce the best results. Our facility is climate-controlled and monitored 24/7.", ar: "نحن نؤمن بأن الأرانب السعيدة والصحية تعطي أفضل النتائج. مرفقنا مكيف ومراقب على مدار الساعة.", fr: "Nous pensons que des lapins heureux et en bonne santé produisent les meilleurs résultats." },
+  contactHero: { en: "Get in Touch", ar: "اتصل بنا", fr: "Contactez-nous" },
+  contactDesc: { en: "Have questions about our breeds or want to visit the farm? We're here to help.", ar: "لديك أسئلة حول سلالاتنا أو تريد زيارة المزرعة؟ نحن هنا للمساعدة.", fr: "Vous avez des questions sur nos races ou vous souhaitez visiter la ferme ?" },
+  fullName: { en: "Full Name", ar: "الاسم الكامل", fr: "Nom complet" },
+  emailAddress: { en: "Email Address", ar: "البريد الإلكتروني", fr: "Adresse e-mail" },
+  message: { en: "Message", ar: "الرسالة", fr: "Message" },
+  sendMessage: { en: "Send Message", ar: "إرسال الرسالة", fr: "Envoyer le message" },
+  whatsappChat: { en: "Chat on WhatsApp", ar: "تحدث عبر واتساب", fr: "Discuter sur WhatsApp" },
+  dataSecurity: { en: "Data Security", ar: "أمن البيانات", fr: "Sécurité des données" },
+  dataSecurityDesc: { en: "We treat your farm data with the highest level of encryption. Your inventory and breeding history are secure.", ar: "نحن نعامل بيانات مزرعتك بأعلى مستوى من التشفير. مخزونك وسجل التزاوج الخاص بك آمنان.", fr: "Nous traitons vos données agricoles avec le plus haut niveau de cryptage." },
+  userResponsibility: { en: "User Responsibility", ar: "مسؤولية المستخدم", fr: "Responsabilité de l'utilisateur" },
+  userResponsibilityDesc: { en: "You are responsible for the accuracy of the data entered into your workspace.", ar: "أنت مسؤول عن دقة البيانات المدخلة في مساحة عملك.", fr: "Vous êtes responsable de l'exactitude des données saisies." }
 };
 
 interface LanguageContextType {
