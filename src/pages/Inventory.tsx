@@ -177,6 +177,7 @@ const Inventory = () => {
                             "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
                             rabbit.status === 'Sold' ? "bg-blue-50 text-blue-600" : 
                             rabbit.status === 'Died' ? "bg-rose-50 text-rose-600" : 
+                            rabbit.status === 'Sick' ? "bg-amber-50 text-amber-600" :
                             "bg-emerald-50 text-emerald-600"
                           )}>
                             {t(rabbit.status.toLowerCase())}
@@ -228,7 +229,10 @@ const Inventory = () => {
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50 dark:border-slate-800">
                     <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('status')}</p>
-                      <span className="text-xs font-bold text-emerald-600">{t(rabbit.status.toLowerCase())}</span>
+                      <span className={cn(
+                        "text-xs font-bold",
+                        rabbit.status === 'Sick' ? "text-amber-600" : "text-emerald-600"
+                      )}>{t(rabbit.status.toLowerCase())}</span>
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('weight')}</p>
@@ -264,7 +268,10 @@ const Inventory = () => {
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{viewingRabbit.breed}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-widest border border-emerald-100">
+                    <span className={cn(
+                      "px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border",
+                      viewingRabbit.status === 'Sick' ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                    )}>
                       {t(viewingRabbit.status.toLowerCase())}
                     </span>
                   </div>
@@ -346,6 +353,7 @@ const Inventory = () => {
                       <option value="Available">{t('available')}</option>
                       <option value="Sold">{t('sold')}</option>
                       <option value="Died">{t('died')}</option>
+                      <option value="Sick">{t('sick')}</option>
                     </select>
                   </div>
                 </div>

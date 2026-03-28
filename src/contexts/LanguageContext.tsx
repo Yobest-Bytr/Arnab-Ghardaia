@@ -36,6 +36,12 @@ const translations: Translations = {
   healthStatus: { en: "Health Status", ar: "الحالة الصحية", fr: "État de Santé" },
   healthyRate: { en: "Healthy", ar: "سليم", fr: "Sain" },
 
+  // About Page
+  aboutHero: { en: "Our Story", ar: "قصتنا", fr: "Notre Histoire" },
+  aboutDesc: { en: "Arnab Ghardaia was born from a passion for sustainable farming and the unique heritage of the M'zab valley. We combine traditional wisdom with modern technology.", ar: "ولدت أرنب غرداية من شغف بالزراعة المستدامة والتراث الفريد لوادي ميزاب. نحن نجمع بين الحكمة التقليدية والتكنولوجيا الحديثة.", fr: "Arnab Ghardaia est né d'une passion pour l'agriculture durable et l'héritage unique de la vallée du M'zab." },
+  qualityCare: { en: "Quality Care", ar: "عناية فائقة", fr: "Soins de Qualité" },
+  qualityDesc: { en: "Every rabbit in our farm receives personalized attention, premium organic feed, and regular health check-ups to ensure the highest standards.", ar: "يتلقى كل أرنب في مزرعتنا اهتماماً شخصياً، وعلفاً عضوياً ممتازاً، وفحوصات صحية منتظمة لضمان أعلى المعايير.", fr: "Chaque lapin de notre ferme reçoit une attention personnalisée et une alimentation biologique de qualité." },
+
   // Breeding Autocomplete & Features
   suggestedParents: { en: "Suggested Parents", ar: "الآباء المقترحون", fr: "Parents Suggérés" },
   noMatches: { en: "No matches found", ar: "لم يتم العثور على نتائج", fr: "Aucun résultat" },
@@ -81,9 +87,25 @@ const translations: Translations = {
   populationGrowth: { en: "Population Growth", ar: "نمو القطيع", fr: "Croissance" },
   recentActivity: { en: "Recent Activity", ar: "النشاط الأخير", fr: "Activité Récente" },
   viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir Tout" },
+  totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total Lapins" },
+  males: { en: "Males", ar: "الذكور", fr: "Mâles" },
+  females: { en: "Females", ar: "الإناث", fr: "Femelles" },
+  newBorns: { en: "New Borns", ar: "المواليد الجدد", fr: "Nouveau-nés" },
   
+  // Reports
+  performanceMetrics: { en: "Performance Metrics", ar: "مقاييس الأداء", fr: "Mesures de Performance" },
+  downloadPDF: { en: "Download PDF", ar: "تحميل PDF", fr: "Télécharger PDF" },
+  statusBreakdown: { en: "Status Breakdown", ar: "تحليل الحالة", fr: "Répartition par Statut" },
+  breedDistribution: { en: "Breed Distribution", ar: "توزيع السلالات", fr: "Distribution des Races" },
+  transactionLog: { en: "Transaction Log", ar: "سجل المعاملات", fr: "Journal des Transactions" },
+  verifiedRecords: { en: "Verified Records", ar: "سجلات موثقة", fr: "Dossiers Vérifiés" },
+  reportDate: { en: "Report Date", ar: "تاريخ التقرير", fr: "Date du Rapport" },
+  executiveSummary: { en: "Executive Summary", ar: "ملخص تنفيذي", fr: "Résumé Exécutif" },
+  totalStock: { en: "Total Stock", ar: "إجمالي المخزون", fr: "Stock Total" },
+
   // About & Contact
   contactHero: { en: "Get in Touch", ar: "اتصل بنا", fr: "Contactez-nous" },
+  contactDesc: { en: "Have questions about our rabbits or services? We're here to help.", ar: "لديك أسئلة حول أرانبنا أو خدماتنا؟ نحن هنا للمساعدة.", fr: "Des questions sur nos lapins ou nos services ? Nous sommes là pour vous aider." },
   fullName: { en: "Full Name", ar: "الاسم الكامل", fr: "Nom complet" },
   emailAddress: { en: "Email Address", ar: "البريد الإلكتروني", fr: "Adresse e-mail" },
   message: { en: "Message", ar: "الرسالة", fr: "Message" },
