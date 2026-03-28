@@ -54,8 +54,8 @@ const Login = () => {
 
       showSuccess('Identity confirmed. Finalizing link...');
       
-      // Small delay to ensure Supabase Auth state is updated
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Increased delay to ensure Supabase Auth state is updated
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) throw loginError;

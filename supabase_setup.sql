@@ -1,23 +1,28 @@
--- Ensure auth_codes table is correctly structured
-CREATE TABLE IF NOT EXISTS auth_codes (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id uuid, 
-  email text NOT NULL,
-  code text NOT NULL,
-  purpose text DEFAULT 'email_verification',
-  expires_at timestamp with time zone NOT NULL,
+-- 1. Profiles Table
+CREATE TABLE IF NOT EXISTS profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
+  email text UNIQUE NOT NULL,
+  display_name text,
   created_at timestamp with time zone DEFAULT now()
 );
 
 -- Enable RLS
-ALTER TABLE auth_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
+CREATE POLICY "System can insert profiles" ON profiles FOR INSERT WITH CHECK (true);
 
--- Policies
-DROP POLICY IF EXISTS "Enable insert for all" ON auth_codes;
-CREATE POLICY "Enable insert for all" ON auth_codes FOR INSERT WITH CHECK (true);
+-- 2. Trigger to auto-create profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, display_name)
+  VALUES (new.id, new.email, split_part(new.email, '@', 1))
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-DROP POLICY IF EXISTS "Enable delete for all" ON auth_codes;
-CREATE POLICY "Enable delete for all" ON auth_codes FOR DELETE USING (true);
-
-DROP POLICY IF EXISTS "Enable select for all" ON auth_codes;
-CREATE POLICY "Enable select for all" ON auth_codes FOR SELECT USING (true);
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

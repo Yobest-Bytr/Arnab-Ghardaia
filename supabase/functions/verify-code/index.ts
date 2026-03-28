@@ -51,19 +51,24 @@ serve(async (req) => {
     }
 
     // 3. Confirm Email in Auth
-    if (targetUserId) {
-      console.log(`[verify-code] Confirming email for user: ${targetUserId}`);
-      const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, { 
-        email_confirm: true 
+    if (!targetUserId) {
+      console.error(`[verify-code] CRITICAL: No user ID found for ${email}. Cannot confirm email.`);
+      return new Response(JSON.stringify({ error: 'User record not found. Please contact support.' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
-      if (confirmError) {
-        console.error("[verify-code] Auth Confirmation Error:", confirmError.message);
-      } else {
-        console.log("[verify-code] Email confirmed successfully.");
-      }
-    } else {
-      console.warn("[verify-code] No user ID found, skipping auth confirmation.");
     }
+
+    console.log(`[verify-code] Confirming email for user: ${targetUserId}`);
+    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, { 
+      email_confirm: true 
+    });
+
+    if (confirmError) {
+      console.error("[verify-code] Auth Confirmation Error:", confirmError.message);
+      throw confirmError;
+    }
+
+    console.log("[verify-code] Email confirmed successfully.");
 
     // 4. Cleanup
     await supabaseAdmin.from('auth_codes').delete().eq('id', authCode.id);

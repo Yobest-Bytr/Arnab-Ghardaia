@@ -40,12 +40,26 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // 1. Resolve User ID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let validUserId = (userId && uuidRegex.test(userId)) ? userId : null;
+
+    if (!validUserId) {
+      console.log(`[send-verification-code] No valid userId provided, looking up in profiles for ${email}`);
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+      
+      if (profile) {
+        validUserId = profile.id;
+        console.log(`[send-verification-code] Found userId in profiles: ${validUserId}`);
+      }
+    }
+
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-    // Simple UUID fix
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const validUserId = (userId && uuidRegex.test(userId)) ? userId : null;
 
     console.log(`[send-verification-code] Inserting code for ${email}. UserID: ${validUserId}`);
 
@@ -62,7 +76,7 @@ serve(async (req) => {
       throw insertError;
     }
 
-    // Original SMTP code
+    // 2. Original SMTP code
     console.log(`[send-verification-code] Connecting to SMTP...`);
     const client = new SmtpClient();
     await client.connectTLS({
