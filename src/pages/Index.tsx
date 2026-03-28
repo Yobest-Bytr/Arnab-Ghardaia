@@ -36,9 +36,8 @@ const Index = () => {
               <Star size={16} className="fill-current" />
               <span>{t('appName')}</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1] text-slate-900 dark:text-white">
-              {t('heroTitle')} <br />
-              <span className="text-emerald-600">{t('appName')}</span>
+            <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-[1.1] text-slate-900 dark:text-white">
+              <span className="text-emerald-600">{t('heroTitle')}</span>
             </h1>
             <p className="text-xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xl">
               {t('heroSubtitle')}
