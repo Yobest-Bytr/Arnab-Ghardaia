@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
@@ -53,13 +54,6 @@ const Dashboard = () => {
     { name: 'Jun', count: 900 },
   ];
 
-  const genderData = [
-    { name: 'Males', value: rabbits.filter(r => r.gender === 'Male').length || 1 },
-    { name: 'Females', value: rabbits.filter(r => r.gender === 'Female').length || 1 },
-  ];
-
-  const COLORS = ['#3b82f6', '#ec4899'];
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
@@ -71,10 +65,12 @@ const Dashboard = () => {
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
           <div className="flex gap-3">
-            <button className="farm-button flex items-center gap-2">
-              <Plus size={20} />
-              {t('addRabbit')}
-            </button>
+            <Link to="/inventory">
+              <button className="farm-button flex items-center gap-2">
+                <Plus size={20} />
+                {t('addRabbit')}
+              </button>
+            </Link>
           </div>
         </header>
 
