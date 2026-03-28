@@ -66,6 +66,9 @@ const Navbar = () => {
               <DropdownMenuItem onClick={() => setLanguage('ar')} className="flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer hover:bg-accent">
                 🇸🇦 العربية
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLanguage('fr')} className="flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer hover:bg-accent">
+                🇫🇷 Français
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
