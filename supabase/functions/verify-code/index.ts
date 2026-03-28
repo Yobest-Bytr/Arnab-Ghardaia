@@ -11,14 +11,20 @@ serve(async (req) => {
 
   try {
     const { email, code } = await req.json();
-    console.log(`[verify-code] Verifying ${email}`);
+    console.log(`[verify-code] Verifying code for ${email}`);
+
+    if (!email || !code) {
+      return new Response(JSON.stringify({ error: 'Email and code are required.' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Check code
+    // 1. Validate code
     const { data: authCode, error: fetchError } = await supabaseAdmin
       .from('auth_codes')
       .select('*')
@@ -27,40 +33,37 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !authCode) {
-      return new Response(JSON.stringify({ error: 'Invalid or expired code.' }), { 
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      console.error("[verify-code] Invalid code for", email);
+      return new Response(JSON.stringify({ error: 'Invalid or expired code.' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // 2. Find User ID from profiles table (Stable SQL lookup)
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single();
-
-    // 3. Confirm Email in Auth (Direct ID update is stable)
-    if (profile?.id) {
-      console.log(`[verify-code] Confirming email for ${profile.id}`);
-      const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(profile.id, { 
-        email_confirm: true 
-      });
-      if (confirmError) console.error("[verify-code] Auth Update Error:", confirmError.message);
-    } else {
-      console.warn("[verify-code] No profile found for email, skipping auth confirmation.");
+    // 2. Confirm Email (Safe Try-Catch)
+    if (authCode.user_id) {
+      try {
+        console.log(`[verify-code] Attempting to confirm email for user: ${authCode.user_id}`);
+        const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(authCode.user_id, { 
+          email_confirm: true 
+        });
+        if (confirmError) console.error("[verify-code] Auth Confirmation Error:", confirmError.message);
+        else console.log("[verify-code] Email confirmed successfully.");
+      } catch (e: any) {
+        console.error("[verify-code] Auth Admin Call Failed:", e.message);
+      }
     }
 
-    // 4. Cleanup
+    // 3. Cleanup used code
     await supabaseAdmin.from('auth_codes').delete().eq('id', authCode.id);
 
-    return new Response(JSON.stringify({ message: 'Identity confirmed.' }), { 
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    return new Response(JSON.stringify({ message: 'Identity confirmed.' }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
-    console.error("[verify-code] Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { 
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    console.error("[verify-code] Critical Error:", error.message);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });

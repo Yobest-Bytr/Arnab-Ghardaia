@@ -7,6 +7,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Polyfill for Deno.writeAll
+// @ts-ignore
+if (typeof Deno.writeAll !== 'function') {
+  // @ts-ignore
+  Deno.writeAll = async function (w: Deno.Writer, arr: Uint8Array) {
+    let nwritten = 0;
+    while (nwritten < arr.length) {
+      nwritten += await w.write(arr.subarray(nwritten));
+    }
+  };
+}
+
 const SMTP_USER = "yobest.bytr47@gmail.com";
 const SMTP_PASS = "rwnjbedwmqqrysrj"; 
 
@@ -15,7 +27,13 @@ serve(async (req) => {
 
   try {
     const { email, userId } = await req.json();
-    console.log(`[send-verification-code] Request for: ${email}`);
+    console.log(`[send-verification-code] Processing request for ${email}`);
+
+    if (!email) {
+      return new Response(JSON.stringify({ error: 'Email is required.' }), { 
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -25,19 +43,27 @@ serve(async (req) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // UUID Fix
+    // Simple UUID fix
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const validUserId = (userId && uuidRegex.test(userId)) ? userId : null;
+
+    console.log(`[send-verification-code] Inserting code for ${email}. UserID: ${validUserId}`);
 
     const { error: insertError } = await supabaseAdmin.from('auth_codes').insert({
       user_id: validUserId,
       email: email,
       code: code,
+      purpose: 'email_verification',
       expires_at: expiresAt,
     });
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error("[send-verification-code] Insert Error:", insertError.message);
+      throw insertError;
+    }
 
+    // Original SMTP code
+    console.log(`[send-verification-code] Connecting to SMTP...`);
     const client = new SmtpClient();
     await client.connectTLS({
       hostname: "smtp.gmail.com",
@@ -56,19 +82,20 @@ serve(async (req) => {
           <h2 style="color: #8b5cf6; text-align: center;">Neural Identity Verification</h2>
           <p style="text-align: center; color: #666;">Enter the following code to initialize your account:</p>
           <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #06b6d4; text-align: center; padding: 20px; background: #f8fafc; border-radius: 10px; margin: 20px 0;">${code}</div>
-          <p style="color: #999; font-size: 11px; text-align: center;">This code expires in 10 minutes.</p>
+          <p style="color: #999; font-size: 11px; text-align: center;">This code expires in 10 minutes. If you did not request this, please ignore this transmission.</p>
         </div>
       `,
     });
 
     await client.close();
-    console.log(`[send-verification-code] Success for ${email}`);
-    return new Response(JSON.stringify({ message: 'Code sent.' }), { 
+    console.log(`[send-verification-code] Success: Code sent to ${email}`);
+
+    return new Response(JSON.stringify({ message: 'Verification code transmitted.' }), { 
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
 
   } catch (error: any) {
-    console.error("[send-verification-code] Error:", error.message);
+    console.error("[send-verification-code] Critical Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
