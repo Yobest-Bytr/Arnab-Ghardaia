@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Heart, Calendar, Plus, History, 
   AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity, X
-} from 'lucide-center';
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
