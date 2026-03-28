@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Sparkles, Loader2, Mail, ShieldCheck, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
@@ -8,6 +9,7 @@ import { motion } from 'framer-motion';
 import Navbar from '@/components/layout/Navbar';
 
 const Login = () => {
+  const { enterDemoMode } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +26,6 @@ const Login = () => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
-        // If email is not confirmed, we show the bypass option
         if (error.message.toLowerCase().includes('email not confirmed')) {
           setUnconfirmed(true);
           showError('Email not confirmed. Use Demo Bypass to enter.');
@@ -44,6 +45,7 @@ const Login = () => {
 
   const handleBypass = () => {
     showSuccess('Demo Bypass Active. Entering Dashboard...');
+    enterDemoMode(email || 'demo@yobest.ai');
     setTimeout(() => navigate('/dashboard'), 1000);
   };
 

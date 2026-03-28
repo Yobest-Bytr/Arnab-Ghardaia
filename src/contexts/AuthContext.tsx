@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  enterDemoMode: (email: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,29 +18,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions
+    // Check for existing demo session first
+    const demoUser = localStorage.getItem('yobest_demo_user');
+    if (demoUser) {
+      const parsedUser = JSON.parse(demoUser);
+      setUser(parsedUser);
+      setLoading(false);
+    }
+
+    // Check active Supabase sessions
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+      }
       setLoading(false);
     });
 
     // Listen for changes on auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+      } else if (!localStorage.getItem('yobest_demo_user')) {
+        setSession(null);
+        setUser(null);
+      }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const enterDemoMode = (email: string) => {
+    const mockUser = {
+      id: 'demo-user-id',
+      email: email,
+      user_metadata: { display_name: email.split('@')[0] },
+      aud: 'authenticated',
+      role: 'authenticated',
+    } as any;
+    
+    localStorage.setItem('yobest_demo_user', JSON.stringify(mockUser));
+    setUser(mockUser);
+    setLoading(false);
+  };
+
   const signOut = async () => {
+    localStorage.removeItem('yobest_demo_user');
     await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut, enterDemoMode }}>
       {children}
     </AuthContext.Provider>
   );
