@@ -25,44 +25,29 @@ const translations: Translations = {
   termsOfService: { en: "Terms of Service", ar: "شروط الخدمة", fr: "Conditions d'utilisation" },
   copyright: { en: "© 2026 Arnab Ghardaia. All rights reserved.", ar: "© 2026 أرنب غرداية. جميع الحقوق محفوظة.", fr: "© 2026 Arnab Ghardaia. Tous droits réservés." },
   
-  // Hero Section
-  heroTitle: { en: "Smart Rabbit Management in Ghardaia", ar: "الإدارة الذكية للأرانب في غرداية", fr: "Gestion Intelligente des Lapins à Ghardaia" },
-  heroSubtitle: { en: "The best platform for managing your rabbit farm in the heart of the M'zab valley. Track, manage, and grow with real-time statistics.", ar: "أفضل منصة لإدارة مزرعة الأرانب الخاصة بك في قلب وادي ميزاب. تتبع وإدارة وتنمية أعمالك بإحصائيات فورية.", fr: "La meilleure plateforme pour gérer votre ferme de lapins au cœur de la vallée du M'zab. Suivez, gérez et développez avec des statistiques en temps réel." },
-  goDashboard: { en: "Go to Dashboard", ar: "انتقل إلى لوحة التحكم", fr: "Aller au tableau de bord" },
-  viewRabbits: { en: "View Our Rabbits", ar: "شاهد أرانبنا", fr: "Voir nos lapins" },
-  happyCustomers: { en: "Happy Customers", ar: "عميل سعيد", fr: "Clients Heureux" },
-  healthStatus: { en: "Health Status", ar: "الحالة الصحية", fr: "État de Santé" },
-  healthyRate: { en: "Healthy", ar: "سليم", fr: "Sain" },
+  // Reports & Analytics
+  executiveSummary: { en: "Executive Summary", ar: "ملخص تنفيذي", fr: "Résumé Exécutif" },
+  totalStock: { en: "Total Stock", ar: "إجمالي القطيع", fr: "Stock Total" },
+  reportDate: { en: "Report Date", ar: "تاريخ التقرير", fr: "Date du Rapport" },
+  statusBreakdown: { en: "Status Breakdown", ar: "توزيع الحالات", fr: "Répartition par Statut" },
+  breedDistribution: { en: "Breed Distribution", ar: "توزيع السلالات", fr: "Distribution des Races" },
+  transactionLog: { en: "Recent Transaction Log", ar: "سجل العمليات الأخيرة", fr: "Journal des Transactions" },
+  downloadPDF: { en: "Download PDF Report", ar: "تحميل التقرير PDF", fr: "Télécharger le Rapport PDF" },
+  verifiedRecords: { en: "Verified Records", ar: "سجلات موثقة", fr: "Enregistrements Vérifiés" },
+  performanceMetrics: { en: "Performance Metrics", ar: "مقاييس الأداء", fr: "Mesures de Performance" },
 
-  // Features Section
-  featuresTitle: { en: "Why Choose Arnab Ghardaia?", ar: "لماذا تختار أرنب غرداية؟", fr: "Pourquoi Choisir Arnab Ghardaia ?" },
-  featuresSubtitle: { en: "We combine traditional farming wisdom with modern technology to ensure the best care for your rabbits.", ar: "نحن نجمع بين حكمة الزراعة التقليدية والتكنولوجيا الحديثة لضمان أفضل رعاية لأرانبك.", fr: "Nous combinons la sagesse agricole traditionnelle avec la technologie moderne." },
-  feature1Title: { en: "Real-time Tracking", ar: "تتبع في الوقت الحقيقي", fr: "Suivi en Temps Réel" },
-  feature1Desc: { en: "Monitor every rabbit's health, weight, and growth from birth to sale with our intuitive dashboard.", ar: "راقب صحة كل أرنب ووزنه ونموه من الولادة حتى البيع من خلال لوحة التحكم البديهية الخاصة بنا.", fr: "Surveillez la santé, le poids et la croissance de chaque lapin." },
-  feature2Title: { en: "Breeding Logic", ar: "منطق التزاوج", fr: "Logique d'Élevage" },
-  feature2Desc: { en: "Smart suggestions for breeding pairs to maintain genetic health and maximize farm productivity.", ar: "اقتراحات ذكية لأزواج التزاوج للحفاظ على الصحة الوراثية وزيادة إنتاجية المزرعة.", fr: "Suggestions intelligentes pour les couples reproducteurs." },
-  feature3Title: { en: "Financial Insights", ar: "رؤى مالية", fr: "Aperçوس مالية" },
-  feature3Desc: { en: "Track sales, expenses, and market trends to understand and grow your farm's profitability.", ar: "تتبع المبيعات والمصروفات واتجاهات السوق لفهم وتنمية ربحية مزرعتك.", fr: "Suivez les ventes, les dépenses et les tendances du marché." },
-
-  // Rabbit Details & Inventory
+  // Inventory & CRUD
   rabbitId: { en: "Rabbit ID", ar: "رقم الأرنب", fr: "ID du lapin" },
-  qrCode: { en: "QR Code", ar: "رمز QR", fr: "Code QR" },
+  cage: { en: "Cage", ar: "القفص", fr: "Cage" },
   weight: { en: "Weight (kg)", ar: "الوزن (كجم)", fr: "Poids (kg)" },
   birthDate: { en: "Birth Date", ar: "تاريخ الميلاد", fr: "Date de naissance" },
   notes: { en: "Notes", ar: "ملاحظات", fr: "Notes" },
-  cage: { en: "Cage", ar: "القفص", fr: "Cage" },
   price: { en: "Price", ar: "السعر", fr: "Prix" },
   breed: { en: "Breed", ar: "السلالة", fr: "Race" },
   gender: { en: "Gender", ar: "الجنس", fr: "Sexe" },
   status: { en: "Status", ar: "الحالة", fr: "Statut" },
   male: { en: "Male", ar: "ذكر", fr: "Mâle" },
   female: { en: "Female", ar: "أنثى", fr: "Femelle" },
-  
-  // Stats & Status
-  totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total des lapins" },
-  males: { en: "Males", ar: "الذكور", fr: "Mâles" },
-  females: { en: "Females", ar: "الإناث", fr: "Femelles" },
-  newBorns: { en: "New Borns", ar: "المواليد الجدد", fr: "Nouveau-nés" },
   available: { en: "Available", ar: "متاح", fr: "Disponible" },
   sold: { en: "Sold", ar: "تم البيع", fr: "Vendu" },
   died: { en: "Died", ar: "نافق", fr: "Mort" },
@@ -70,47 +55,22 @@ const translations: Translations = {
   sick: { en: "Sick", ar: "مريض", fr: "Malade" },
   reserved: { en: "Reserved", ar: "محجوز", fr: "Réservé" },
   
-  // Actions
-  addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un lapin" },
-  addRecord: { en: "Add Record", ar: "إضافة سجل", fr: "Ajouter un enregistrement" },
-  edit: { en: "Edit", ar: "تعديل", fr: "Modifier" },
-  delete: { en: "Delete", ar: "حذف", fr: "Supprimer" },
-  save: { en: "Save Changes", ar: "حفظ التغييرات", fr: "Sauvegarder" },
-  export: { en: "Export Data", ar: "تصدير البيانات", fr: "Exporter" },
-  viewDetails: { en: "View Details", ar: "عرض التفاصيل", fr: "Voir les détails" },
-  searchPlaceholder: { en: "Search by ID, name or breed...", ar: "ابحث بالرقم، الاسم أو السلالة...", fr: "Rechercher par ID, nom ou race..." },
-  
-  // Pages
-  changelog: { en: "Changelog", ar: "سجل التغييرات", fr: "Journal" },
-  shop: { en: "Public Shop", ar: "المتجر العام", fr: "Boutique" },
-  inquire: { en: "Inquire Now", ar: "استفسر الآن", fr: "S'informer" },
-  expectedBirth: { en: "Expected Birth", ar: "الولادة المتوقعة", fr: "Naissance prévue" },
+  // Breeding
+  activePregnancies: { en: "Active Pregnancies", ar: "حالات الحمل النشطة", fr: "Grossesses Actives" },
+  expectedBirth: { en: "Expected Birth", ar: "الولادة المتوقعة", fr: "Naissance Prévue" },
   mother: { en: "Mother", ar: "الأم", fr: "Mère" },
   father: { en: "Father", ar: "الأب", fr: "Père" },
-  matingDate: { en: "Mating Date", ar: "تاريخ التزاوج", fr: "Date d'accouplement" },
-  activePregnancies: { en: "Active Pregnancies", ar: "حالات الحمل النشطة", fr: "Grossesses actives" },
-  recentActivity: { en: "Recent Activity", ar: "النشاط الأخير", fr: "Activité récente" },
-  quickActions: { en: "Quick Actions", ar: "إجراءات سريعة", fr: "Actions rapides" },
-  populationGrowth: { en: "Population Growth", ar: "نمو القطيع", fr: "Croissance" },
-  farmHealth: { en: "Farm Health", ar: "صحة المزرعة", fr: "Santé de la ferme" },
-  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir tout" },
+  matingDate: { en: "Mating Date", ar: "تاريخ التزاوج", fr: "Date d'Accouplement" },
+  recordMating: { en: "Record Mating", ar: "تسجيل تزاوج", fr: "Enregistrer l'Accouplement" },
+  kitCount: { en: "Kit Count", ar: "عدد الصغار", fr: "Nombre de Petits" },
 
-  // About & Contact
-  aboutHero: { en: "Our Story at Arnab Ghardaia", ar: "قصتنا في أرنب غرداية", fr: "Notre histoire à Arnab Ghardaia" },
-  aboutDesc: { en: "Founded in the heart of Ghardaia, we've grown from a small family hobby into one of the region's most respected rabbit breeding facilities.", ar: "تأسست في قلب غرداية، ونمت من هواية عائلية صغيرة إلى واحدة من أكثر مرافق تربية الأرانب احتراماً في المنطقة.", fr: "Fondée au cœur de Ghardaia, nous sommes passés d'un petit passe-temps familial à l'un des centres d'élevage les plus respectés." },
-  qualityCare: { en: "Quality & Care First", ar: "الجودة والرعاية أولاً", fr: "Qualité et soins d'abord" },
-  qualityDesc: { en: "We believe that happy, healthy rabbits produce the best results. Our facility is climate-controlled and monitored 24/7.", ar: "نحن نؤمن بأن الأرانب السعيدة والصحية تعطي أفضل النتائج. مرفقنا مكيف ومراقب على مدار الساعة.", fr: "Nous pensons que des lapins heureux et en bonne santé produisent les meilleurs résultats." },
-  contactHero: { en: "Get in Touch", ar: "اتصل بنا", fr: "Contactez-nous" },
-  contactDesc: { en: "Have questions about our breeds or want to visit the farm? We're here to help.", ar: "لديك أسئلة حول سلالاتنا أو تريد زيارة المزرعة؟ نحن هنا للمساعدة.", fr: "Vous avez des questions sur nos races ou vous souhaitez visiter la ferme ?" },
-  fullName: { en: "Full Name", ar: "الاسم الكامل", fr: "Nom complet" },
-  emailAddress: { en: "Email Address", ar: "البريد الإلكتروني", fr: "Adresse e-mail" },
-  message: { en: "Message", ar: "الرسالة", fr: "Message" },
-  sendMessage: { en: "Send Message", ar: "إرسال الرسالة", fr: "Envoyer le message" },
-  whatsappChat: { en: "Chat on WhatsApp", ar: "تحدث عبر واتساب", fr: "Discuter sur WhatsApp" },
-  dataSecurity: { en: "Data Security", ar: "أمن البيانات", fr: "Sécurité des données" },
-  dataSecurityDesc: { en: "We treat your farm data with the highest level of encryption. Your inventory and breeding history are secure.", ar: "نحن نعامل بيانات مزرعتك بأعلى مستوى من التشفير. مخزونك وسجل التزاوج الخاص بك آمنان.", fr: "Nous traitons vos données agricoles avec le plus haut niveau de cryptage." },
-  userResponsibility: { en: "User Responsibility", ar: "مسؤولية المستخدم", fr: "Responsabilité de l'utilisateur" },
-  userResponsibilityDesc: { en: "You are responsible for the accuracy of the data entered into your workspace.", ar: "أنت مسؤول عن دقة البيانات المدخلة في مساحة عملك.", fr: "Vous êtes responsable de l'exactitude des données saisies." }
+  // Dashboard
+  quickActions: { en: "Quick Actions", ar: "إجراءات سريعة", fr: "Actions Rapides" },
+  populationGrowth: { en: "Population Growth", ar: "نمو القطيع", fr: "Croissance" },
+  recentActivity: { en: "Recent Activity", ar: "النشاط الأخير", fr: "Activité Récente" },
+  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir Tout" },
+  addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un Lapin" },
+  farmHealth: { en: "Farm Health", ar: "صحة المزرعة", fr: "Santé de la Ferme" }
 };
 
 interface LanguageContextType {
