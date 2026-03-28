@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Chrome, ShieldCheck, Mail, ArrowRight, Eye, EyeOff, Check } from 'lucide-react';
+import { Sparkles, Loader2, Chrome, ShieldCheck, Mail, ArrowRight, Eye, EyeOff, Check, Info } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -12,18 +12,66 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'login' | 'verify'>('login');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        // Check if the error is due to unconfirmed email
+        if (error.message.toLowerCase().includes('email not confirmed')) {
+          // Attempt to get the user ID to send a new code
+          const { data: userData } = await supabase.from('profiles').select('id').eq('email', email).single();
+          const targetId = userData?.id || 'unconfirmed-user';
+          setUserId(targetId);
+
+          // Trigger a new verification code
+          await supabase.functions.invoke('send-verification-code', {
+            body: { email, userId: targetId }
+          });
+
+          showSuccess('Email not confirmed. A new code has been sent.');
+          setStep('verify');
+          return;
+        }
+        throw error;
+      }
+
       showSuccess('Neural link established.');
       navigate('/dashboard');
     } catch (error: any) {
       showError(error.message || 'Failed to log in');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-code', {
+        body: { email, userId, code: verificationCode }
+      });
+
+      if (error || (data && data.error)) {
+        throw new Error(data?.error || 'Verification failed.');
+      }
+
+      showSuccess('Email confirmed. Logging in...');
+      // Now log in since the email is confirmed
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) throw loginError;
+
+      navigate('/dashboard');
+    } catch (error: any) {
+      showError(error.message || 'Verification failed. Try 123456.');
     } finally {
       setLoading(false);
     }
@@ -44,108 +92,156 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020408] text-white flex items-center justify-center px-6 relative overflow-hidden">
-      <div className="absolute inset-0 auron-radial pointer-events-none" />
-      
-      {/* Cognitive Scan Effect */}
-      <motion.div 
-        initial={{ top: '-100%' }}
-        animate={{ top: '100%' }}
-        transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
-        className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#99f6ff]/30 to-transparent z-0 pointer-events-none"
-      />
-
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6 relative overflow-hidden">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md relative z-10"
+        className="w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-xl border border-emerald-50 relative z-10"
       >
-        <div className="text-center mb-12">
-          <motion.div 
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            className="w-20 h-20 bg-white/5 border border-white/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(153,246,255,0.1)]"
-          >
-            <Sparkles className="text-[#99f6ff]" size={40} />
-          </motion.div>
-          <h1 className="text-5xl font-black tracking-tighter mb-2 dopamine-text">Welcome Back</h1>
-          <p className="text-white/40 font-medium">Access your cognitive workspace</p>
-        </div>
-
-        <div className="space-y-4">
-          <button 
-            onClick={handleGoogleLogin}
-            className="pill-nav w-full h-16 flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 transition-all font-bold border-white/10 group"
-          >
-            <Chrome size={20} className="text-[#99f6ff] group-hover:scale-110 transition-transform" />
-            Continue with Google
-          </button>
-
-          <div className="relative py-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-            <div className="relative flex justify-center text-[10px] uppercase tracking-[0.2em]"><span className="bg-[#020408] px-4 text-white/20 font-black">Neural Authentication</span></div>
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg shadow-emerald-200">
+            <Sparkles size={32} />
           </div>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all group">
-              <Mail className="text-white/20 group-focus-within:text-[#99f6ff] transition-colors" size={20} />
-              <Input 
-                type="email" 
-                placeholder="Email Address" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required 
-                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium"
-              />
-            </div>
-            <div className="pill-nav p-1 px-6 flex items-center bg-white/5 border-white/10 focus-within:border-[#99f6ff]/50 transition-all group relative">
-              <ShieldCheck className="text-white/20 group-focus-within:text-[#99f6ff] transition-colors" size={20} />
-              <Input 
-                type={showPassword ? "text" : "password"} 
-                placeholder="Password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required 
-                className="bg-transparent border-none h-14 text-white placeholder:text-white/20 focus-visible:ring-0 font-medium pr-12"
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-6 text-white/20 hover:text-white transition-colors"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-            
-            <div className="flex items-center justify-between px-2">
-              <button 
-                type="button"
-                onClick={() => setRememberMe(!rememberMe)}
-                className="flex items-center gap-2 group"
-              >
-                <div className={`w-4 h-4 rounded border transition-all flex items-center justify-center ${rememberMe ? 'bg-[#99f6ff] border-[#99f6ff]' : 'border-white/10 group-hover:border-white/30'}`}>
-                  {rememberMe && <Check size={10} className="text-[#020408] stroke-[4]" />}
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/30 group-hover:text-white/50 transition-colors">Remember Me</span>
-              </button>
-              <Link to="/forgot-password" title="Forgot Password" className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-[#99f6ff] transition-colors">
-                Forgot Password?
-              </Link>
-            </div>
-
-            <button type="submit" className="auron-button w-full h-16 text-xl mt-6 flex items-center justify-center gap-3" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : (
-                <>
-                  Initialize Link
-                  <ArrowRight size={20} />
-                </>
-              )}
-            </button>
-          </form>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            {step === 'login' ? 'Welcome Back' : 'Confirm Identity'}
+          </h1>
+          <p className="text-slate-500 font-medium mt-2">
+            {step === 'login' ? 'Access your farm management portal' : `Enter the code sent to ${email}`}
+          </p>
         </div>
 
-        <p className="text-center mt-10 text-white/40 font-medium">
-          New here? <Link to="/signup" className="text-[#99f6ff] font-bold hover:underline">Create Account</Link>
-        </p>
+        <AnimatePresence mode="wait">
+          {step === 'login' ? (
+            <motion.div
+              key="login-step"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <button 
+                onClick={handleGoogleLogin}
+                className="w-full h-14 flex items-center justify-center gap-3 bg-slate-50 hover:bg-slate-100 transition-all font-bold rounded-xl border border-slate-100 group mb-6"
+              >
+                <Chrome size={20} className="text-emerald-600 group-hover:scale-110 transition-transform" />
+                Continue with Google
+              </button>
+
+              <div className="relative py-4 mb-4">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+                <div className="relative flex justify-center text-[10px] uppercase tracking-[0.2em]"><span className="bg-white px-4 text-slate-400 font-black">Or use email</span></div>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                    <Input 
+                      type="email" 
+                      placeholder="name@example.com" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required 
+                      className="pl-12 h-14 bg-slate-50 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Password</label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                    <Input 
+                      type={showPassword ? "text" : "password"} 
+                      placeholder="••••••••" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required 
+                      className="pl-12 h-14 bg-slate-50 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 pr-12"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between px-2">
+                  <button 
+                    type="button"
+                    onClick={() => setRememberMe(!rememberMe)}
+                    className="flex items-center gap-2 group"
+                  >
+                    <div className={`w-4 h-4 rounded border transition-all flex items-center justify-center ${rememberMe ? 'bg-emerald-500 border-emerald-500' : 'border-slate-200 group-hover:border-slate-400'}`}>
+                      {rememberMe && <Check size={10} className="text-white stroke-[4]" />}
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">Remember Me</span>
+                  </button>
+                  <Link to="/forgot-password" title="Forgot Password" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors">
+                    Forgot Password?
+                  </Link>
+                </div>
+
+                <button type="submit" className="farm-button w-full h-16 text-lg mt-6 flex items-center justify-center gap-3" disabled={loading}>
+                  {loading ? <Loader2 className="animate-spin" /> : (
+                    <>
+                      Log In
+                      <ArrowRight size={20} />
+                    </>
+                  )}
+                </button>
+              </form>
+            </motion.div>
+          ) : (
+            <motion.form 
+              key="verify-step"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              onSubmit={handleVerify} 
+              className="space-y-6"
+            >
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest text-center block">Verification Code</label>
+                <Input 
+                  type="text" 
+                  placeholder="000000" 
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  required 
+                  maxLength={6}
+                  className="h-20 text-center text-4xl tracking-[0.5em] bg-slate-50 border-none rounded-2xl font-black focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <button type="submit" className="farm-button w-full h-16 text-lg" disabled={loading}>
+                {loading ? <Loader2 className="animate-spin mx-auto" /> : "Verify & Log In"}
+              </button>
+              
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-3">
+                <Info size={18} className="text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-[10px] text-amber-700 font-bold leading-relaxed">
+                  If you don't receive an email, use code <code className="bg-amber-100 px-1 rounded">123456</code> for this demo.
+                </p>
+              </div>
+              
+              <button 
+                type="button" 
+                onClick={() => setStep('login')}
+                className="w-full text-center text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Back to Login
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        {step === 'login' && (
+          <p className="text-center mt-10 text-slate-400 font-bold text-sm">
+            New here? <Link to="/signup" className="text-emerald-600 font-bold hover:underline">Create Account</Link>
+          </p>
+        )}
       </motion.div>
     </div>
   );
