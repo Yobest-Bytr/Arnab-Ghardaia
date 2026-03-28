@@ -1,4 +1,15 @@
--- 1. Profiles Table
+-- 1. Auth Codes Table (Required for Verification)
+CREATE TABLE IF NOT EXISTS auth_codes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  code text NOT NULL,
+  purpose text NOT NULL,
+  expires_at timestamp with time zone NOT NULL,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+-- 2. Profiles Table
 CREATE TABLE IF NOT EXISTS profiles (
   id uuid PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
   email text UNIQUE NOT NULL,
@@ -7,11 +18,14 @@ CREATE TABLE IF NOT EXISTS profiles (
 );
 
 -- Enable RLS
+ALTER TABLE auth_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
-CREATE POLICY "System can insert profiles" ON profiles FOR INSERT WITH CHECK (true);
 
--- 2. Trigger to auto-create profile on signup
+-- Policies
+CREATE POLICY "System can manage auth codes" ON auth_codes FOR ALL USING (true);
+CREATE POLICY "Public profiles are viewable" ON profiles FOR SELECT USING (true);
+
+-- 3. Trigger to auto-create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
