@@ -23,11 +23,12 @@ const translations: Translations = {
   changelog: { en: "Changelog", ar: "سجل التغييرات", fr: "Journal" },
   profile: { en: "Profile", ar: "الملف الشخصي", fr: "Profil" },
   
-  // Hero
-  heroTitle: { en: "Smart Rabbit Management", ar: "الإدارة الذكية لمزارع الأرانب", fr: "Gestion Intelligente des Lapins" },
-  heroSubtitle: { en: "Track, manage, and grow your rabbit business with real-time statistics and complete inventory control.", ar: "تتبع وإدارة وتنمية أعمال الأرانب الخاصة بك من خلال إحصائيات فورية وتحكم كامل في المخزون.", fr: "Suivez, gérez et développez votre entreprise de lapins avec des statistiques en temps réel." },
-  goDashboard: { en: "Go to Dashboard", ar: "انتقل إلى لوحة التحكم", fr: "Aller au tableau de bord" },
-  viewRabbits: { en: "View Our Rabbits", ar: "شاهد أرانبنا", fr: "Voir nos lapins" },
+  // Rabbit Details
+  rabbitId: { en: "Rabbit ID", ar: "رقم الأرنب", fr: "ID du lapin" },
+  qrCode: { en: "QR Code", ar: "رمز QR", fr: "Code QR" },
+  weight: { en: "Weight (kg)", ar: "الوزن (كجم)", fr: "Poids (kg)" },
+  birthDate: { en: "Birth Date", ar: "تاريخ الميلاد", fr: "Date de naissance" },
+  notes: { en: "Notes", ar: "ملاحظات", fr: "Notes" },
   
   // Stats & Status
   totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total des lapins" },
@@ -41,30 +42,14 @@ const translations: Translations = {
   sick: { en: "Sick", ar: "مريض", fr: "Malade" },
   reserved: { en: "Reserved", ar: "محجوز", fr: "Réservé" },
   
-  // Breeding Specific
-  matingDate: { en: "Mating Date", ar: "تاريخ التزاوج", fr: "Date d'accouplement" },
-  expectedBirth: { en: "Expected Birth", ar: "الولادة المتوقعة", fr: "Naissance prévue" },
-  mother: { en: "Mother", ar: "الأم", fr: "Mère" },
-  father: { en: "Father", ar: "الأب", fr: "Père" },
-  kitCount: { en: "Kit Count", ar: "عدد الصغار", fr: "Nombre de petits" },
-  recordMating: { en: "Record Mating", ar: "تسجيل تزاوج", fr: "Enregistrer l'accouplement" },
-  activePregnancies: { en: "Active Pregnancies", ar: "حالات الحمل النشطة", fr: "Grossesses actives" },
-  
-  // Inventory Specific
-  cage: { en: "Cage", ar: "القفص", fr: "Cage" },
-  price: { en: "Price", ar: "السعر", fr: "Prix" },
-  breed: { en: "Breed", ar: "السلالة", fr: "Race" },
-  gender: { en: "Gender", ar: "الجنس", fr: "Sexe" },
-  addRecord: { en: "Add Record", ar: "إضافة سجل", fr: "Ajouter un enregistrement" },
-  quickFilter: { en: "Quick Filter", ar: "تصفية سريعة", fr: "Filtre rapide" },
-  
   // Actions
   addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un lapin" },
   edit: { en: "Edit", ar: "تعديل", fr: "Modifier" },
   delete: { en: "Delete", ar: "حذف", fr: "Supprimer" },
   save: { en: "Save Changes", ar: "حفظ التغييرات", fr: "Sauvegarder" },
   export: { en: "Export Data", ar: "تصدير البيانات", fr: "Exporter" },
-  searchPlaceholder: { en: "Search by name or breed...", ar: "ابحث بالاسم أو السلالة...", fr: "Rechercher par nom ou race..." },
+  viewDetails: { en: "View Details", ar: "عرض التفاصيل", fr: "Voir les détails" },
+  searchPlaceholder: { en: "Search by ID, name or breed...", ar: "ابحث بالرقم، الاسم أو السلالة...", fr: "Rechercher par ID, nom ou race..." },
   
   // Dashboard Specific
   recentActivity: { en: "Recent Activity", ar: "النشاط الأخير", fr: "Activité récente" },

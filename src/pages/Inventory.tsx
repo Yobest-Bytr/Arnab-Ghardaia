@@ -4,15 +4,14 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { 
-  Search, Plus, MoreVertical, Rabbit, Download,
-  X, Loader2, Edit2, Trash2, Calendar, FileText, Table as TableIcon, Filter
+  Search, Plus, Rabbit, Download,
+  X, Loader2, Edit2, Trash2, FileText, Table as TableIcon, Filter, QrCode, Eye, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
 import { exportToCSV } from '@/utils/export';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,16 +27,22 @@ const Inventory = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedRabbit, setSelectedRabbit] = useState<any>(null);
   const [editingRabbit, setEditingRabbit] = useState<any>(null);
   
   const [formData, setFormData] = useState({
+    rabbit_id: '',
     name: '',
     breed: 'New Zealand White',
     gender: 'Female',
     health_status: 'Healthy',
     status: 'Available',
     cage_number: '',
-    price: ''
+    price: '',
+    weight: '',
+    birth_date: '',
+    notes: ''
   });
 
   useEffect(() => {
@@ -50,36 +55,21 @@ const Inventory = () => {
     setLoading(false);
   };
 
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Aranib Farm - Inventory Report", 14, 15);
-    const tableData = rabbits.map(r => [
-      new Date(r.created_at).toLocaleDateString(),
-      r.name,
-      r.breed,
-      r.gender,
-      r.status,
-      `$${r.price || 0}`
-    ]);
-    autoTable(doc, {
-      head: [['Date', 'Name', 'Breed', 'Gender', 'Status', 'Price']],
-      body: tableData,
-      startY: 20,
-    });
-    doc.save(`Inventory_${new Date().getTime()}.pdf`);
-    showSuccess("PDF Exported");
-  };
-
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
+    const dataToSave = {
+      ...formData,
+      rabbit_id: formData.rabbit_id || `RB-${Math.floor(1000 + Math.random() * 9000)}`
+    };
+
     if (editingRabbit) {
-      await storage.update('rabbits', user.id, editingRabbit.id, formData);
-      setRabbits(prev => prev.map(r => r.id === editingRabbit.id ? { ...r, ...formData } : r));
+      await storage.update('rabbits', user.id, editingRabbit.id, dataToSave);
+      setRabbits(prev => prev.map(r => r.id === editingRabbit.id ? { ...r, ...dataToSave } : r));
       showSuccess("Rabbit updated successfully.");
     } else {
-      const newRabbit = await storage.insert('rabbits', user.id, formData);
+      const newRabbit = await storage.insert('rabbits', user.id, dataToSave);
       setRabbits([newRabbit, ...rabbits]);
       showSuccess("Rabbit added to inventory.");
     }
@@ -97,13 +87,17 @@ const Inventory = () => {
   const openEditModal = (rabbit: any) => {
     setEditingRabbit(rabbit);
     setFormData({
-      name: rabbit.name,
-      breed: rabbit.breed,
-      gender: rabbit.gender,
-      health_status: rabbit.health_status,
-      status: rabbit.status,
+      rabbit_id: rabbit.rabbit_id || '',
+      name: rabbit.name || '',
+      breed: rabbit.breed || 'New Zealand White',
+      gender: rabbit.gender || 'Female',
+      health_status: rabbit.health_status || 'Healthy',
+      status: rabbit.status || 'Available',
       cage_number: rabbit.cage_number || '',
-      price: rabbit.price || ''
+      price: rabbit.price || '',
+      weight: rabbit.weight || '',
+      birth_date: rabbit.birth_date || '',
+      notes: rabbit.notes || ''
     });
     setIsModalOpen(true);
   };
@@ -111,12 +105,14 @@ const Inventory = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingRabbit(null);
-    setFormData({ name: '', breed: 'New Zealand White', gender: 'Female', health_status: 'Healthy', status: 'Available', cage_number: '', price: '' });
+    setFormData({ rabbit_id: '', name: '', breed: 'New Zealand White', gender: 'Female', health_status: 'Healthy', status: 'Available', cage_number: '', price: '', weight: '', birth_date: '', notes: '' });
   };
 
   const filteredRabbits = rabbits.filter(r => {
-    const matchesSearch = r.name?.toLowerCase().includes(search.toLowerCase()) || 
-                         r.breed?.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = 
+      r.name?.toLowerCase().includes(search.toLowerCase()) || 
+      r.breed?.toLowerCase().includes(search.toLowerCase()) ||
+      r.rabbit_id?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'All' || r.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -134,20 +130,6 @@ const Inventory = () => {
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Track population, sales, and health history.</p>
           </div>
           <div className="flex gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="px-6 h-12 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-2 hover:bg-emerald-50 transition-all outline-none">
-                <Download size={18} /> {t('export')}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white dark:bg-slate-900 border-emerald-50 dark:border-slate-800 rounded-xl p-2 w-48">
-                <DropdownMenuItem onClick={handleExportPDF} className="flex items-center gap-2 p-3 cursor-pointer rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                  <FileText size={16} className="text-rose-500" /> Export as PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportToCSV(rabbits, 'Inventory')} className="flex items-center gap-2 p-3 cursor-pointer rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                  <TableIcon size={16} className="text-emerald-500" /> Export as CSV
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
             <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2">
               <Plus size={20} /> {t('addRecord')}
             </button>
@@ -190,7 +172,7 @@ const Inventory = () => {
             <table className="w-full text-left rtl:text-right">
               <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-emerald-50 dark:border-slate-800">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Date Added</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('rabbitId')}</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Rabbit</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('breed')}</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
@@ -203,8 +185,10 @@ const Inventory = () => {
                   <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-400 font-medium">Loading...</td></tr>
                 ) : filteredRabbits.map((rabbit) => (
                   <tr key={rabbit.id} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-colors group">
-                    <td className="px-6 py-4 text-xs font-bold text-slate-400">
-                      {new Date(rabbit.created_at).toLocaleDateString()}
+                    <td className="px-6 py-4">
+                      <span className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                        {rabbit.rabbit_id || 'N/A'}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -239,6 +223,9 @@ const Inventory = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => { setSelectedRabbit(rabbit); setIsDetailsOpen(true); }} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 hover:text-emerald-600 transition-all" title={t('viewDetails')}>
+                          <Eye size={16} />
+                        </button>
                         <button onClick={() => openEditModal(rabbit)} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 hover:text-emerald-600 transition-all">
                           <Edit2 size={16} />
                         </button>
@@ -255,6 +242,7 @@ const Inventory = () => {
         </div>
       </main>
 
+      {/* Add/Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center px-6 bg-slate-900/60 backdrop-blur-sm">
@@ -262,7 +250,7 @@ const Inventory = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="max-w-lg w-full bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl border border-emerald-50 dark:border-slate-800 relative"
+              className="max-w-2xl w-full bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl border border-emerald-50 dark:border-slate-800 relative max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               <button onClick={closeModal} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                 <X size={24} />
@@ -275,12 +263,12 @@ const Inventory = () => {
               <form onSubmit={handleAction} className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Name</label>
-                    <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('rabbitId')}</label>
+                    <input type="text" placeholder="e.g. RB-1001" value={formData.rabbit_id} onChange={(e) => setFormData({...formData, rabbit_id: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('price')} ($)</label>
-                    <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Name</label>
+                    <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
                 
@@ -308,22 +296,75 @@ const Inventory = () => {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('gender')}</label>
-                    <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
-                      <option value="Female">{t('females')}</option>
-                      <option value="Male">{t('males')}</option>
-                    </select>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('weight')}</label>
+                    <input type="number" step="0.1" value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('cage')}</label>
-                    <input type="text" value={formData.cage_number} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('birthDate')}</label>
+                    <input type="date" value={formData.birth_date} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('notes')}</label>
+                  <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full min-h-[100px] p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                 </div>
 
                 <button type="submit" className="farm-button w-full h-16 text-lg mt-4">
                   {editingRabbit ? t('save') : t('addRecord')}
                 </button>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Details Modal with QR Code */}
+      <AnimatePresence>
+        {isDetailsOpen && selectedRabbit && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center px-6 bg-slate-900/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-md w-full bg-white dark:bg-slate-900 p-10 rounded-[3rem] shadow-2xl border border-emerald-50 dark:border-slate-800 relative text-center"
+            >
+              <button onClick={() => setIsDetailsOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <X size={24} />
+              </button>
+
+              <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center text-emerald-600 mx-auto mb-6">
+                <Rabbit size={40} />
+              </div>
+
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">{selectedRabbit.name}</h2>
+              <p className="text-sm font-black text-emerald-600 uppercase tracking-widest mb-8">{selectedRabbit.rabbit_id}</p>
+
+              <div className="bg-slate-50 dark:bg-slate-800 p-8 rounded-[2.5rem] mb-8 flex flex-col items-center border border-slate-100 dark:border-slate-700">
+                <QRCodeSVG 
+                  value={`https://aranibfarm.com/rabbit/${selectedRabbit.rabbit_id}`} 
+                  size={160}
+                  level="H"
+                  includeMargin={true}
+                  className="rounded-xl"
+                />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-6">{t('qrCode')}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-left rtl:text-right">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('breed')}</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{selectedRabbit.breed}</p>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('weight')}</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{selectedRabbit.weight || '0'} kg</p>
+                </div>
+              </div>
+
+              <button onClick={() => setIsDetailsOpen(false)} className="w-full h-14 mt-8 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-sm">
+                Close Profile
+              </button>
             </motion.div>
           </div>
         )}

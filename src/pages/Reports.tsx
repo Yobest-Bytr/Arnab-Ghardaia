@@ -83,7 +83,7 @@ const Reports = () => {
 
     // Table
     const tableData = rabbits.map(r => [
-      new Date(r.created_at).toLocaleDateString(),
+      r.rabbit_id || 'N/A',
       r.name || 'N/A',
       r.breed,
       r.gender,
@@ -93,7 +93,7 @@ const Reports = () => {
 
     autoTable(doc, {
       startY: 95,
-      head: [['Date', 'Name', 'Breed', 'Gender', 'Status', 'Price']],
+      head: [['ID', 'Name', 'Breed', 'Gender', 'Status', 'Price']],
       body: tableData,
       headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [248, 250, 252] },
@@ -198,7 +198,7 @@ const Reports = () => {
             <table className="w-full text-left rtl:text-right">
               <thead className="bg-slate-50 dark:bg-slate-800/50">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Date</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">ID</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Breed</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Name</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
@@ -208,7 +208,7 @@ const Reports = () => {
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                 {rabbits.slice(0, 10).map((r, i) => (
                   <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-400">{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-400">{r.rabbit_id || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm font-bold text-slate-900 dark:text-white">{r.breed}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-500">{r.name || 'N/A'}</td>
                     <td className="px-6 py-4">
