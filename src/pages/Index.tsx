@@ -78,7 +78,7 @@ const Index = () => {
             className="relative"
           >
             <div className="aspect-[4/5] rounded-[4rem] overflow-hidden shadow-2xl border-[12px] border-white dark:border-slate-900 relative z-10 group">
-              <img 
+              <img //https://fieldandstream.com/wp-content/uploads/2024/06/BGHA45BMURB4HK43PODKL2UICQ.jpg
                 src="https://images.unsplash.com/photo-1585110396050-c99b13f8c543?auto=format&fit=crop&q=80&w=1000" 
                 alt="Rabbit Farm" 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
