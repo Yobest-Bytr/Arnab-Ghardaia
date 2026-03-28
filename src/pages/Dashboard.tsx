@@ -77,10 +77,6 @@ const Dashboard = () => {
     { label: t('healthy'), val: rabbits.filter(r => r.health_status === 'Healthy').length, icon: ShieldCheck, color: "bg-emerald-400" },
   ];
 
-  const healthPercentage = rabbits.length > 0 
-    ? Math.round((rabbits.filter(r => r.health_status === 'Healthy').length / rabbits.length) * 100) 
-    : 100;
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
@@ -115,7 +111,6 @@ const Dashboard = () => {
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {/* Quick Actions */}
             <div className="farm-card">
               <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                 <Zap className="text-amber-500" size={20} />
