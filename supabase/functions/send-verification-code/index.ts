@@ -7,6 +7,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// @ts-ignore
+if (typeof Deno.writeAll !== 'function') {
+  // @ts-ignore
+  Deno.writeAll = async function (w: Deno.Writer, arr: Uint8Array) {
+    let nwritten = 0;
+    while (nwritten < arr.length) {
+      nwritten += await w.write(arr.subarray(nwritten));
+    }
+  };
+}
+
 const SMTP_USER = "yobest.bytr47@gmail.com";
 const SMTP_PASS = "rwnjbedwmqqrysrj"; 
 
@@ -15,7 +26,7 @@ serve(async (req) => {
 
   try {
     const { email, userId } = await req.json();
-    console.log(`[send-verification-code] Request for ${email}`);
+    console.log(`[send-verification-code] Processing request for ${email}`);
 
     if (!email) {
       return new Response(JSON.stringify({ error: 'Email is required.' }), { 
@@ -28,21 +39,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Find the real user ID if the one provided is a placeholder
-    let targetUserId = userId;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
-    if (!userId || !uuidRegex.test(userId)) {
-      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      const user = users.find(u => u.email === email);
-      targetUserId = user?.id || null;
-    }
-
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
+    // === SIMPLE UUID FIX ===
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validUserId = (userId && uuidRegex.test(userId)) ? userId : null;
+
     const { error: insertError } = await supabaseAdmin.from('auth_codes').insert({
-      user_id: targetUserId,
+      user_id: validUserId,
       email: email,
       code: code,
       purpose: 'email_verification',
@@ -51,6 +56,7 @@ serve(async (req) => {
 
     if (insertError) throw insertError;
 
+    // SMTP email
     const client = new SmtpClient();
     await client.connectTLS({
       hostname: "smtp.gmail.com",
@@ -62,26 +68,25 @@ serve(async (req) => {
     await client.send({
       from: SMTP_USER,
       to: email,
-      subject: 'Aranib Farm - Verification Code',
+      subject: 'Yobest Studio - Verification Code',
       content: `Your code is: ${code}`,
       html: `
-        <div style="font-family: sans-serif; padding: 40px; background: #f8fafc; text-align: center;">
-          <div style="background: white; padding: 40px; border-radius: 24px; max-width: 400px; margin: auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
-            <h2 style="color: #059669; margin-bottom: 8px;">Confirm Your Identity</h2>
-            <p style="color: #64748b; font-size: 14px;">Enter this code to access your farm dashboard:</p>
-            <div style="font-size: 42px; font-weight: 900; letter-spacing: 10px; color: #0f172a; padding: 30px; background: #ecfdf5; border-radius: 16px; margin: 24px 0;">${code}</div>
-            <p style="color: #94a3b8; font-size: 12px;">This code expires in 10 minutes.</p>
-          </div>
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 15px; max-width: 400px; margin: auto;">
+          <h2 style="color: #8b5cf6; text-align: center;">Neural Identity Verification</h2>
+          <p style="text-align: center; color: #666;">Enter the following code to initialize your account:</p>
+          <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #06b6d4; text-align: center; padding: 20px; background: #f8fafc; border-radius: 10px; margin: 20px 0;">${code}</div>
+          <p style="color: #999; font-size: 11px; text-align: center;">This code expires in 10 minutes. If you did not request this, please ignore this transmission.</p>
         </div>
       `,
     });
 
     await client.close();
-    return new Response(JSON.stringify({ message: 'Code sent.' }), { 
+    return new Response(JSON.stringify({ message: 'Verification code transmitted.' }), { 
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
 
   } catch (error: any) {
+    console.error("[send-verification-code] Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
