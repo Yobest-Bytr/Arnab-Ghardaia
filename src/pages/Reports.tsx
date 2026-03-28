@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
@@ -9,6 +9,10 @@ import {
   FileText, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell 
+} from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { showSuccess } from '@/utils/toast';
@@ -28,52 +32,30 @@ const Reports = () => {
     setRabbits(data);
   };
 
+  const breedData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    rabbits.forEach(r => {
+      counts[r.breed] = (counts[r.breed] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [rabbits]);
+
+  const performanceData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    return months.map((month, i) => ({
+      name: month,
+      added: rabbits.filter(r => new Date(r.created_at).getMonth() === i).length
+    }));
+  }, [rabbits]);
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+
   const generatePDF = () => {
     setLoading(true);
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    // Add Title
+    const doc = new jsPDF();
     doc.setFontSize(22);
-    doc.setTextColor(15, 23, 42); // Slate 900
-    const title = isRTL ? "سجل معاملات مزرعة الأرانب" : "Aranib Farm Transaction Log";
-    doc.text(title, 105, 20, { align: 'center' });
-
-    // Add Summary Cards (Right side style)
-    const totalValue = rabbits.reduce((acc, r) => acc + (Number(r.price) || 0), 0);
-    const soldCount = rabbits.filter(r => r.status === 'Sold').length;
-    const availableCount = rabbits.filter(r => r.status === 'Available').length;
-
-    // Summary Box
-    doc.setDrawColor(241, 245, 249); // Slate 100
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(140, 35, 60, 60, 5, 5, 'FD');
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139); // Slate 500
-    doc.text(isRTL ? "إجمالي القيمة" : "Total Value", 190, 45, { align: 'right' });
-    doc.setFontSize(14);
-    doc.setTextColor(16, 185, 129); // Emerald 500
-    doc.text(`$${totalValue.toLocaleString()}`, 190, 52, { align: 'right' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
-    doc.text(isRTL ? "تم بيعه" : "Sold Count", 190, 65, { align: 'right' });
-    doc.setFontSize(14);
-    doc.setTextColor(59, 130, 246); // Blue 500
-    doc.text(`${soldCount}`, 190, 72, { align: 'right' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
-    doc.text(isRTL ? "متاح حاليا" : "Available", 190, 85, { align: 'right' });
-    doc.setFontSize(14);
-    doc.setTextColor(245, 158, 11); // Amber 500
-    doc.text(`${availableCount}`, 190, 92, { align: 'right' });
-
-    // Table Data
+    doc.text(isRTL ? "تقرير مزرعة الأرانب" : "Aranib Farm Report", 105, 20, { align: 'center' });
+    
     const tableData = rabbits.map(r => [
       new Date(r.created_at).toLocaleDateString(),
       r.breed,
@@ -83,80 +65,90 @@ const Reports = () => {
     ]);
 
     autoTable(doc, {
-      startY: 105,
-      head: [[
-        isRTL ? "التاريخ" : "Date",
-        isRTL ? "السلالة" : "Breed",
-        isRTL ? "الاسم" : "Name",
-        isRTL ? "الحالة" : "Status",
-        isRTL ? "السعر" : "Price"
-      ]],
+      startY: 30,
+      head: [[isRTL ? "التاريخ" : "Date", isRTL ? "السلالة" : "Breed", isRTL ? "الاسم" : "Name", isRTL ? "الحالة" : "Status", isRTL ? "السعر" : "Price"]],
       body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 9, cellPadding: 5 },
-      alternateRowStyles: { fillColor: [248, 250, 252] }
     });
 
-    doc.save(`Aranib_Farm_Report_${new Date().getTime()}.pdf`);
+    doc.save(`Report_${new Date().getTime()}.pdf`);
     setLoading(false);
-    showSuccess("Report downloaded successfully.");
+    showSuccess("Report downloaded.");
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
       
       <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">{t('reports')}</h1>
-            <p className="text-slate-500 font-medium mt-1">Detailed analytics and exportable farm data.</p>
+            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('reports')}</h1>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Detailed analytics and exportable farm data.</p>
           </div>
-          <div className="flex gap-3">
-            <button 
-              onClick={generatePDF}
-              disabled={loading}
-              className="px-6 h-12 rounded-xl bg-emerald-600 text-white font-black flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50"
-            >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : <FileText size={18} />}
-              {isRTL ? "تحميل التقرير PDF" : "Download PDF Report"}
-            </button>
-          </div>
+          <button 
+            onClick={generatePDF}
+            disabled={loading}
+            className="px-6 h-12 rounded-xl bg-emerald-600 text-white font-black flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="animate-spin" size={18} /> : <FileText size={18} />}
+            {isRTL ? "تحميل التقرير PDF" : "Download PDF Report"}
+          </button>
         </header>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="farm-card lg:col-span-2">
-            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-2">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
               <TrendingUp className="text-emerald-600" size={20} />
               {isRTL ? "أداء المزرعة" : "Farm Performance"}
             </h3>
-            <div className="h-80 bg-slate-50 rounded-2xl flex flex-col items-center justify-center text-slate-300 font-bold italic border-2 border-dashed border-slate-200">
-              <BarChart3 size={48} className="mb-4 opacity-20" />
-              <p>{isRTL ? "سيتم عرض الرسوم البيانية هنا" : "Interactive charts will appear here"}</p>
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} fontWeight="bold" tickLine={false} axisLine={false} />
+                  <YAxis hide />
+                  <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="added" fill="#10b981" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
           <div className="farm-card">
-            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-2">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
               <PieIcon className="text-emerald-600" size={20} />
               {isRTL ? "توزيع السلالات" : "Breed Distribution"}
             </h3>
-            <div className="h-80 bg-slate-50 rounded-2xl flex flex-col items-center justify-center text-slate-300 font-bold italic border-2 border-dashed border-slate-200">
-              <PieIcon size={48} className="mb-4 opacity-20" />
-              <p>{isRTL ? "تحليل السلالات" : "Breed Analysis"}</p>
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={breedData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {breedData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* Preview Table (Similar to image) */}
         <div className="mt-12 farm-card p-0 overflow-hidden">
-          <div className="p-6 border-b border-slate-50 bg-white">
-            <h3 className="text-lg font-black text-slate-900">{isRTL ? "سجل المعاملات الأخير" : "Recent Transaction Log"}</h3>
+          <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white">{isRTL ? "سجل المعاملات الأخير" : "Recent Transaction Log"}</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left rtl:text-right">
-              <thead className="bg-slate-50">
+              <thead className="bg-slate-50 dark:bg-slate-800/50">
                 <tr>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{isRTL ? "التاريخ" : "Date"}</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{isRTL ? "السلالة" : "Breed"}</th>
@@ -165,11 +157,11 @@ const Reports = () => {
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{isRTL ? "السعر" : "Price"}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                 {rabbits.slice(0, 10).map((r, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-bold text-slate-600">{new Date(r.created_at).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900">{r.breed}</td>
+                  <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-400">{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-slate-900 dark:text-white">{r.breed}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-500">{r.name || 'N/A'}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
@@ -181,13 +173,6 @@ const Reports = () => {
                     <td className="px-6 py-4 text-sm font-black text-emerald-600">${r.price || 0}</td>
                   </tr>
                 ))}
-                {rabbits.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium italic">
-                      {isRTL ? "لا توجد بيانات متاحة حالياً" : "No transaction data available yet."}
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>

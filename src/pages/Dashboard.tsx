@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,7 +12,7 @@ import {
 import { motion } from 'framer-motion';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell 
+  Tooltip, ResponsiveContainer
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
@@ -20,38 +20,82 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { t, isRTL } = useLanguage();
   const [rabbits, setRabbits] = useState<any[]>([]);
+  const [litters, setLitters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) fetchRabbits();
+    if (user) {
+      fetchData();
+    }
   }, [user]);
 
-  const fetchRabbits = async () => {
-    const data = await storage.get('rabbits', user?.id || '');
-    setRabbits(data);
+  const fetchData = async () => {
+    const [rabbitData, litterData] = await Promise.all([
+      storage.get('rabbits', user?.id || ''),
+      storage.get('litters', user?.id || '')
+    ]);
+    setRabbits(rabbitData);
+    setLitters(litterData);
     setLoading(false);
   };
+
+  // Calculate real population growth data
+  const chartData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+    const last6Months = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthIdx = (currentMonth - i + 12) % 12;
+      const monthName = months[monthIdx];
+      const count = rabbits.filter(r => {
+        const date = new Date(r.created_at);
+        return date.getMonth() <= monthIdx || date.getFullYear() < new Date().getFullYear();
+      }).length;
+      
+      last6Months.push({ name: monthName, count: count || 0 });
+    }
+    return last6Months;
+  }, [rabbits]);
+
+  // Generate real activity feed
+  const recentActivity = useMemo(() => {
+    const activities = [];
+    
+    // Add recent rabbits
+    rabbits.slice(0, 3).forEach(r => {
+      activities.push({
+        type: 'addition',
+        title: isRTL ? `تمت إضافة ${r.name}` : `Added ${r.name}`,
+        desc: `${r.breed} - Cage ${r.cage_number || 'N/A'}`,
+        time: new Date(r.created_at).toLocaleDateString(),
+        icon: Rabbit,
+        color: 'text-emerald-500',
+        timestamp: new Date(r.created_at).getTime()
+      });
+    });
+
+    // Add recent matings
+    litters.slice(0, 2).forEach(l => {
+      activities.push({
+        type: 'mating',
+        title: isRTL ? 'تسجيل تزاوج جديد' : 'New Mating Recorded',
+        desc: `${l.mother_name} & ${l.father_name}`,
+        time: new Date(l.created_at).toLocaleDateString(),
+        icon: Activity,
+        color: 'text-pink-500',
+        timestamp: new Date(l.created_at).getTime()
+      });
+    });
+
+    return activities.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+  }, [rabbits, litters, isRTL]);
 
   const stats = [
     { label: t('totalRabbits'), val: rabbits.length, icon: Rabbit, color: "bg-emerald-500", trend: "+12%" },
     { label: t('males'), val: rabbits.filter(r => r.gender === 'Male').length, icon: Users, color: "bg-blue-500", trend: "+5%" },
     { label: t('females'), val: rabbits.filter(r => r.gender === 'Female').length, icon: Users, color: "bg-pink-500", trend: "+8%" },
     { label: "Healthy", val: rabbits.filter(r => r.health_status === 'Healthy').length, icon: CheckCircle2, color: "bg-emerald-400", trend: "98%" },
-  ];
-
-  const recentActivity = [
-    { type: 'birth', title: 'New Litter Born', desc: 'Mother Bella gave birth to 6 kits.', time: '2 hours ago', icon: Activity, color: 'text-emerald-500' },
-    { type: 'sale', title: 'Rabbit Sold', desc: 'Snowball was sold to a new owner.', time: '5 hours ago', icon: TrendingUp, color: 'text-blue-500' },
-    { type: 'health', title: 'Health Check', desc: 'Routine checkup for Cage A-12 completed.', time: 'Yesterday', icon: CheckCircle2, color: 'text-purple-500' },
-  ];
-
-  const chartData = [
-    { name: 'Jan', count: 400 },
-    { name: 'Feb', count: 300 },
-    { name: 'Mar', count: 600 },
-    { name: 'Apr', count: 800 },
-    { name: 'May', count: 700 },
-    { name: 'Jun', count: 900 },
   ];
 
   return (
@@ -135,7 +179,7 @@ const Dashboard = () => {
               Recent Activity
             </h3>
             <div className="space-y-6">
-              {recentActivity.map((activity, i) => (
+              {recentActivity.length > 0 ? recentActivity.map((activity, i) => (
                 <div key={i} className="flex gap-4">
                   <div className={cn("w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0", activity.color)}>
                     <activity.icon size={20} />
@@ -146,11 +190,17 @@ const Dashboard = () => {
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{activity.time}</p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8 text-slate-400 font-medium italic">
+                  No recent activity.
+                </div>
+              )}
             </div>
-            <button className="w-full mt-8 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-all">
-              View All Activity
-            </button>
+            <Link to="/inventory" className="block w-full mt-8">
+              <button className="w-full py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-all">
+                View All Activity
+              </button>
+            </Link>
           </div>
         </div>
       </main>
