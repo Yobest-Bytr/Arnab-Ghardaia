@@ -7,6 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Polyfill for Deno.writeAll if missing in some environments
 // @ts-ignore
 if (typeof Deno.writeAll !== 'function') {
   // @ts-ignore
@@ -26,9 +27,10 @@ serve(async (req) => {
 
   try {
     const { email, userId } = await req.json();
-    console.log(`[send-verification-code] Processing request for ${email}`);
+    console.log(`[send-verification-code] Processing request for: ${email}`);
 
     if (!email) {
+      console.error("[send-verification-code] Error: Email is missing in request body.");
       return new Response(JSON.stringify({ error: 'Email is required.' }), { 
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
@@ -43,8 +45,11 @@ serve(async (req) => {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
     // === SIMPLE UUID FIX ===
+    // If userId is not a valid UUID (like 'reset-request' or 'unconfirmed'), we store it as null
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const validUserId = (userId && uuidRegex.test(userId)) ? userId : null;
+    
+    console.log(`[send-verification-code] Storing code for ${email} (Valid UUID: ${!!validUserId})`);
 
     const { error: insertError } = await supabaseAdmin.from('auth_codes').insert({
       user_id: validUserId,
@@ -54,9 +59,13 @@ serve(async (req) => {
       expires_at: expiresAt,
     });
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error("[send-verification-code] Database Insert Error:", insertError.message);
+      throw insertError;
+    }
 
-    // SMTP email
+    // SMTP email transmission
+    console.log(`[send-verification-code] Connecting to SMTP for ${email}...`);
     const client = new SmtpClient();
     await client.connectTLS({
       hostname: "smtp.gmail.com",
@@ -81,12 +90,14 @@ serve(async (req) => {
     });
 
     await client.close();
+    console.log(`[send-verification-code] Success: Code ${code} transmitted to ${email}`);
+    
     return new Response(JSON.stringify({ message: 'Verification code transmitted.' }), { 
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
 
   } catch (error: any) {
-    console.error("[send-verification-code] Error:", error.message);
+    console.error("[send-verification-code] Critical Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });

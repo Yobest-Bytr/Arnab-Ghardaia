@@ -10,15 +10,23 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { email, userId, code } = await req.json();
-    console.log(`[verify-code] Verifying code for ${email}`);
+    const { email, code } = await req.json();
+    console.log(`[verify-code] Attempting verification for: ${email}`);
+
+    if (!email || !code) {
+      console.error("[verify-code] Error: Missing email or code in request.");
+      return new Response(JSON.stringify({ error: 'Email and code are required.' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Validate the code exists in our table
+    // 1. Validate the code exists in our table for this email
+    console.log(`[verify-code] Checking database for ${email} with code ${code}...`);
     const { data: authCode, error: fetchError } = await supabaseAdmin
       .from('auth_codes')
       .select('*')
@@ -27,44 +35,32 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !authCode) {
-      console.error("[verify-code] Invalid code attempt:", email, code);
-      return new Response(JSON.stringify({ error: 'Invalid or expired code.' }), { 
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      console.error("[verify-code] Verification Failed: Invalid or expired code for", email);
+      return new Response(JSON.stringify({ error: 'Invalid or expired code.' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // 2. Resolve the real User ID to confirm the email in Supabase Auth
-    let targetId = userId;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
-    if (!targetId || !uuidRegex.test(targetId)) {
-      // Use direct lookup instead of listUsers to avoid 500 timeouts
-      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
-      if (!userError && userData?.user) {
-        targetId = userData.user.id;
-      }
+    // 2. Cleanup the used code
+    console.log(`[verify-code] Code validated. Deleting record ID: ${authCode.id}`);
+    const { error: deleteError } = await supabaseAdmin
+      .from('auth_codes')
+      .delete()
+      .eq('id', authCode.id);
+
+    if (deleteError) {
+      console.warn("[verify-code] Warning: Failed to delete used code record:", deleteError.message);
     }
 
-    // 3. Confirm the user in Supabase Auth (prevents the 400 token error on login)
-    if (targetId && uuidRegex.test(targetId)) {
-      console.log(`[verify-code] Confirming email for user: ${targetId}`);
-      const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(targetId, { 
-        email_confirm: true 
-      });
-      if (confirmError) console.error("[verify-code] Confirmation error:", confirmError.message);
-    }
-
-    // 4. Cleanup the code
-    await supabaseAdmin.from('auth_codes').delete().eq('id', authCode.id);
-
-    return new Response(JSON.stringify({ message: 'Identity confirmed.' }), { 
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    console.log(`[verify-code] Success: Identity confirmed for ${email}`);
+    return new Response(JSON.stringify({ message: 'Identity confirmed.' }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
     console.error("[verify-code] Critical Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { 
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
