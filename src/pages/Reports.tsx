@@ -32,6 +32,14 @@ const Reports = () => {
     setRabbits(data);
   };
 
+  const statusData = useMemo(() => {
+    const counts: Record<string, number> = { 'Available': 0, 'Sold': 0, 'Died': 0 };
+    rabbits.forEach(r => {
+      counts[r.status] = (counts[r.status] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [rabbits]);
+
   const breedData = useMemo(() => {
     const counts: Record<string, number> = {};
     rabbits.forEach(r => {
@@ -40,15 +48,8 @@ const Reports = () => {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [rabbits]);
 
-  const performanceData = useMemo(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    return months.map((month, i) => ({
-      name: month,
-      added: rabbits.filter(r => new Date(r.created_at).getMonth() === i).length
-    }));
-  }, [rabbits]);
-
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+  const STATUS_COLORS = { 'Available': '#10b981', 'Sold': '#3b82f6', 'Died': '#ef4444' };
 
   const generatePDF = () => {
     setLoading(true);
@@ -98,17 +99,21 @@ const Reports = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="farm-card lg:col-span-2">
             <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
-              <TrendingUp className="text-emerald-600" size={20} />
-              {isRTL ? "أداء المزرعة" : "Farm Performance"}
+              <BarChart3 className="text-emerald-600" size={20} />
+              Status Breakdown
             </h3>
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={performanceData}>
+                <BarChart data={statusData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                   <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} fontWeight="bold" tickLine={false} axisLine={false} />
                   <YAxis hide />
                   <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="added" fill="#10b981" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name as keyof typeof STATUS_COLORS] || '#94a3b8'} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -117,7 +122,7 @@ const Reports = () => {
           <div className="farm-card">
             <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
               <PieIcon className="text-emerald-600" size={20} />
-              {isRTL ? "توزيع السلالات" : "Breed Distribution"}
+              Breed Distribution
             </h3>
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -144,17 +149,17 @@ const Reports = () => {
 
         <div className="mt-12 farm-card p-0 overflow-hidden">
           <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">{isRTL ? "سجل المعاملات الأخير" : "Recent Transaction Log"}</h3>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white">Recent Transaction Log</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left rtl:text-right">
               <thead className="bg-slate-50 dark:bg-slate-800/50">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{isRTL ? "التاريخ" : "Date"}</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{isRTL ? "السلالة" : "Breed"}</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{isRTL ? "الاسم" : "Name"}</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{isRTL ? "الحالة" : "Status"}</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{isRTL ? "السعر" : "Price"}</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Date</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Breed</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Name</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Price</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
