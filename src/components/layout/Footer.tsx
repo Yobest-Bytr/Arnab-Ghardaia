@@ -15,7 +15,7 @@ const Footer = () => {
               <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white">
                 <Rabbit size={24} />
               </div>
-              <span>Aranib <span className="text-emerald-600">Farm</span></span>
+              <span>Arnab <span className="text-emerald-600">Ghardaia</span></span>
             </Link>
             <p className="text-xl text-slate-400 font-medium max-w-md leading-relaxed">
               {t('heroSubtitle')}

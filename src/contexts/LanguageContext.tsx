@@ -10,7 +10,7 @@ interface Translations {
 
 const translations: Translations = {
   // General
-  appName: { en: "Aranib Farm", ar: "مزرعة الأرانب", fr: "Ferme Aranib" },
+  appName: { en: "Arnab Ghardaia", ar: "أرنب غرداية", fr: "Arnab Ghardaia" },
   dashboard: { en: "Dashboard", ar: "لوحة التحكم", fr: "Tableau de bord" },
   inventory: { en: "Inventory", ar: "المخزون", fr: "Inventaire" },
   breeding: { en: "Breeding", ar: "التزاوج", fr: "Élevage" },
@@ -23,11 +23,11 @@ const translations: Translations = {
   profile: { en: "Profile", ar: "الملف الشخصي", fr: "Profil" },
   privacyPolicy: { en: "Privacy Policy", ar: "سياسة الخصوصية", fr: "Politique de confidentialité" },
   termsOfService: { en: "Terms of Service", ar: "شروط الخدمة", fr: "Conditions d'utilisation" },
-  copyright: { en: "© 2026 Aranib Farm. All rights reserved.", ar: "© 2026 مزرعة الأرانب. جميع الحقوق محفوظة.", fr: "© 2026 Ferme Aranib. Tous droits réservés." },
+  copyright: { en: "© 2026 Arnab Ghardaia. All rights reserved.", ar: "© 2026 أرنب غرداية. جميع الحقوق محفوظة.", fr: "© 2026 Arnab Ghardaia. Tous droits réservés." },
   
   // Hero Section
-  heroTitle: { en: "Smart Rabbit Management", ar: "الإدارة الذكية لمزارع الأرانب", fr: "Gestion Intelligente des Lapins" },
-  heroSubtitle: { en: "Track, manage, and grow your rabbit business with real-time statistics and complete inventory control.", ar: "تتبع وإدارة وتنمية أعمال الأرانب الخاصة بك من خلال إحصائيات فورية وتحكم كامل في المخزون.", fr: "Suivez, gérez et développez votre entreprise de lapins avec des statistiques en temps réel." },
+  heroTitle: { en: "Smart Rabbit Management in Ghardaia", ar: "الإدارة الذكية للأرانب في غرداية", fr: "Gestion Intelligente des Lapins à Ghardaia" },
+  heroSubtitle: { en: "The best platform for managing your rabbit farm in the heart of the M'zab valley. Track, manage, and grow with real-time statistics.", ar: "أفضل منصة لإدارة مزرعة الأرانب الخاصة بك في قلب وادي ميزاب. تتبع وإدارة وتنمية أعمالك بإحصائيات فورية.", fr: "La meilleure plateforme pour gérer votre ferme de lapins au cœur de la vallée du M'zab. Suivez, gérez et développez avec des statistiques en temps réel." },
   goDashboard: { en: "Go to Dashboard", ar: "انتقل إلى لوحة التحكم", fr: "Aller au tableau de bord" },
   viewRabbits: { en: "View Our Rabbits", ar: "شاهد أرانبنا", fr: "Voir nos lapins" },
   happyCustomers: { en: "Happy Customers", ar: "عميل سعيد", fr: "Clients Heureux" },
@@ -35,7 +35,7 @@ const translations: Translations = {
   healthyRate: { en: "Healthy", ar: "سليم", fr: "Sain" },
 
   // Features Section
-  featuresTitle: { en: "Why Choose Aranib Farm?", ar: "لماذا تختار مزرعة الأرانب؟", fr: "Pourquoi Choisir Ferme Aranib ?" },
+  featuresTitle: { en: "Why Choose Arnab Ghardaia?", ar: "لماذا تختار أرنب غرداية؟", fr: "Pourquoi Choisir Arnab Ghardaia ?" },
   featuresSubtitle: { en: "We combine traditional farming wisdom with modern technology to ensure the best care for your rabbits.", ar: "نحن نجمع بين حكمة الزراعة التقليدية والتكنولوجيا الحديثة لضمان أفضل رعاية لأرانبك.", fr: "Nous combinons la sagesse agricole traditionnelle avec la technologie moderne." },
   feature1Title: { en: "Real-time Tracking", ar: "تتبع في الوقت الحقيقي", fr: "Suivi en Temps Réel" },
   feature1Desc: { en: "Monitor every rabbit's health, weight, and growth from birth to sale with our intuitive dashboard.", ar: "راقب صحة كل أرنب ووزنه ونموه من الولادة حتى البيع من خلال لوحة التحكم البديهية الخاصة بنا.", fr: "Surveillez la santé, le poids et la croissance de chaque lapin." },
@@ -43,12 +43,6 @@ const translations: Translations = {
   feature2Desc: { en: "Smart suggestions for breeding pairs to maintain genetic health and maximize farm productivity.", ar: "اقتراحات ذكية لأزواج التزاوج للحفاظ على الصحة الوراثية وزيادة إنتاجية المزرعة.", fr: "Suggestions intelligentes pour les couples reproducteurs." },
   feature3Title: { en: "Financial Insights", ar: "رؤى مالية", fr: "Aperçus Financiers" },
   feature3Desc: { en: "Track sales, expenses, and market trends to understand and grow your farm's profitability.", ar: "تتبع المبيعات والمصروفات واتجاهات السوق لفهم وتنمية ربحية مزرعتك.", fr: "Suivez les ventes, les dépenses et les tendances du marché." },
-
-  // CTA Section
-  ctaTitle: { en: "Ready to start your rabbit journey?", ar: "هل أنت مستعد لبدء رحلتك مع الأرانب؟", fr: "Prêt à commencer votre voyage ?" },
-  ctaSubtitle: { en: "Join hundreds of successful breeders using Aranib Farm's management system today.", ar: "انضم إلى مئات المربين الناجحين الذين يستخدمون نظام إدارة مزرعة الأرانب اليوم.", fr: "Rejoignez des centaines d'éleveurs utilisant notre système." },
-  getStartedFree: { en: "Get Started Free", ar: "ابدأ مجاناً", fr: "Commencer Gratuitement" },
-  contactSales: { en: "Contact Sales", ar: "اتصل بالمبيعات", fr: "Contacter les Ventes" },
 
   // Rabbit Details & Inventory
   rabbitId: { en: "Rabbit ID", ar: "رقم الأرنب", fr: "ID du lapin" },
@@ -61,6 +55,8 @@ const translations: Translations = {
   breed: { en: "Breed", ar: "السلالة", fr: "Race" },
   gender: { en: "Gender", ar: "الجنس", fr: "Sexe" },
   status: { en: "Status", ar: "الحالة", fr: "Statut" },
+  male: { en: "Male", ar: "ذكر", fr: "Mâle" },
+  female: { en: "Female", ar: "أنثى", fr: "Femelle" },
   
   // Stats & Status
   totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total des lapins" },
@@ -84,18 +80,20 @@ const translations: Translations = {
   viewDetails: { en: "View Details", ar: "عرض التفاصيل", fr: "Voir les détails" },
   searchPlaceholder: { en: "Search by ID, name or breed...", ar: "ابحث بالرقم، الاسم أو السلالة...", fr: "Rechercher par ID, nom ou race..." },
   
-  // Dashboard Specific
+  // Pages
+  changelog: { en: "Changelog", ar: "سجل التغييرات", fr: "Journal" },
+  shop: { en: "Public Shop", ar: "المتجر العام", fr: "Boutique" },
+  inquire: { en: "Inquire Now", ar: "استفسر الآن", fr: "S'informer" },
+  expectedBirth: { en: "Expected Birth", ar: "الولادة المتوقعة", fr: "Naissance prévue" },
+  mother: { en: "Mother", ar: "الأم", fr: "Mère" },
+  father: { en: "Father", ar: "الأب", fr: "Père" },
+  matingDate: { en: "Mating Date", ar: "تاريخ التزاوج", fr: "Date d'accouplement" },
+  activePregnancies: { en: "Active Pregnancies", ar: "حالات الحمل النشطة", fr: "Grossesses actives" },
   recentActivity: { en: "Recent Activity", ar: "النشاط الأخير", fr: "Activité récente" },
+  quickActions: { en: "Quick Actions", ar: "إجراءات سريعة", fr: "Actions rapides" },
   populationGrowth: { en: "Population Growth", ar: "نمو القطيع", fr: "Croissance" },
   farmHealth: { en: "Farm Health", ar: "صحة المزرعة", fr: "Santé de la ferme" },
-  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir tout" },
-  quickActions: { en: "Quick Actions", ar: "إجراءات سريعة", fr: "Actions rapides" },
-  recordMating: { en: "Record Mating", ar: "تسجيل تزاوج", fr: "Enregistrer l'accouplement" },
-
-  // New Pages
-  changelog: { en: "Changelog", ar: "سجل التغييرات", fr: "Journal des modifications" },
-  shop: { en: "Public Shop", ar: "المتجر العام", fr: "Boutique Publique" },
-  inquire: { en: "Inquire Now", ar: "استفسر الآن", fr: "S'informer" }
+  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir tout" }
 };
 
 interface LanguageContextType {

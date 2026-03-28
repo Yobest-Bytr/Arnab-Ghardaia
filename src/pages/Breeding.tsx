@@ -59,7 +59,7 @@ const Breeding = () => {
     await storage.insert('litters', user.id, newMating);
     setLitters([newMating, ...litters]);
     setIsModalOpen(false);
-    showSuccess(`${t('recordMating')} ${t('available')}: ${formData.mother_name}.`);
+    showSuccess(`${t('recordMating')}: ${formData.mother_name}.`);
   };
 
   return (
