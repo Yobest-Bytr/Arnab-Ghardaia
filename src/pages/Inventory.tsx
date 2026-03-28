@@ -5,7 +5,7 @@ import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Search, Plus, Rabbit, Download,
-  X, Loader2, Edit2, Trash2, FileText, Table as TableIcon, Filter, QrCode, Eye, Info, Calendar, Weight
+  X, Loader2, Edit2, Trash2, FileText, Table as TableIcon, Filter, QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -18,7 +18,9 @@ const Inventory = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingRabbit, setEditingRabbit] = useState<any>(null);
+  const [viewingRabbit, setViewingRabbit] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     rabbit_id: '',
@@ -79,7 +81,7 @@ const Inventory = () => {
       }
       setIsModalOpen(false);
     } catch (err) {
-      showError("Operation failed. Check database connection.");
+      showError("Operation failed.");
     }
   };
 
@@ -182,10 +184,13 @@ const Inventory = () => {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 hover:text-emerald-600 transition-all">
+                            <button onClick={() => { setViewingRabbit(rabbit); setIsViewModalOpen(true); }} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 hover:text-blue-600 transition-all" title="View Profile">
+                              <Eye size={16} />
+                            </button>
+                            <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 hover:text-emerald-600 transition-all" title="Edit">
                               <Edit2 size={16} />
                             </button>
-                            <button onClick={() => handleDelete(rabbit.id)} className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all">
+                            <button onClick={() => handleDelete(rabbit.id)} className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all" title="Delete">
                               <Trash2 size={16} />
                             </button>
                           </div>
@@ -206,6 +211,7 @@ const Inventory = () => {
                       {rabbit.rabbit_id}
                     </span>
                     <div className="flex gap-2">
+                      <button onClick={() => { setViewingRabbit(rabbit); setIsViewModalOpen(true); }} className="p-2 rounded-lg bg-slate-100 text-blue-600"><Eye size={16} /></button>
                       <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="p-2 rounded-lg bg-slate-100 text-slate-600"><Edit2 size={16} /></button>
                       <button onClick={() => handleDelete(rabbit.id)} className="p-2 rounded-lg bg-rose-50 text-rose-600"><Trash2 size={16} /></button>
                     </div>
@@ -236,9 +242,82 @@ const Inventory = () => {
         )}
       </main>
 
+      {/* View Modal */}
+      <AnimatePresence>
+        {isViewModalOpen && viewingRabbit && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="max-w-2xl w-full bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden relative">
+              <button onClick={() => setIsViewModalOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 dark:hover:text-white z-10"><X size={24} /></button>
+              
+              <div className="h-32 bg-emerald-600 relative">
+                <div className="absolute -bottom-12 left-10 w-24 h-24 rounded-[2rem] bg-white dark:bg-slate-900 p-2 shadow-xl">
+                  <div className="w-full h-full rounded-[1.5rem] bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
+                    <Rabbit size={48} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-16 pb-10 px-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                  <div>
+                    <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{viewingRabbit.name || 'Unnamed Rabbit'}</h2>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{viewingRabbit.breed}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-widest border border-emerald-100">
+                      {t(viewingRabbit.status.toLowerCase())}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('rabbitId')}</p>
+                    <p className="text-sm font-bold">{viewingRabbit.rabbit_id}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('gender')}</p>
+                    <p className="text-sm font-bold">{t(viewingRabbit.gender.toLowerCase())}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('weight')}</p>
+                    <p className="text-sm font-bold">{viewingRabbit.weight || '0'} kg</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('cage')}</p>
+                    <p className="text-sm font-bold">{viewingRabbit.cage_number || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Info size={14} /> {t('notes')}
+                    </h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed bg-slate-50 dark:bg-slate-800/30 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      {viewingRabbit.notes || 'No additional notes recorded for this rabbit.'}
+                    </p>
+                  </div>
+                  <div className="space-y-6">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <QrCode size={14} /> Cage Neural Link
+                    </h4>
+                    <div className="aspect-square w-32 bg-white p-2 rounded-2xl border-2 border-slate-100 mx-auto md:mx-0">
+                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${viewingRabbit.rabbit_id}`} alt="QR Code" className="w-full h-full" />
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold">Scan to view digital health records instantly.</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit/Add Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-2xl w-full bg-white dark:bg-slate-900 p-6 md:p-10 rounded-[2.5rem] shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
               <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={24} /></button>
               <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">{editingRabbit ? t('edit') : t('addRabbit')}</h2>

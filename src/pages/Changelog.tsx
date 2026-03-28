@@ -7,6 +7,20 @@ import { Rocket, Sparkles, Bug, Zap, ShieldCheck, Globe } from 'lucide-react';
 
 const updates = [
   {
+    version: "v1.3.0",
+    date: "May 2026",
+    title: "Neural Link Restoration",
+    description: "Fixed critical Supabase 400 errors and restored all missing management features.",
+    type: "feature",
+    changes: [
+      "Restored 'View' button with detailed Rabbit Profiles",
+      "Fixed PDF Export for Arabic/RTL layouts",
+      "Optimized mobile UI for small screens",
+      "Restored Delete, Edit, and Date tracking across all modules",
+      "Implemented simulated QR codes for cage management"
+    ]
+  },
+  {
     version: "v1.2.0",
     date: "October 2023",
     title: "Professional Export Engine",
@@ -21,14 +35,6 @@ const updates = [
     description: "Real-time activity feed and population growth charts are now live.",
     type: "improvement",
     changes: ["Real-time activity tracking", "Dynamic population charts", "Improved mobile responsiveness"]
-  },
-  {
-    version: "v1.1.0",
-    date: "August 2023",
-    title: "Inventory CRUD",
-    description: "Full control over your inventory with edit and delete capabilities.",
-    type: "feature",
-    changes: ["Edit rabbit records", "Delete records with confirmation", "Status tracking (Sold, Died, Available)"]
   }
 ];
 
