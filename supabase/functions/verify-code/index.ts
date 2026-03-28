@@ -17,40 +17,40 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Check the code in our custom table
     const { data: authCode, error: fetchError } = await supabaseAdmin
       .from('auth_codes')
       .select('*')
       .eq('email', email)
       .eq('code', code)
-      .eq('purpose', 'email_verification')
       .single();
 
     if (fetchError || !authCode) {
-      return new Response(JSON.stringify({ error: 'Invalid or expired verification code.' }), { 
+      return new Response(JSON.stringify({ error: 'Invalid or expired code.' }), { 
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
 
-    // 2. Confirm the user in Supabase Auth internal system
-    // This is what fixes the "Email not confirmed" error during login
-    if (userId && userId !== 'reset-request') {
-      const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
-        userId,
-        { email_confirm: true }
-      );
-      if (confirmError) throw confirmError;
+    // Resolve the real user ID if needed
+    let targetId = userId;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    if (!userId || !uuidRegex.test(userId)) {
+      const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+      const user = users.find(u => u.email === email);
+      targetId = user?.id;
     }
 
-    // 3. Clean up: Delete the code so it can't be used again
+    if (targetId) {
+      await supabaseAdmin.auth.admin.updateUserById(targetId, { email_confirm: true });
+    }
+
     await supabaseAdmin.from('auth_codes').delete().eq('id', authCode.id);
 
-    return new Response(JSON.stringify({ message: 'Neural identity confirmed.' }), { 
+    return new Response(JSON.stringify({ message: 'Identity confirmed.' }), { 
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
 
   } catch (error: any) {
-    console.error("[verify-code] Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     });
