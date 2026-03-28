@@ -30,6 +30,16 @@ const Breeding = () => {
     if (user) fetchLitters();
   }, [user]);
 
+  // Auto-calculate expected birth date (31 days after mating)
+  useEffect(() => {
+    if (formData.mating_date) {
+      const matingDate = new Date(formData.mating_date);
+      const expectedDate = new Date(matingDate);
+      expectedDate.setDate(matingDate.getDate() + 31);
+      setFormData(prev => ({ ...prev, expected_birth_date: expectedDate.toISOString().split('T')[0] }));
+    }
+  }, [formData.mating_date]);
+
   const fetchLitters = async () => {
     const data = await storage.get('litters', user?.id || '');
     setLitters(data);
@@ -40,13 +50,8 @@ const Breeding = () => {
     e.preventDefault();
     if (!user) return;
 
-    const matingDate = new Date(formData.mating_date);
-    const expectedDate = new Date(matingDate);
-    expectedDate.setDate(matingDate.getDate() + 31);
-
     const newMating = {
       ...formData,
-      expected_birth_date: expectedDate.toISOString().split('T')[0],
       status: 'Pregnant',
       progress: 0
     };
@@ -54,7 +59,7 @@ const Breeding = () => {
     await storage.insert('litters', user.id, newMating);
     setLitters([newMating, ...litters]);
     setIsModalOpen(false);
-    showSuccess(`Mating recorded for ${formData.mother_name}.`);
+    showSuccess(`${t('recordMating')} ${t('available')}: ${formData.mother_name}.`);
   };
 
   return (
@@ -69,7 +74,7 @@ const Breeding = () => {
           </div>
           <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2">
             <Plus size={20} />
-            Record New Mating
+            {t('recordMating')}
           </button>
         </header>
 
@@ -77,7 +82,7 @@ const Breeding = () => {
           <div className="lg:col-span-2 space-y-6">
             <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
               <Activity className="text-emerald-600" size={20} />
-              Active Pregnancies
+              {t('activePregnancies')}
             </h3>
             
             <div className="grid sm:grid-cols-2 gap-6">
@@ -85,7 +90,7 @@ const Breeding = () => {
                 <div key={i} className="farm-card relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4">
                     <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-widest">
-                      Expected: {litter.expected_birth_date}
+                      {t('expectedBirth')}: {litter.expected_birth_date}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 mb-6">
@@ -93,58 +98,46 @@ const Breeding = () => {
                       <Heart size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-slate-900 dark:text-white">{litter.mother_name} (Mother)</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mated with: {litter.father_name}</p>
+                      <p className="text-sm font-black text-slate-900 dark:text-white">{litter.mother_name} ({t('mother')})</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('father')}: {litter.father_name}</p>
                     </div>
                   </div>
                   <button 
                     onClick={() => setSelectedLitter(litter)}
                     className="w-full py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-all"
                   >
-                    View Details
+                    {t('viewAll')}
                   </button>
                 </div>
               ))}
-              {litters.filter(l => l.status === 'Pregnant').length === 0 && (
-                <div className="col-span-2 p-12 text-center border-2 border-dashed border-emerald-100 dark:border-slate-800 rounded-3xl">
-                  <p className="text-slate-400 font-medium">No active pregnancies recorded.</p>
-                </div>
-              )}
             </div>
           </div>
 
           <div className="space-y-6">
             <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
               <History className="text-emerald-600" size={20} />
-              Recent Litters
+              {t('recentActivity')}
             </h3>
             
             <div className="space-y-4">
-              {litters.length === 0 ? (
-                <div className="farm-card text-center py-12">
-                  <Rabbit className="mx-auto text-slate-200 mb-4" size={48} />
-                  <p className="text-slate-400 font-medium">No litter history yet.</p>
-                </div>
-              ) : (
-                litters.map((litter, i) => (
-                  <div 
-                    key={i} 
-                    onClick={() => setSelectedLitter(litter)}
-                    className="farm-card p-4 flex items-center justify-between cursor-pointer hover:bg-emerald-50/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 font-black">
-                        {litter.kit_count || '?'}
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-slate-900 dark:text-white">{litter.mother_name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{litter.mating_date}</p>
-                      </div>
+              {litters.map((litter, i) => (
+                <div 
+                  key={i} 
+                  onClick={() => setSelectedLitter(litter)}
+                  className="farm-card p-4 flex items-center justify-between cursor-pointer hover:bg-emerald-50/30 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 font-black">
+                      {litter.kit_count || '?'}
                     </div>
-                    <ArrowRight size={18} className="text-slate-300" />
+                    <div>
+                      <p className="text-sm font-black text-slate-900 dark:text-white">{litter.mother_name}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{litter.mating_date}</p>
+                    </div>
                   </div>
-                ))
-              )}
+                  <ArrowRight size={18} className="text-slate-300" />
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -162,77 +155,30 @@ const Breeding = () => {
               <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                 <X size={24} />
               </button>
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">Record Mating</h2>
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">{t('recordMating')}</h2>
               <form onSubmit={handleAddMating} className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Mother Name</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('mother')}</label>
                     <input type="text" required value={formData.mother_name} onChange={(e) => setFormData({...formData, mother_name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Father Name</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('father')}</label>
                     <input type="text" required value={formData.father_name} onChange={(e) => setFormData({...formData, father_name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Mating Date</label>
-                  <input type="date" required value={formData.mating_date} onChange={(e) => setFormData({...formData, mating_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('matingDate')}</label>
+                    <input type="date" required value={formData.mating_date} onChange={(e) => setFormData({...formData, mating_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('expectedBirth')}</label>
+                    <input type="date" readOnly value={formData.expected_birth_date} className="w-full h-14 px-6 bg-slate-100 dark:bg-slate-800 border-none rounded-xl font-bold text-emerald-600" />
+                  </div>
                 </div>
-                <button type="submit" className="farm-button w-full h-16 text-lg mt-4">Record Mating</button>
+                <button type="submit" className="farm-button w-full h-16 text-lg mt-4">{t('recordMating')}</button>
               </form>
-            </motion.div>
-          </div>
-        )}
-
-        {selectedLitter && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-6 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="max-w-lg w-full bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl border border-emerald-50 dark:border-slate-800 relative"
-            >
-              <button onClick={() => setSelectedLitter(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-                <X size={24} />
-              </button>
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-                  <Info size={28} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Litter Details</h2>
-                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Record ID: {selectedLitter.id}</p>
-                </div>
-              </div>
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Mother</p>
-                    <p className="text-lg font-black text-slate-900 dark:text-white">{selectedLitter.mother_name}</p>
-                  </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Father</p>
-                    <p className="text-lg font-black text-slate-900 dark:text-white">{selectedLitter.father_name}</p>
-                  </div>
-                </div>
-                <div className="p-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/50">
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Pregnancy Status</p>
-                    <span className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest">{selectedLitter.status}</span>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm font-bold">
-                      <span className="text-slate-500">Mating Date</span>
-                      <span className="text-slate-900 dark:text-white">{selectedLitter.mating_date}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-bold">
-                      <span className="text-slate-500">Expected Birth</span>
-                      <span className="text-emerald-600">{selectedLitter.expected_birth_date}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button onClick={() => setSelectedLitter(null)} className="w-full h-14 mt-8 bg-slate-900 text-white font-black rounded-xl">Close Details</button>
             </motion.div>
           </div>
         )}

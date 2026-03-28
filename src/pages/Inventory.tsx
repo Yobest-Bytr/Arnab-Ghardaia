@@ -5,7 +5,7 @@ import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Search, Plus, MoreVertical, Rabbit, Download,
-  X, Loader2, Edit2, Trash2, Calendar, FileText, Table as TableIcon
+  X, Loader2, Edit2, Trash2, Calendar, FileText, Table as TableIcon, Filter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ const Inventory = () => {
   const { t, isRTL } = useLanguage();
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRabbit, setEditingRabbit] = useState<any>(null);
@@ -113,10 +114,14 @@ const Inventory = () => {
     setFormData({ name: '', breed: 'New Zealand White', gender: 'Female', health_status: 'Healthy', status: 'Available', cage_number: '', price: '' });
   };
 
-  const filteredRabbits = rabbits.filter(r => 
-    r.name?.toLowerCase().includes(search.toLowerCase()) || 
-    r.breed?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredRabbits = rabbits.filter(r => {
+    const matchesSearch = r.name?.toLowerCase().includes(search.toLowerCase()) || 
+                         r.breed?.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const statusOptions = ['All', 'Available', 'Sold', 'Died', 'Reserved'];
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -131,7 +136,7 @@ const Inventory = () => {
           <div className="flex gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger className="px-6 h-12 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-2 hover:bg-emerald-50 transition-all outline-none">
-                <Download size={18} /> Export Data
+                <Download size={18} /> {t('export')}
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-white dark:bg-slate-900 border-emerald-50 dark:border-slate-800 rounded-xl p-2 w-48">
                 <DropdownMenuItem onClick={handleExportPDF} className="flex items-center gap-2 p-3 cursor-pointer rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
@@ -144,22 +149,40 @@ const Inventory = () => {
             </DropdownMenu>
             
             <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2">
-              <Plus size={20} /> Add Record
+              <Plus size={20} /> {t('addRecord')}
             </button>
           </div>
         </header>
 
         <div className="farm-card p-0 overflow-hidden border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
-          <div className="p-6 border-b border-emerald-50 dark:border-slate-800 flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900">
+          <div className="p-6 border-b border-emerald-50 dark:border-slate-800 flex flex-col md:flex-row gap-6 items-center justify-between bg-white dark:bg-slate-900">
             <div className="relative w-full md:w-96">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text" 
-                placeholder="Search by name, breed or cage..."
+                placeholder={t('searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full h-12 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 transition-all"
               />
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
+              <Filter size={16} className="text-slate-400 shrink-0" />
+              {statusOptions.map(status => (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                    statusFilter === status 
+                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" 
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200"
+                  )}
+                >
+                  {status === 'All' ? t('viewAll') : t(status.toLowerCase())}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -169,7 +192,7 @@ const Inventory = () => {
                 <tr>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Date Added</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Rabbit</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Breed</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('breed')}</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Health</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Actions</th>
@@ -190,7 +213,7 @@ const Inventory = () => {
                         </div>
                         <div>
                           <p className="text-sm font-black text-slate-900 dark:text-white">{rabbit.name || 'Unnamed'}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cage: {rabbit.cage_number || 'N/A'}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('cage')}: {rabbit.cage_number || 'N/A'}</p>
                         </div>
                       </div>
                     </td>
@@ -202,7 +225,7 @@ const Inventory = () => {
                         rabbit.status === 'Died' ? "bg-rose-50 text-rose-600" : 
                         "bg-emerald-50 text-emerald-600"
                       )}>
-                        {rabbit.status}
+                        {t(rabbit.status.toLowerCase())}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -211,7 +234,7 @@ const Inventory = () => {
                           "w-2 h-2 rounded-full",
                           rabbit.health_status === 'Healthy' ? "bg-emerald-500" : "bg-rose-500"
                         )} />
-                        <span className="text-sm font-bold text-slate-600 dark:text-slate-400">{rabbit.health_status}</span>
+                        <span className="text-sm font-bold text-slate-600 dark:text-slate-400">{t(rabbit.health_status.toLowerCase())}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -246,7 +269,7 @@ const Inventory = () => {
               </button>
               
               <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">
-                {editingRabbit ? 'Edit Record' : 'Add New Rabbit'}
+                {editingRabbit ? t('edit') : t('addRabbit')}
               </h2>
               
               <form onSubmit={handleAction} className="space-y-6">
@@ -256,14 +279,14 @@ const Inventory = () => {
                     <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Price ($)</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('price')} ($)</label>
                     <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Breed</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('breed')}</label>
                     <select value={formData.breed} onChange={(e) => setFormData({...formData, breed: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
                       <option>New Zealand White</option>
                       <option>Flemish Giant</option>
@@ -274,31 +297,31 @@ const Inventory = () => {
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Status</label>
                     <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
-                      <option>Available</option>
-                      <option>Sold</option>
-                      <option>Died</option>
-                      <option>Sick</option>
-                      <option>Reserved</option>
+                      <option value="Available">{t('available')}</option>
+                      <option value="Sold">{t('sold')}</option>
+                      <option value="Died">{t('died')}</option>
+                      <option value="Sick">{t('sick')}</option>
+                      <option value="Reserved">{t('reserved')}</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Gender</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('gender')}</label>
                     <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
-                      <option>Female</option>
-                      <option>Male</option>
+                      <option value="Female">{t('females')}</option>
+                      <option value="Male">{t('males')}</option>
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Cage</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('cage')}</label>
                     <input type="text" value={formData.cage_number} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
 
                 <button type="submit" className="farm-button w-full h-16 text-lg mt-4">
-                  {editingRabbit ? 'Update Record' : 'Add to Inventory'}
+                  {editingRabbit ? t('save') : t('addRecord')}
                 </button>
               </form>
             </motion.div>

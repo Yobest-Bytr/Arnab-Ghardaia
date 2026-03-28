@@ -39,6 +39,24 @@ const translations: Translations = {
   died: { en: "Died", ar: "نافق", fr: "Mort" },
   healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },
   sick: { en: "Sick", ar: "مريض", fr: "Malade" },
+  reserved: { en: "Reserved", ar: "محجوز", fr: "Réservé" },
+  
+  // Breeding Specific
+  matingDate: { en: "Mating Date", ar: "تاريخ التزاوج", fr: "Date d'accouplement" },
+  expectedBirth: { en: "Expected Birth", ar: "الولادة المتوقعة", fr: "Naissance prévue" },
+  mother: { en: "Mother", ar: "الأم", fr: "Mère" },
+  father: { en: "Father", ar: "الأب", fr: "Père" },
+  kitCount: { en: "Kit Count", ar: "عدد الصغار", fr: "Nombre de petits" },
+  recordMating: { en: "Record Mating", ar: "تسجيل تزاوج", fr: "Enregistrer l'accouplement" },
+  activePregnancies: { en: "Active Pregnancies", ar: "حالات الحمل النشطة", fr: "Grossesses actives" },
+  
+  // Inventory Specific
+  cage: { en: "Cage", ar: "القفص", fr: "Cage" },
+  price: { en: "Price", ar: "السعر", fr: "Prix" },
+  breed: { en: "Breed", ar: "السلالة", fr: "Race" },
+  gender: { en: "Gender", ar: "الجنس", fr: "Sexe" },
+  addRecord: { en: "Add Record", ar: "إضافة سجل", fr: "Ajouter un enregistrement" },
+  quickFilter: { en: "Quick Filter", ar: "تصفية سريعة", fr: "Filtre rapide" },
   
   // Actions
   addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un lapin" },
@@ -52,7 +70,8 @@ const translations: Translations = {
   recentActivity: { en: "Recent Activity", ar: "النشاط الأخير", fr: "Activité récente" },
   populationGrowth: { en: "Population Growth", ar: "نمو القطيع", fr: "Croissance" },
   farmHealth: { en: "Farm Health", ar: "صحة المزرعة", fr: "Santé de la ferme" },
-  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir tout" }
+  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir tout" },
+  quickActions: { en: "Quick Actions", ar: "إجراءات سريعة", fr: "Actions rapides" }
 };
 
 interface LanguageContextType {

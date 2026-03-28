@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart
+  Clock, ShieldCheck, Heart, FileText, Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -91,12 +91,14 @@ const Dashboard = () => {
             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('dashboard')}</h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
-          <Link to="/inventory">
-            <button className="farm-button flex items-center gap-2">
-              <Plus size={20} />
-              {t('addRabbit')}
-            </button>
-          </Link>
+          <div className="flex gap-3">
+            <Link to="/inventory">
+              <button className="farm-button flex items-center gap-2">
+                <Plus size={20} />
+                {t('addRabbit')}
+              </button>
+            </Link>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -113,6 +115,28 @@ const Dashboard = () => {
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
+            {/* Quick Actions */}
+            <div className="farm-card">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <Zap className="text-amber-500" size={20} />
+                {t('quickActions')}
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <Link to="/inventory" className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-100 transition-all group">
+                  <Plus className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
+                  <p className="text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">{t('addRabbit')}</p>
+                </Link>
+                <Link to="/breeding" className="p-4 rounded-2xl bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-900/50 hover:bg-pink-100 transition-all group">
+                  <Heart className="text-pink-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
+                  <p className="text-xs font-black text-pink-700 dark:text-pink-400 uppercase tracking-widest">{t('recordMating')}</p>
+                </Link>
+                <Link to="/reports" className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 hover:bg-blue-100 transition-all group">
+                  <FileText className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
+                  <p className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">{t('reports')}</p>
+                </Link>
+              </div>
+            </div>
+
             <div className="farm-card">
               <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
                 <TrendingUp className="text-emerald-600" size={20} />
@@ -134,29 +158,6 @@ const Dashboard = () => {
                     <Area type="monotone" dataKey="count" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorCount)" />
                   </AreaChart>
                 </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="farm-card bg-emerald-600 text-white border-none shadow-xl shadow-emerald-500/20">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
-                    <Heart size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black">{t('farmHealth')}</h3>
-                    <p className="text-emerald-100 text-sm font-medium">Overall stock condition</p>
-                  </div>
-                </div>
-                <div className="text-4xl font-black">{healthPercentage}%</div>
-              </div>
-              <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${healthPercentage}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className="h-full bg-white"
-                />
               </div>
             </div>
           </div>
