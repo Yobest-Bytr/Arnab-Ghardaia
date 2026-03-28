@@ -77,13 +77,13 @@ const Index = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative"
           >
-            <div className="aspect-[4/5] rounded-[4rem] overflow-hidden shadow-2xl border-[12px] border-white dark:border-slate-900 relative z-10">
+            <div className="aspect-[4/5] rounded-[4rem] overflow-hidden shadow-2xl border-[12px] border-white dark:border-slate-900 relative z-10 group">
               <img 
                 src="https://images.unsplash.com/photo-1585110396050-c99b13f8c543?auto=format&fit=crop&q=80&w=1000" 
                 alt="Rabbit Farm" 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-60" />
             </div>
             
             {/* Floating Stats Card */}

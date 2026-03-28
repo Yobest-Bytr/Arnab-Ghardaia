@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Search, Filter, Plus, MoreVertical, 
   Rabbit, ChevronLeft, ChevronRight, Download,
-  Activity, ShieldCheck, AlertCircle, X
+  Activity, ShieldCheck, AlertCircle, X, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,7 @@ const Inventory = () => {
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -40,13 +41,17 @@ const Inventory = () => {
     setLoading(false);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (rabbits.length === 0) {
       showError("No data to export.");
       return;
     }
+    setExporting(true);
+    // Simulate a small delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 800));
     exportToCSV(rabbits, 'Aranib_Inventory');
-    showSuccess("Inventory exported to CSV.");
+    setExporting(false);
+    showSuccess("Inventory exported successfully.");
   };
 
   const handleAddRabbit = async (e: React.FormEvent) => {
@@ -78,18 +83,20 @@ const Inventory = () => {
           <div className="flex gap-3">
             <button 
               onClick={handleExport}
-              className="px-4 h-12 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-2 hover:bg-emerald-50 transition-all"
+              disabled={exporting}
+              className="px-6 h-12 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all disabled:opacity-50 shadow-sm"
             >
-              <Download size={18} /> Export
+              {exporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              {exporting ? 'Exporting...' : 'Export CSV'}
             </button>
-            <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2">
+            <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2 shadow-lg shadow-emerald-500/20">
               <Plus size={20} />
               {t('addRabbit')}
             </button>
           </div>
         </header>
 
-        <div className="farm-card p-0 overflow-hidden">
+        <div className="farm-card p-0 overflow-hidden border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
           <div className="p-6 border-b border-emerald-50 dark:border-slate-800 flex flex-col md:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900">
             <div className="relative w-full md:w-96">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -173,7 +180,7 @@ const Inventory = () => {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-6 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-6 bg-slate-900/40 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
