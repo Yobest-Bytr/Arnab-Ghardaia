@@ -10,7 +10,6 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'login' | 'verify'>('login');
   const [verificationCode, setVerificationCode] = useState('');
@@ -53,7 +52,11 @@ const Login = () => {
 
       if (error || (data && data.error)) throw new Error(data?.error || 'Verification failed.');
 
-      showSuccess('Identity confirmed. Logging in...');
+      showSuccess('Identity confirmed. Finalizing link...');
+      
+      // Small delay to ensure Supabase Auth state is updated
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) throw loginError;
 
