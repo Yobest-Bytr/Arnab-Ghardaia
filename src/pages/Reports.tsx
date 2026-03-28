@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   BarChart3, TrendingUp, Download, 
   PieChart as PieIcon, Calendar, ArrowUpRight,
-  FileText, Loader2, Rabbit, ShieldCheck
+  FileText, Loader2, Rabbit, ShieldCheck, Printer
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -15,10 +15,10 @@ import {
 } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 
 const Reports = () => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,10 @@ const Reports = () => {
     rabbits.forEach(r => {
       counts[r.status] = (counts[r.status] || 0) + 1;
     });
-    return Object.entries(counts).map(([name, value]) => ({ name: t(name.toLowerCase()), value }));
+    return Object.entries(counts).map(([name, value]) => ({ 
+      name: t(name.toLowerCase()), 
+      value 
+    }));
   }, [rabbits, t]);
 
   const breedData = useMemo(() => {
@@ -51,72 +54,99 @@ const Reports = () => {
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
   const STATUS_COLORS = { 'Available': '#10b981', 'Sold': '#3b82f6', 'Died': '#ef4444' };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const generatePDF = () => {
+    if (language === 'ar') {
+      showError("PDF Export for Arabic is currently optimized via 'Print to PDF' for better font support.");
+      handlePrint();
+      return;
+    }
+
     setLoading(true);
-    const doc = new jsPDF();
-    
-    doc.setFillColor(16, 185, 129);
-    doc.rect(0, 0, 210, 40, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.text(t('appName').toUpperCase(), 105, 20, { align: 'center' });
-    
-    doc.setFontSize(12);
-    doc.text(t('performanceMetrics'), 105, 30, { align: 'center' });
+    try {
+      const doc = new jsPDF();
+      
+      doc.setFillColor(16, 185, 129);
+      doc.rect(0, 0, 210, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.text(t('appName').toUpperCase(), 105, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.text(t('performanceMetrics'), 105, 30, { align: 'center' });
 
-    doc.setTextColor(51, 65, 85);
-    doc.setFontSize(14);
-    doc.text(t('executiveSummary'), 14, 55);
-    
-    doc.setFontSize(10);
-    doc.text(`${t('totalStock')}: ${rabbits.length}`, 14, 65);
-    doc.text(`${t('available')}: ${rabbits.filter(r => r.status === 'Available').length}`, 14, 72);
-    doc.text(`${t('reportDate')}: ${new Date().toLocaleString()}`, 14, 79);
+      doc.setTextColor(51, 65, 85);
+      doc.setFontSize(14);
+      doc.text(t('executiveSummary'), 14, 55);
+      
+      doc.setFontSize(10);
+      doc.text(`${t('totalStock')}: ${rabbits.length}`, 14, 65);
+      doc.text(`${t('available')}: ${rabbits.filter(r => r.status === 'Available').length}`, 14, 72);
+      doc.text(`${t('reportDate')}: ${new Date().toLocaleString()}`, 14, 79);
 
-    const tableData = rabbits.map(r => [
-      r.rabbit_id || 'N/A',
-      r.name || 'N/A',
-      r.breed,
-      t(r.gender.toLowerCase()),
-      t(r.status.toLowerCase()),
-      `$${r.price || 0}`
-    ]);
+      const tableData = rabbits.map(r => [
+        r.rabbit_id || 'N/A',
+        r.name || 'N/A',
+        r.breed,
+        t(r.gender.toLowerCase()),
+        t(r.status.toLowerCase()),
+        `$${r.price || 0}`
+      ]);
 
-    autoTable(doc, {
-      startY: 90,
-      head: [[t('rabbitId'), t('home'), t('breed'), t('gender'), t('status'), t('price')]],
-      body: tableData,
-      headStyles: { fillColor: [16, 185, 129] },
-    });
+      autoTable(doc, {
+        startY: 90,
+        head: [[t('rabbitId'), t('home'), t('breed'), t('gender'), t('status'), t('price')]],
+        body: tableData,
+        headStyles: { fillColor: [16, 185, 129] },
+        styles: { font: 'helvetica' }
+      });
 
-    doc.save(`Arnab_Ghardaia_Report_${new Date().getTime()}.pdf`);
-    setLoading(false);
-    showSuccess(t('save'));
+      doc.save(`Arnab_Ghardaia_Report_${new Date().getTime()}.pdf`);
+      showSuccess(t('save'));
+    } catch (err) {
+      showError("Failed to generate PDF.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <Navbar />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
+      <div className="print:hidden">
+        <Navbar />
+      </div>
       
-      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto print:pt-0">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 print:mb-8">
           <div>
             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('reports')}</h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t('performanceMetrics')}</p>
           </div>
-          <button 
-            onClick={generatePDF}
-            disabled={loading}
-            className="px-8 h-14 rounded-2xl bg-emerald-600 text-white font-black flex items-center gap-3 hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <FileText size={20} />}
-            {t('downloadPDF')}
-          </button>
+          <div className="flex gap-3 print:hidden">
+            <button 
+              onClick={handlePrint}
+              className="px-6 h-14 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black flex items-center gap-3 hover:bg-slate-50 transition-all"
+            >
+              <Printer size={20} />
+              {isRTL ? 'طباعة' : 'Print'}
+            </button>
+            <button 
+              onClick={generatePDF}
+              disabled={loading}
+              className="px-8 h-14 rounded-2xl bg-emerald-600 text-white font-black flex items-center gap-3 hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <FileText size={20} />}
+              {t('downloadPDF')}
+            </button>
+          </div>
         </header>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="farm-card lg:col-span-2">
+          <div className="farm-card lg:col-span-2 print:shadow-none print:border-slate-200">
             <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
               <BarChart3 className="text-emerald-600" size={20} />
               {t('statusBreakdown')}
@@ -138,7 +168,7 @@ const Reports = () => {
             </div>
           </div>
 
-          <div className="farm-card">
+          <div className="farm-card print:shadow-none print:border-slate-200">
             <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
               <PieIcon className="text-emerald-600" size={20} />
               {t('breedDistribution')}
@@ -166,10 +196,10 @@ const Reports = () => {
           </div>
         </div>
 
-        <div className="mt-12 farm-card p-0 overflow-hidden">
+        <div className="mt-12 farm-card p-0 overflow-hidden print:shadow-none print:border-slate-200">
           <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
             <h3 className="text-lg font-black text-slate-900 dark:text-white">{t('transactionLog')}</h3>
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 print:hidden">
               <ShieldCheck size={14} className="text-emerald-500" />
               {t('verifiedRecords')}
             </div>
@@ -186,7 +216,7 @@ const Reports = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                {rabbits.slice(0, 10).map((r, i) => (
+                {rabbits.slice(0, 20).map((r, i) => (
                   <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-400">{r.rabbit_id || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm font-bold text-slate-900 dark:text-white">{r.breed}</td>
