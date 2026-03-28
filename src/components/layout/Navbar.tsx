@@ -38,7 +38,7 @@ const Navbar = () => {
           <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200 group-hover:rotate-12 transition-transform">
             <Rabbit size={24} />
           </div>
-          <span className="font-black text-xl tracking-tight text-foreground">Aranib <span className="text-emerald-600">Farm</span></span>
+          <span className="font-black text-xl tracking-tight text-foreground">{t('appName')}</span>
         </Link>
 
         <div className="hidden lg:flex items-center gap-8">

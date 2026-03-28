@@ -55,33 +55,46 @@ const Inventory = () => {
     setLoading(false);
   };
 
+  const openAddModal = () => {
+    setEditingRabbit(null);
+    setFormData({
+      rabbit_id: `RB-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: '',
+      breed: 'New Zealand White',
+      gender: 'Female',
+      health_status: 'Healthy',
+      status: 'Available',
+      cage_number: '',
+      price: '',
+      weight: '',
+      birth_date: '',
+      notes: ''
+    });
+    setIsModalOpen(true);
+  };
+
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
-    const dataToSave = {
-      ...formData,
-      rabbit_id: formData.rabbit_id || `RB-${Math.floor(1000 + Math.random() * 9000)}`
-    };
-
     if (editingRabbit) {
-      await storage.update('rabbits', user.id, editingRabbit.id, dataToSave);
-      setRabbits(prev => prev.map(r => r.id === editingRabbit.id ? { ...r, ...dataToSave } : r));
-      showSuccess("Rabbit updated successfully.");
+      await storage.update('rabbits', user.id, editingRabbit.id, formData);
+      setRabbits(prev => prev.map(r => r.id === editingRabbit.id ? { ...r, ...formData } : r));
+      showSuccess(t('save'));
     } else {
-      const newRabbit = await storage.insert('rabbits', user.id, dataToSave);
+      const newRabbit = await storage.insert('rabbits', user.id, formData);
       setRabbits([newRabbit, ...rabbits]);
-      showSuccess("Rabbit added to inventory.");
+      showSuccess(t('addRabbit'));
     }
     
     closeModal();
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this record?")) return;
+    if (!confirm(t('delete') + "?")) return;
     await storage.delete('rabbits', user!.id, id);
     setRabbits(prev => prev.filter(r => r.id !== id));
-    showSuccess("Record deleted.");
+    showSuccess(t('delete'));
   };
 
   const openEditModal = (rabbit: any) => {
@@ -105,7 +118,6 @@ const Inventory = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingRabbit(null);
-    setFormData({ rabbit_id: '', name: '', breed: 'New Zealand White', gender: 'Female', health_status: 'Healthy', status: 'Available', cage_number: '', price: '', weight: '', birth_date: '', notes: '' });
   };
 
   const filteredRabbits = rabbits.filter(r => {
@@ -127,10 +139,10 @@ const Inventory = () => {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('inventory')}</h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Track population, sales, and health history.</p>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t('featuresSubtitle')}</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2">
+            <button onClick={openAddModal} className="farm-button flex items-center gap-2">
               <Plus size={20} /> {t('addRecord')}
             </button>
           </div>
@@ -173,11 +185,11 @@ const Inventory = () => {
               <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-emerald-50 dark:border-slate-800">
                 <tr>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('rabbitId')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Rabbit</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('home')}</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('breed')}</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Health</th>
-                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Actions</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('status')}</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('farmHealth')}</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t('quickActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-emerald-50 dark:divide-slate-800">
@@ -264,10 +276,10 @@ const Inventory = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('rabbitId')}</label>
-                    <input type="text" placeholder="e.g. RB-1001" value={formData.rabbit_id} onChange={(e) => setFormData({...formData, rabbit_id: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <input type="text" readOnly value={formData.rabbit_id} className="w-full h-14 px-6 bg-slate-100 dark:bg-slate-800 border-none rounded-xl font-bold text-emerald-600" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Name</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('home')}</label>
                     <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
@@ -283,7 +295,7 @@ const Inventory = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Status</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('status')}</label>
                     <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
                       <option value="Available">{t('available')}</option>
                       <option value="Sold">{t('sold')}</option>
@@ -363,7 +375,7 @@ const Inventory = () => {
               </div>
 
               <button onClick={() => setIsDetailsOpen(false)} className="w-full h-14 mt-8 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-sm">
-                Close Profile
+                {t('viewAll')}
               </button>
             </motion.div>
           </div>
