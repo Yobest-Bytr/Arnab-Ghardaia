@@ -1,6 +1,7 @@
 import React from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { Rocket, Sparkles, Bug, Zap, ShieldCheck, Globe } from 'lucide-react';
 
@@ -32,6 +33,8 @@ const updates = [
 ];
 
 const Changelog = () => {
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
