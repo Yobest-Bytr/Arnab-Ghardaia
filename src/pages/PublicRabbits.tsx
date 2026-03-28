@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { storage } from '@/lib/storage';
-import { Rabbit, ShoppingBag, Search, Filter, Tag } from 'lucide-react';
+import { Rabbit, ShoppingBag, Search, Filter, Tag, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PublicRabbits = () => {
@@ -14,7 +14,6 @@ const PublicRabbits = () => {
   }, []);
 
   const fetchRabbits = async () => {
-    // In a real app, we'd fetch from a public endpoint or specific user's farm
     const data = await storage.get('rabbits', 'public'); 
     setRabbits(data.length > 0 ? data : [
       { id: '1', name: 'Snowball', breed: 'New Zealand White', price: 150, gender: 'Female' },
@@ -22,6 +21,12 @@ const PublicRabbits = () => {
       { id: '3', name: 'Shadow', breed: 'Netherland Dwarf', price: 180, gender: 'Male' },
     ]);
     setLoading(false);
+  };
+
+  const handleInquiry = (rabbit: any) => {
+    const phone = "966500000000"; // Farm WhatsApp
+    const message = `Hello Aranib Farm! I am interested in ${rabbit.name}, the ${rabbit.breed} rabbit listed for $${rabbit.price || '150'}. Is it still available?`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   return (
@@ -35,7 +40,6 @@ const PublicRabbits = () => {
         </div>
 
         <div className="grid lg:grid-cols-4 gap-8">
-          {/* Sidebar Filters */}
           <div className="hidden lg:block space-y-8">
             <div className="farm-card">
               <h3 className="font-black text-slate-900 mb-6 uppercase tracking-widest text-xs">Filter by Breed</h3>
@@ -50,7 +54,6 @@ const PublicRabbits = () => {
             </div>
           </div>
 
-          {/* Product Grid */}
           <div className="lg:col-span-3 grid md:grid-cols-2 xl:grid-cols-3 gap-8">
             {rabbits.map((rabbit, i) => (
               <motion.div
@@ -74,8 +77,11 @@ const PublicRabbits = () => {
                   <h3 className="text-xl font-black text-slate-900">{rabbit.name}</h3>
                   <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{rabbit.breed}</p>
                 </div>
-                <button className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-sm hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
-                  <ShoppingBag size={18} />
+                <button 
+                  onClick={() => handleInquiry(rabbit)}
+                  className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-sm hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <MessageCircle size={18} />
                   Inquire Now
                 </button>
               </motion.div>

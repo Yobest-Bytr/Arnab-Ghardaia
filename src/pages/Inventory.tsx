@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
+import { exportToCSV } from '@/utils/export';
 
 const Inventory = () => {
   const { user } = useAuth();
@@ -20,7 +21,6 @@ const Inventory = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     breed: 'New Zealand White',
@@ -40,19 +40,24 @@ const Inventory = () => {
     setLoading(false);
   };
 
+  const handleExport = () => {
+    if (rabbits.length === 0) {
+      showError("No data to export.");
+      return;
+    }
+    exportToCSV(rabbits, 'Aranib_Inventory');
+    showSuccess("Inventory exported to CSV.");
+  };
+
   const handleAddRabbit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
-    try {
-      const newRabbit = await storage.insert('rabbits', user.id, formData);
-      setRabbits([newRabbit, ...rabbits]);
-      setIsModalOpen(false);
-      setFormData({ name: '', breed: 'New Zealand White', gender: 'Female', health_status: 'Healthy', status: 'Available', cage_number: '' });
-      showSuccess(`${formData.name || 'Rabbit'} added to inventory.`);
-    } catch (err) {
-      showError('Failed to add rabbit.');
-    }
+    const newRabbit = await storage.insert('rabbits', user.id, formData);
+    setRabbits([newRabbit, ...rabbits]);
+    setIsModalOpen(false);
+    setFormData({ name: '', breed: 'New Zealand White', gender: 'Female', health_status: 'Healthy', status: 'Available', cage_number: '' });
+    showSuccess(`${formData.name || 'Rabbit'} added to inventory.`);
   };
 
   const filteredRabbits = rabbits.filter(r => 
@@ -71,7 +76,10 @@ const Inventory = () => {
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Manage your complete rabbit stock and history.</p>
           </div>
           <div className="flex gap-3">
-            <button className="px-4 h-12 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-2 hover:bg-emerald-50 transition-all">
+            <button 
+              onClick={handleExport}
+              className="px-4 h-12 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-2 hover:bg-emerald-50 transition-all"
+            >
               <Download size={18} /> Export
             </button>
             <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2">
@@ -163,7 +171,6 @@ const Inventory = () => {
         </div>
       </main>
 
-      {/* Add Rabbit Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center px-6 bg-black/60 backdrop-blur-sm">
