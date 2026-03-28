@@ -17,6 +17,7 @@ import Reports from "./pages/Reports";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PublicRabbits from "./pages/PublicRabbits";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,11 @@ const App = () => (
                 <Route path="/reports" element={
                   <ProtectedRoute>
                     <Reports />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
                   </ProtectedRoute>
                 } />
                 
