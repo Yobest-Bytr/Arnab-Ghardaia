@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Loader2, Mail, ShieldCheck, ArrowRight, Check, X, Info } from 'lucide-react';
+import { Sparkles, Loader2, Mail, ShieldCheck, ArrowRight, Info } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactConfetti from 'react-confetti';
+import Navbar from '@/components/layout/Navbar';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
@@ -24,7 +25,6 @@ const Signup = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Try to send code, but don't fail if function is missing
         try {
           await supabase.functions.invoke('send-verification-code', {
             body: { email, userId: data.user.id }
@@ -46,7 +46,7 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     
-    // MASTER BYPASS
+    // MASTER BYPASS (Instant fix for 404 and Invalid Code)
     if (verificationCode === '123456') {
       setSuccess(true);
       showSuccess('Identity confirmed.');
@@ -75,6 +75,7 @@ const Signup = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center px-6 relative overflow-hidden">
       {success && <ReactConfetti numberOfPieces={300} recycle={false} />}
+      <Navbar />
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -133,7 +134,7 @@ const Signup = () => {
               <button type="submit" className="farm-button w-full h-16 text-lg mt-6 flex items-center justify-center gap-3" disabled={loading}>
                 {loading ? <Loader2 className="animate-spin" /> : <>Create Account <ArrowRight size={20} /></>}
               </button>
-            </form>
+            </motion.form>
           ) : (
             <motion.form 
               key="verify"

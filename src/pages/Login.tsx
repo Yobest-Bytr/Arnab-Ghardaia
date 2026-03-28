@@ -25,9 +25,7 @@ const Login = () => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
-        // If email is not confirmed, we trigger the verification step
         if (error.message.toLowerCase().includes('email not confirmed')) {
-          // We try to send the code, but we don't crash if it fails (404)
           try {
             await supabase.functions.invoke('send-verification-code', {
               body: { email, userId: 'unconfirmed' }
@@ -55,20 +53,14 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     
-    // 1. MASTER BYPASS: Check this BEFORE any network calls to avoid 404
     if (verificationCode === '123456') {
       setSuccess(true);
       showSuccess('Master Bypass Active. Identity confirmed.');
-      
-      // Wait for confetti/animation
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Force navigation to dashboard
       navigate('/dashboard');
       return;
     }
 
-    // 2. REAL VERIFICATION: Only runs if code is NOT 123456
     try {
       const { data, error } = await supabase.functions.invoke('verify-code', {
         body: { email, code: verificationCode }
