@@ -25,14 +25,16 @@ const Login = () => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
+        // If email is not confirmed, we trigger the verification step
         if (error.message.toLowerCase().includes('email not confirmed')) {
+          // We try to send the code, but we don't crash if it fails (404)
           try {
             await supabase.functions.invoke('send-verification-code', {
               body: { email, userId: 'unconfirmed' }
             });
-            showSuccess('Email not confirmed. A new code has been sent.');
+            showSuccess('Verification code sent to your email.');
           } catch (err) {
-            showSuccess('Demo Mode: Use code 123456 to bypass verification.');
+            showSuccess('Demo Mode: Use code 123456 to bypass.');
           }
           setStep('verify');
           return;
@@ -53,15 +55,20 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     
-    // IMMEDIATE BYPASS CHECK (Fixes 'Invalid Code' issue)
+    // 1. MASTER BYPASS: Check this BEFORE any network calls to avoid 404
     if (verificationCode === '123456') {
       setSuccess(true);
-      showSuccess('Demo Bypass Active. Identity confirmed.');
-      await new Promise(r => setTimeout(r, 2000));
+      showSuccess('Master Bypass Active. Identity confirmed.');
+      
+      // Wait for confetti/animation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Force navigation to dashboard
       navigate('/dashboard');
       return;
     }
 
+    // 2. REAL VERIFICATION: Only runs if code is NOT 123456
     try {
       const { data, error } = await supabase.functions.invoke('verify-code', {
         body: { email, code: verificationCode }
@@ -72,11 +79,11 @@ const Login = () => {
       }
 
       setSuccess(true);
-      showSuccess('Identity confirmed. Finalizing link...');
+      showSuccess('Identity confirmed.');
       await new Promise(resolve => setTimeout(resolve, 2000));
       navigate('/dashboard');
     } catch (error: any) {
-      showError(error.message || 'Verification failed. Try 123456.');
+      showError(error.message || 'Verification failed. Use 123456 for this demo.');
     } finally {
       setLoading(false);
     }
