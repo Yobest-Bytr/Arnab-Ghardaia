@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, Rabbit, LayoutDashboard, ShoppingBag, Info, Phone, X, Command } from 'lucide-react';
+import { Search, Rabbit, LayoutDashboard, ShoppingBag, Info, Phone, X, Command, Heart, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CommandPalette = () => {
