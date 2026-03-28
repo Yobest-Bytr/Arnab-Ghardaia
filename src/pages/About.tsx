@@ -1,12 +1,15 @@
 import React from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { Leaf, ShieldCheck, Users, Heart } from 'lucide-react';
 
 const About = () => {
+  const { t } = useLanguage();
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
       <Navbar />
       
       <main className="pt-40 pb-20 px-6 max-w-5xl mx-auto">
@@ -15,11 +18,11 @@ const About = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-20"
         >
-          <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight mb-6">
-            Our Story at <span className="text-emerald-600">Aranib Farm</span>
+          <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tight mb-6">
+            {t('aboutHero')}
           </h1>
-          <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto">
-            Founded in 2015, we've grown from a small family hobby into one of the region's most respected rabbit breeding facilities.
+          <p className="text-xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-2xl mx-auto">
+            {t('aboutDesc')}
           </p>
         </motion.div>
 
@@ -30,9 +33,9 @@ const About = () => {
             className="rounded-[3rem] shadow-2xl"
           />
           <div className="flex flex-col justify-center space-y-6">
-            <h2 className="text-3xl font-black text-slate-900">Quality & Care First</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">
-              We believe that happy, healthy rabbits produce the best results. Our facility is climate-controlled and monitored 24/7 to ensure optimal conditions for every breed.
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white">{t('qualityCare')}</h2>
+            <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+              {t('qualityDesc')}
             </p>
             <div className="grid grid-cols-2 gap-4">
               {[
@@ -41,7 +44,7 @@ const About = () => {
                 { icon: Users, label: "Expert Staff" },
                 { icon: Heart, label: "Ethical Breeding" }
               ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                <div key={i} className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
                   <item.icon className="text-emerald-600" size={18} />
                   {item.label}
                 </div>

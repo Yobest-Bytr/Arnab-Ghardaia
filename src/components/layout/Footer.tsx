@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Rabbit, Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react';
 
 const Footer = () => {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-slate-900 text-white pt-32 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
@@ -15,16 +18,16 @@ const Footer = () => {
               <span>Aranib <span className="text-emerald-600">Farm</span></span>
             </Link>
             <p className="text-xl text-slate-400 font-medium max-w-md leading-relaxed">
-              The region's leading professional rabbit breeding facility, combining traditional care with modern technology.
+              {t('heroSubtitle')}
             </p>
           </div>
           <div>
             <h4 className="font-black uppercase tracking-widest text-xs text-emerald-500 mb-8">Quick Links</h4>
             <ul className="space-y-4 text-slate-400 font-bold">
-              <li><Link to="/shop" className="hover:text-emerald-500 transition-colors">Our Rabbits</Link></li>
-              <li><Link to="/about" className="hover:text-emerald-500 transition-colors">About Us</Link></li>
-              <li><Link to="/contact" className="hover:text-emerald-500 transition-colors">Contact</Link></li>
-              <li><Link to="/login" className="hover:text-emerald-500 transition-colors">Dashboard</Link></li>
+              <li><Link to="/shop" className="hover:text-emerald-500 transition-colors">{t('inventory')}</Link></li>
+              <li><Link to="/about" className="hover:text-emerald-500 transition-colors">{t('about')}</Link></li>
+              <li><Link to="/contact" className="hover:text-emerald-500 transition-colors">{t('contact')}</Link></li>
+              <li><Link to="/login" className="hover:text-emerald-500 transition-colors">{t('dashboard')}</Link></li>
             </ul>
           </div>
           <div>
@@ -39,10 +42,10 @@ const Footer = () => {
           </div>
         </div>
         <div className="flex flex-col md:flex-row items-center justify-between pt-16 border-t border-white/5 text-slate-500 text-sm font-bold">
-          <p>© 2023 Aranib Farm. All rights reserved.</p>
+          <p>{t('copyright')}</p>
           <div className="flex gap-8 mt-4 md:mt-0">
-            <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">{t('privacyPolicy')}</Link>
+            <Link to="/terms" className="hover:text-white transition-colors">{t('termsOfService')}</Link>
           </div>
         </div>
       </div>
