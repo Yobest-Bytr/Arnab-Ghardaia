@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Heart, Calendar, Plus, History, 
-  AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity, X, Info, Trash2
+  AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity, X, Info, Trash2, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -13,8 +13,9 @@ import { showSuccess, showError } from '@/utils/toast';
 
 const Breeding = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [litters, setLitters] = useState<any[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -27,8 +28,12 @@ const Breeding = () => {
     notes: ''
   });
 
+  const [suggestions, setSuggestions] = useState<{ type: 'mother' | 'father', list: any[] }>({ type: 'mother', list: [] });
+
   useEffect(() => {
-    if (user) fetchLitters();
+    if (user) {
+      fetchData();
+    }
   }, [user]);
 
   useEffect(() => {
@@ -40,11 +45,34 @@ const Breeding = () => {
     }
   }, [formData.mating_date]);
 
-  const fetchLitters = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const data = await storage.get('litters', user?.id || '');
-    setLitters(data);
+    const [litterData, rabbitData] = await Promise.all([
+      storage.get('litters', user?.id || ''),
+      storage.get('rabbits', user?.id || '')
+    ]);
+    setLitters(litterData);
+    setInventory(rabbitData);
     setLoading(false);
+  };
+
+  const handleParentInput = (val: string, type: 'mother' | 'father') => {
+    setFormData(prev => ({ ...prev, [`${type}_name`]: val }));
+    
+    if (val.length > 0) {
+      const filtered = inventory.filter(r => 
+        r.gender === (type === 'mother' ? 'Female' : 'Male') &&
+        (r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase()))
+      );
+      setSuggestions({ type, list: filtered.slice(0, 5) });
+    } else {
+      setSuggestions({ type, list: [] });
+    }
+  };
+
+  const selectSuggestion = (rabbit: any, type: 'mother' | 'father') => {
+    setFormData(prev => ({ ...prev, [`${type}_name`]: rabbit.name || rabbit.rabbit_id }));
+    setSuggestions({ type, list: [] });
   };
 
   const handleAddMating = async (e: React.FormEvent) => {
@@ -67,6 +95,11 @@ const Breeding = () => {
     await storage.delete('litters', user.id, id);
     setLitters(prev => prev.filter(l => l.id !== id));
     showSuccess("Deleted.");
+  };
+
+  const getDaysRemaining = (expectedDate: string) => {
+    const diff = new Date(expectedDate).getTime() - new Date().getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
   return (
@@ -93,27 +126,42 @@ const Breeding = () => {
             </h3>
             
             <div className="grid sm:grid-cols-2 gap-6">
-              {litters.filter(l => l.status === 'Pregnant').map((litter, i) => (
-                <div key={i} className="farm-card relative overflow-hidden group">
-                  <button onClick={() => handleDelete(litter.id)} className="absolute top-4 right-4 p-2 rounded-lg bg-rose-50 text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 size={14} />
-                  </button>
-                  <div className="mb-4">
-                    <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-widest">
-                      {t('expectedBirth')}: {litter.expected_birth_date}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-600">
-                      <Heart size={24} />
+              {litters.filter(l => l.status === 'Pregnant').map((litter, i) => {
+                const daysLeft = getDaysRemaining(litter.expected_birth_date);
+                const progress = Math.max(0, Math.min(100, ((31 - daysLeft) / 31) * 100));
+                
+                return (
+                  <div key={i} className="farm-card relative overflow-hidden group">
+                    <button onClick={() => handleDelete(litter.id)} className="absolute top-4 right-4 p-2 rounded-lg bg-rose-50 text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 size={14} />
+                    </button>
+                    <div className="mb-4 flex justify-between items-center">
+                      <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-widest">
+                        {t('expectedBirth')}: {litter.expected_birth_date}
+                      </span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase">{daysLeft} {t('daysRemaining')}</span>
                     </div>
-                    <div>
-                      <p className="text-sm font-black text-slate-900 dark:text-white">{litter.mother_name} ({t('mother')})</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('father')}: {litter.father_name}</p>
+                    
+                    <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full mb-6 overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        className="h-full bg-emerald-500"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-600">
+                        <Heart size={24} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-slate-900 dark:text-white">{litter.mother_name} ({t('mother')})</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('father')}: {litter.father_name}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -153,13 +201,48 @@ const Breeding = () => {
               <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">{t('recordMating')}</h2>
               <form onSubmit={handleAddMating} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
+                  {/* Mother Input with Autocomplete */}
+                  <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('mother')}</label>
-                    <input type="text" required value={formData.mother_name} onChange={(e) => setFormData({...formData, mother_name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                      type="text" 
+                      required 
+                      value={formData.mother_name} 
+                      onChange={(e) => handleParentInput(e.target.value, 'mother')} 
+                      className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                    />
+                    {suggestions.type === 'mother' && suggestions.list.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                        {suggestions.list.map(r => (
+                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'mother')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors">
+                            <Rabbit size={14} className="text-emerald-600" />
+                            <span className="text-sm font-bold">{r.name || r.rabbit_id}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="space-y-2">
+
+                  {/* Father Input with Autocomplete */}
+                  <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('father')}</label>
-                    <input type="text" required value={formData.father_name} onChange={(e) => setFormData({...formData, father_name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                      type="text" 
+                      required 
+                      value={formData.father_name} 
+                      onChange={(e) => handleParentInput(e.target.value, 'father')} 
+                      className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                    />
+                    {suggestions.type === 'father' && suggestions.list.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                        {suggestions.list.map(r => (
+                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'father')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors">
+                            <Rabbit size={14} className="text-emerald-600" />
+                            <span className="text-sm font-bold">{r.name || r.rabbit_id}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

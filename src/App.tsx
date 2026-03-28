@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import CommandPalette from "./components/CommandPalette";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -45,6 +46,7 @@ const App = () => (
             <Toaster />
             <Sonner position="top-center" expand={true} richColors />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <CommandPalette />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />
