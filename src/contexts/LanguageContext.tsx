@@ -20,6 +20,8 @@ const translations: Translations = {
   login: { en: "Login", ar: "تسجيل الدخول", fr: "Connexion" },
   signup: { en: "Sign Up", ar: "إنشاء حساب", fr: "S'inscrire" },
   home: { en: "Home", ar: "الرئيسية", fr: "Accueil" },
+  changelog: { en: "Changelog", ar: "سجل التغييرات", fr: "Journal" },
+  profile: { en: "Profile", ar: "الملف الشخصي", fr: "Profil" },
   
   // Hero
   heroTitle: { en: "Smart Rabbit Management", ar: "الإدارة الذكية لمزارع الأرانب", fr: "Gestion Intelligente des Lapins" },
@@ -27,24 +29,30 @@ const translations: Translations = {
   goDashboard: { en: "Go to Dashboard", ar: "انتقل إلى لوحة التحكم", fr: "Aller au tableau de bord" },
   viewRabbits: { en: "View Our Rabbits", ar: "شاهد أرانبنا", fr: "Voir nos lapins" },
   
-  // Stats
+  // Stats & Status
   totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total des lapins" },
   males: { en: "Males", ar: "الذكور", fr: "Mâles" },
   females: { en: "Females", ar: "الإناث", fr: "Femelles" },
   newBorns: { en: "New Borns", ar: "المواليد الجدد", fr: "Nouveau-nés" },
-  breeds: { en: "Breeds", ar: "السلالات", fr: "Races" },
+  available: { en: "Available", ar: "متاح", fr: "Disponible" },
+  sold: { en: "Sold", ar: "تم البيع", fr: "Vendu" },
+  died: { en: "Died", ar: "نافق", fr: "Mort" },
+  healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },
+  sick: { en: "Sick", ar: "مريض", fr: "Malade" },
   
-  // Inventory
+  // Actions
   addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un lapin" },
+  edit: { en: "Edit", ar: "تعديل", fr: "Modifier" },
+  delete: { en: "Delete", ar: "حذف", fr: "Supprimer" },
+  save: { en: "Save Changes", ar: "حفظ التغييرات", fr: "Sauvegarder" },
+  export: { en: "Export Data", ar: "تصدير البيانات", fr: "Exporter" },
   searchPlaceholder: { en: "Search by name or breed...", ar: "ابحث بالاسم أو السلالة...", fr: "Rechercher par nom ou race..." },
-  id: { en: "ID", ar: "المعرف", fr: "ID" },
-  name: { en: "Name", ar: "الاسم", fr: "Nom" },
-  breed: { en: "Breed", ar: "السلالة", fr: "Race" },
-  gender: { en: "Gender", ar: "الجنس", fr: "Genre" },
-  age: { en: "Age", ar: "العمر", fr: "Âge" },
-  status: { en: "Status", ar: "الحالة", fr: "Statut" },
-  health: { en: "Health", ar: "الصحة", fr: "Santé" },
-  actions: { en: "Actions", ar: "الإجراءات", fr: "Actions" }
+  
+  // Dashboard Specific
+  recentActivity: { en: "Recent Activity", ar: "النشاط الأخير", fr: "Activité récente" },
+  populationGrowth: { en: "Population Growth", ar: "نمو القطيع", fr: "Croissance" },
+  farmHealth: { en: "Farm Health", ar: "صحة المزرعة", fr: "Santé de la ferme" },
+  viewAll: { en: "View All", ar: "عرض الكل", fr: "Voir tout" }
 };
 
 interface LanguageContextType {
@@ -75,7 +83,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t, isRTL }}>
-      <div dir={isRTL ? 'rtl' : 'ltr'}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} className={isRTL ? 'font-cairo' : 'font-inter'}>
         {children}
       </div>
     </LanguageContext.Provider>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Rabbit, Globe, ChevronDown, LayoutDashboard, ShoppingBag, Info, Phone, User, LogOut, Settings } from 'lucide-react';
+import { Rabbit, Globe, ChevronDown, LayoutDashboard, ShoppingBag, Info, Phone, User, LogOut } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,7 @@ import { ThemeToggle } from '../ThemeToggle';
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, isRTL } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -41,7 +41,6 @@ const Navbar = () => {
           <span className="font-black text-xl tracking-tight text-foreground">Aranib <span className="text-emerald-600">Farm</span></span>
         </Link>
 
-        {/* Desktop Links */}
         <div className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => (
             <Link 
@@ -101,28 +100,23 @@ const Navbar = () => {
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 mt-2 bg-background border-border rounded-2xl p-2 shadow-2xl">
-                <div className="px-4 py-3 mb-2">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Signed in as</p>
-                  <p className="text-sm font-bold truncate">{user.email}</p>
-                </div>
-                <DropdownMenuSeparator className="bg-border" />
                 <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
                   <Link to="/dashboard" className="flex items-center gap-3">
                     <LayoutDashboard size={18} className="text-emerald-600" />
-                    <span className="font-bold">Dashboard</span>
+                    <span className="font-bold">{t('dashboard')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
                   <Link to="/profile" className="flex items-center gap-3">
                     <User size={18} className="text-emerald-600" />
-                    <span className="font-bold">Profile Settings</span>
+                    <span className="font-bold">{t('profile')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-border" />
                 <DropdownMenuItem onClick={handleLogout} className="rounded-xl cursor-pointer py-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20">
                   <div className="flex items-center gap-3">
                     <LogOut size={18} />
-                    <span className="font-bold">Log Out</span>
+                    <span className="font-bold">{t('login')}</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
