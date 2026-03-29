@@ -42,6 +42,22 @@ const translations: Translations = {
   qualityCare: { en: "Quality Care", ar: "عناية فائقة", fr: "Soins de Qualité" },
   qualityDesc: { en: "Every rabbit in our farm receives personalized attention, premium organic feed, and regular health check-ups to ensure the highest standards.", ar: "يتلقى كل أرنب في مزرعتنا اهتماماً شخصياً، وعلفاً عضوياً ممتازاً، وفحوصات صحية منتظمة لضمان أعلى المعايير.", fr: "Chaque lapin de notre ferme reçoit une attention personnalisée et une alimentation biologique de qualité." },
 
+  // Features Section
+  featuresTitle: { en: "Smart Farm Management", ar: "إدارة المزرعة الذكية", fr: "Gestion de Ferme Intelligente" },
+  featuresSubtitle: { en: "Everything you need to run a professional rabbitry in one place.", ar: "كل ما تحتاجه لإدارة مزرعة أرانب احترافية في مكان واحد.", fr: "Tout ce dont vous avez besoin pour gérer une lapinière professionnelle." },
+  feature1Title: { en: "Real-time Tracking", ar: "تتبع في الوقت الحقيقي", fr: "Suivi en Temps Réel" },
+  feature1Desc: { en: "Monitor health, weight, and growth cycles of every rabbit instantly.", ar: "راقب الصحة والوزن ودورات النمو لكل أرنب على الفور.", fr: "Surveillez instantanément la santé et la croissance de chaque lapin." },
+  feature2Title: { en: "Breeding Analytics", ar: "تحليلات التزاوج", fr: "Analyses d'Élevage" },
+  feature2Desc: { en: "Predict birth dates and manage litters with automated reminders.", ar: "توقع مواعيد الولادة وإدارة المواليد مع تذكيرات تلقائية.", fr: "Prévoyez les dates de naissance et gérez les portées." },
+  feature3Title: { en: "Digital Pedigree", ar: "النسب الرقمي", fr: "Généalogie Numérique" },
+  feature3Desc: { en: "Maintain detailed lineage records to ensure genetic diversity.", ar: "احتفظ بسجلات نسب مفصلة لضمان التنوع الجيني.", fr: "Conservez des registres de lignée détaillés." },
+
+  // CTA Section
+  ctaTitle: { en: "Ready to grow your farm?", ar: "هل أنت مستعد لتنمية مزرعتك؟", fr: "Prêt à agrandir votre ferme ?" },
+  ctaSubtitle: { en: "Join hundreds of breeders in Ghardaia using our platform to optimize their production.", ar: "انضم إلى مئات المربين في غرداية الذين يستخدمون منصتنا لتحسين إنتاجهم.", fr: "Rejoignez des centaines d'éleveurs à Ghardaia utilisant notre plateforme." },
+  getStartedFree: { en: "Get Started Free", ar: "ابدأ مجاناً", fr: "Commencer Gratuitement" },
+  contactSales: { en: "Contact Sales", ar: "اتصل بالمبيعات", fr: "Contacter les Ventes" },
+
   // Breeding Autocomplete & Features
   suggestedParents: { en: "Suggested Parents", ar: "الآباء المقترحون", fr: "Parents Suggérés" },
   noMatches: { en: "No matches found", ar: "لم يتم العثور على نتائج", fr: "Aucun résultat" },
