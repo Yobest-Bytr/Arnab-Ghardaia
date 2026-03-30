@@ -30,29 +30,33 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 }) => {
   const [isThoughtOpen, setIsThoughtOpen] = useState(false);
 
-  // Parse special AI tags
+  // Parse special AI tags using the new robust delimiter
   const parsedData = useMemo(() => {
-    const chartMatch = content.match(/\[CHART:\s*([\s\S]*?)\]/);
-    const planMatch = content.match(/\[PLAN:\s*([\s\S]*?)\]/);
-    const styleMatch = content.match(/\[STYLE:\s*([\s\S]*?)\]/);
+    const chartMatch = content.match(/<<<CHART:\s*([\s\S]*?)>>>/);
+    const planMatch = content.match(/<<<PLAN:\s*([\s\S]*?)>>>/);
+    const styleMatch = content.match(/<<<STYLE:\s*([\s\S]*?)>>>/);
 
     let chart = null;
     let plan = null;
     let style = null;
 
     try {
-      if (chartMatch) chart = JSON.parse(chartMatch[1]);
+      if (chartMatch) chart = JSON.parse(chartMatch[1].trim());
+    } catch (e) {}
+    
+    try {
       if (planMatch) plan = planMatch[1].split('\n').filter(line => line.trim());
-      if (styleMatch) style = JSON.parse(styleMatch[1]);
-    } catch (e) {
-      console.error("Failed to parse AI tag", e);
-    }
+    } catch (e) {}
+    
+    try {
+      if (styleMatch) style = JSON.parse(styleMatch[1].trim());
+    } catch (e) {}
 
     // Clean content by removing tags
     const cleanContent = content
-      .replace(/\[CHART:[\s\S]*?\]/g, "")
-      .replace(/\[PLAN:[\s\S]*?\]/g, "")
-      .replace(/\[STYLE:[\s\S]*?\]/g, "")
+      .replace(/<<<CHART:[\s\S]*?>>>/g, "")
+      .replace(/<<<PLAN:[\s\S]*?>>>/g, "")
+      .replace(/<<<STYLE:[\s\S]*?>>>/g, "")
       .trim();
 
     return { cleanContent, chart, plan, style };

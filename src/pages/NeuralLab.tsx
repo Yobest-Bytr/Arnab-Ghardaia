@@ -86,9 +86,9 @@ const NeuralLab = () => {
       const systemPrompt = `You are the Yobest AI Neural Architect.
       
       COMMANDS (Use these tags to update the Workspace):
-      - [CHART: {"type": "bar|area", "title": "...", "data": [{"label": "...", "value": 10}]}]
-      - [PLAN: Step 1\\nStep 2]
-      - [STYLE: {"color": "#hex", "bg": "#hex"}]
+      - <<<CHART: {"type": "bar|area", "title": "...", "data": [{"label": "...", "value": 10}]}>>>
+      - <<<PLAN: Step 1\\nStep 2>>>
+      - <<<STYLE: {"color": "#hex", "bg": "#hex"}>>>
       
       FARM DATA:
       - Rabbits: ${farmSnapshot.rabbits.length}
@@ -107,14 +107,29 @@ const NeuralLab = () => {
       }, (chunk) => {
         responseText += chunk;
         
-        // Extract tags for the workspace
-        const chartMatch = responseText.match(/\[CHART:\s*([\s\S]*?)\]/);
-        const planMatch = responseText.match(/\[PLAN:\s*([\s\S]*?)\]/);
-        const styleMatch = responseText.match(/\[STYLE:\s*([\s\S]*?)\]/);
+        // Extract tags for the workspace using the new robust delimiter
+        const chartMatch = responseText.match(/<<<CHART:\s*([\s\S]*?)>>>/);
+        const planMatch = responseText.match(/<<<PLAN:\s*([\s\S]*?)>>>/);
+        const styleMatch = responseText.match(/<<<STYLE:\s*([\s\S]*?)>>>/);
 
-        if (chartMatch) try { setWorkspaceState((prev:any) => ({ ...prev, chart: JSON.parse(chartMatch[1]) })); } catch(e){}
-        if (planMatch) setWorkspaceState((prev:any) => ({ ...prev, plan: planMatch[1].split('\n').filter(l => l.trim()) }));
-        if (styleMatch) try { setWorkspaceState((prev:any) => ({ ...prev, style: JSON.parse(styleMatch[1]) })); } catch(e){}
+        if (chartMatch) {
+          try { 
+            const data = JSON.parse(chartMatch[1].trim());
+            setWorkspaceState((prev:any) => ({ ...prev, chart: data })); 
+          } catch(e) {}
+        }
+        
+        if (planMatch) {
+          const steps = planMatch[1].split('\n').filter(l => l.trim());
+          setWorkspaceState((prev:any) => ({ ...prev, plan: steps }));
+        }
+        
+        if (styleMatch) {
+          try { 
+            const style = JSON.parse(styleMatch[1].trim());
+            setWorkspaceState((prev:any) => ({ ...prev, style })); 
+          } catch(e) {}
+        }
 
         setMessages(prev => {
           const last = prev[prev.length - 1];
@@ -200,7 +215,7 @@ const NeuralLab = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="p-8 rounded-[3rem] bg-white/5 border border-white/10"
                     >
-                      <ChatMessage role="assistant" content={`[CHART: ${JSON.stringify(workspaceState.chart)}]`} timestamp={new Date().toISOString()} />
+                      <ChatMessage role="assistant" content={`<<<CHART: ${JSON.stringify(workspaceState.chart)}>>>`} timestamp={new Date().toISOString()} />
                     </motion.div>
                   ) : (
                     <div className="h-64 rounded-[3rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-white/10">
@@ -215,7 +230,7 @@ const NeuralLab = () => {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                     >
-                      <ChatMessage role="assistant" content={`[PLAN: ${workspaceState.plan.join('\n')}]`} timestamp={new Date().toISOString()} />
+                      <ChatMessage role="assistant" content={`<<<PLAN: ${workspaceState.plan.join('\n')}>>>`} timestamp={new Date().toISOString()} />
                     </motion.div>
                   )}
                 </AnimatePresence>
