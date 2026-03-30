@@ -133,25 +133,27 @@ export const storage = {
           console.error(`Sync error for ${item.table}:`, error.message);
           
           // AUTO-RECOVERY: Detect missing column from error message and strip it
-          if (error.message.includes('column') && (error.message.includes('not found') || error.message.includes('cache'))) {
-            // Match 'column_name' or "column_name"
-            const match = error.message.match(/column ['"](.+?)['"]/);
-            const columnName = match ? match[1] : null;
+          // Handles formats like: Could not find the 'column_name' or "column_name"
+          const match = error.message.match(/column ['"](.+?)['"]/i);
+          const columnName = match ? match[1] : null;
+          
+          if (columnName && item.data[columnName] !== undefined) {
+            console.warn(`Neural Recovery: Stripping missing column '${columnName}' from ${item.table} payload.`);
+            const { [columnName]: _, ...sanitizedData } = item.data;
             
-            if (columnName && item.data[columnName] !== undefined) {
-              console.warn(`Neural Recovery: Stripping missing column '${columnName}' from ${item.table} payload.`);
-              const { [columnName]: _, ...sanitizedData } = item.data;
-              updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
-              hasChanges = true;
-              
-              if ((item.retryCount || 0) > 10) {
-                updatedQueue.splice(i, 1);
-                i--;
-              }
-              continue; 
+            // Update the item in the queue and retry immediately in the next loop iteration
+            updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
+            hasChanges = true;
+            
+            // Prevent infinite loops if something is fundamentally wrong
+            if ((item.retryCount || 0) > 15) {
+              console.error(`Neural Recovery: Max retries reached for ${item.table}. Skipping item.`);
+              updatedQueue.splice(i, 1);
+              i--;
             }
+            continue; 
           }
-          break; 
+          break; // Stop processing for other errors (like network or auth)
         }
       } catch (e) {
         break; 
