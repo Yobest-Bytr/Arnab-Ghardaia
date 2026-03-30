@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
+import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, Database, ExternalLink
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -15,6 +16,7 @@ import {
   Tooltip, ResponsiveContainer
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -22,10 +24,29 @@ const Dashboard = () => {
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [litters, setLitters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cloudStatus, setCloudStatus] = useState<'checking' | 'ready' | 'missing'>('checking');
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
 
   useEffect(() => {
-    if (user) fetchData();
+    if (user) {
+      fetchData();
+      checkCloudTables();
+    }
   }, [user]);
+
+  const checkCloudTables = async () => {
+    if (storage.isOffline()) return;
+    try {
+      const { status } = await supabase.from('rabbits').select('id', { count: 'exact', head: true }).limit(1);
+      if (status === 404) {
+        setCloudStatus('missing');
+      } else {
+        setCloudStatus('ready');
+      }
+    } catch {
+      setCloudStatus('missing');
+    }
+  };
 
   const fetchData = async () => {
     const [rabbitData, litterData] = await Promise.all([
@@ -96,6 +117,11 @@ const Dashboard = () => {
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
           <div className="flex gap-3">
+            {cloudStatus === 'missing' && (
+              <button onClick={() => setIsSetupModalOpen(true)} className="flex items-center gap-2 px-6 py-3 rounded-full bg-rose-500/20 text-rose-400 text-sm font-bold border border-rose-500/20 hover:bg-rose-500/30 transition-all">
+                <AlertCircle size={16} /> Setup Cloud Storage
+              </button>
+            )}
             <Link to="/inventory">
               <button className="farm-button flex items-center gap-2">
                 <Plus size={20} />
@@ -239,6 +265,100 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
+
+      <Dialog open={isSetupModalOpen} onOpenChange={setIsSetupModalOpen}>
+        <DialogContent className="bg-white dark:bg-slate-900 border-none text-slate-900 dark:text-white max-w-2xl max-h-[80vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black flex items-center gap-3">
+              <Database className="text-emerald-600" />
+              Setup Supabase Tables
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 font-medium">
+              Your Supabase tables are missing. Follow these steps to enable cloud storage.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <ol className="list-decimal pl-6 space-y-6 text-sm font-medium text-slate-600 dark:text-slate-400">
+              <li>
+                Go to your Supabase dashboard: 
+                <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline ml-2 inline-flex items-center gap-1">
+                  supabase.com/dashboard <ExternalLink size={12} />
+                </a>
+              </li>
+              <li>Select your project.</li>
+              <li>
+                Open the <span className="text-slate-900 dark:text-white font-bold">SQL Editor</span> and run the following script:
+                <div className="mt-4 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 font-mono text-[11px] text-emerald-600 overflow-x-auto">
+                  <pre>{`CREATE TABLE rabbits (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  rabbit_id text NOT NULL,
+  name text,
+  breed text,
+  gender text,
+  health_status text,
+  status text,
+  sale_category text,
+  cage_number text,
+  price_dzd text,
+  weight text,
+  birth_date timestamp with time zone,
+  notes text,
+  mother_id text,
+  father_id text,
+  vaccination_status text,
+  medical_history text,
+  weight_history jsonb DEFAULT '[]'::jsonb,
+  is_public boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE litters (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  mother_name text,
+  father_name text,
+  mating_date timestamp with time zone,
+  expected_birth_date timestamp with time zone,
+  kit_count integer DEFAULT 0,
+  status text,
+  notes text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE sales (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  rabbit_id uuid REFERENCES rabbits(id),
+  customer_name text,
+  price numeric,
+  sale_date timestamp with time zone,
+  category text,
+  notes text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE rabbits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE litters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+
+-- Create Policies
+CREATE POLICY "Users can manage their own rabbits" ON rabbits FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own litters" ON litters FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own sales" ON sales FOR ALL USING (auth.uid() = user_id);`}</pre>
+                </div>
+              </li>
+              <li>Reload this page after the tables are created.</li>
+            </ol>
+          </div>
+          
+          <div className="flex justify-end mt-6">
+            <button onClick={() => setIsSetupModalOpen(false)} className="farm-button h-12 px-8">I've Created the Tables</button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
