@@ -14,7 +14,7 @@ const translations: Translations = {
   heroSubtitle: { en: "The ultimate platform for breeders in Ghardaia. Track growth, manage cages, and optimize your sales with neural precision.", ar: "المنصة المثالية للمربين في غرداية. تتبع النمو، أدر الأقفاص، وحسن مبيعاتك بدقة عالية.", fr: "La plateforme ultime pour les éleveurs à Ghardaia. Suivez la croissance, gérez les cages et optimisez vos ventes." },
   goDashboard: { en: "Go to Dashboard", ar: "اذهب للوحة التحكم", fr: "Aller au tableau de bord" },
   viewRabbits: { en: "View Rabbits", ar: "عرض الأرانب", fr: "Voir les lapins" },
-  happyCustomers: { en: "Happy Breeders", ar: "مربي سعيد", fr: "Éleveurs satisfaits" },
+  happyCustomers: { en: "Happy Breeders", ar: "مربي سعيد", fr: "Éleveurs satisfاكت" },
   healthStatus: { en: "Health Status", ar: "الحالة الصحية", fr: "État de santé" },
   healthyRate: { en: "Healthy Rate", ar: "معدل الصحة", fr: "Taux de santé" },
   featuresTitle: { en: "Powerful Features", ar: "مميزات قوية", fr: "Fonctionnalités puissantes" },
@@ -53,7 +53,7 @@ const translations: Translations = {
   edit: { en: "Edit", ar: "تعديل", fr: "Modifier" },
   age: { en: "Age", ar: "العمر", fr: "Âge" },
   months: { en: "Months", ar: "أشهر", fr: "Mois" },
-  days: { en: "Days", ar: "أيام", fr: "جورس" },
+  days: { en: "Days", ar: "أيام", fr: "Jours" },
   cageNumber: { en: "Cage #", ar: "رقم القفص", fr: "N° Cage" },
   searchPlaceholder: { en: "Search by name or ID...", ar: "ابحث بالاسم أو الرقم...", fr: "Rechercher par nom ou ID..." },
   scanQr: { en: "Scan QR Code", ar: "مسح رمز QR", fr: "Scanner QR" },
@@ -63,8 +63,6 @@ const translations: Translations = {
   categoryAdult: { en: "Adult", ar: "بالغ", fr: "Adulte" },
   categoryMeat: { en: "For Meat", ar: "للحم", fr: "Pour viande" },
   salePrice: { en: "Sale Price", ar: "سعر البيع", fr: "Prix de vente" },
-  
-  // New Keys
   startDate: { en: "Start Date", ar: "تاريخ البدء", fr: "Date de début" },
   endDate: { en: "End Date", ar: "تاريخ الانتهاء", fr: "Date de fin" },
   downloadQr: { en: "Download QR", ar: "تحميل رمز QR", fr: "Télécharger QR" },
@@ -104,6 +102,14 @@ const translations: Translations = {
   message: { en: "Message", ar: "الرسالة", fr: "Message" },
   sendMessage: { en: "Send Message", ar: "إرسال الرسالة", fr: "Envoyer" },
   profile: { en: "Profile", ar: "الملف الشخصي", fr: "Profil" },
+  
+  // New Keys
+  medicalHistory: { en: "Medical History", ar: "السجل الطبي", fr: "Historique médical" },
+  vaccinationStatus: { en: "Vaccination Status", ar: "حالة التطعيم", fr: "Statut vaccinal" },
+  lineage: { en: "Lineage", ar: "النسب", fr: "Lignée" },
+  cageMap: { en: "Cage Map", ar: "خريطة الأقفاص", fr: "Plan des cages" },
+  vaccinated: { en: "Vaccinated", ar: "مُطعم", fr: "Vacciné" },
+  notVaccinated: { en: "Not Vaccinated", ar: "غير مُطعم", fr: "Non vacciné" },
 };
 
 interface LanguageContextType {

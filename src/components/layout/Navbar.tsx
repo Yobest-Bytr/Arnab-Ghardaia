@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Rabbit, Globe, ChevronDown, LayoutDashboard, ShoppingBag, Info, Phone, User, LogOut } from 'lucide-react';
+import { Rabbit, Globe, ChevronDown, LayoutDashboard, ShoppingBag, Info, Phone, User, LogOut, Search } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,14 @@ const Navbar = () => {
     navigate('/');
   };
 
+  const triggerSearch = () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      bubbles: true
+    }));
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -57,6 +65,14 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <button 
+            onClick={triggerSearch}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-emerald-600 transition-all"
+            title="Search (Ctrl+K)"
+          >
+            <Search size={20} />
+          </button>
+
           <ThemeToggle />
           
           <DropdownMenu>

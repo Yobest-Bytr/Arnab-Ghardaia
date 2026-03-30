@@ -5,7 +5,8 @@ import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
-  QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera
+  QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
+  Stethoscope, Heart, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -38,6 +39,10 @@ const Inventory = () => {
     weight: '',
     birth_date: new Date().toISOString().split('T')[0],
     notes: '',
+    mother_id: '',
+    father_id: '',
+    vaccination_status: 'Not Vaccinated',
+    medical_history: '',
     weight_history: [] as any[]
   };
 
@@ -224,7 +229,7 @@ const Inventory = () => {
       <AnimatePresence>
         {isViewModalOpen && viewingRabbit && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="max-w-4xl w-full bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="max-w-5xl w-full bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden relative max-h-[90vh] overflow-y-auto custom-scrollbar">
               <button onClick={() => setIsViewModalOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 z-10"><X size={24} /></button>
               
               <div className="p-10">
@@ -266,17 +271,49 @@ const Inventory = () => {
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-xl font-black flex items-center gap-2"><Stethoscope className="text-emerald-600" /> {t('medicalHistory')}</h3>
+                      <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('vaccinationStatus')}</span>
+                          <span className={cn(
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+                            viewingRabbit.vaccination_status === 'Vaccinated' ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"
+                          )}>{t(viewingRabbit.vaccination_status === 'Vaccinated' ? 'vaccinated' : 'notVaccinated')}</span>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                          {viewingRabbit.medical_history || 'No medical records found.'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-black flex items-center gap-2"><QrCode className="text-emerald-600" /> Cage Neural Link</h3>
-                    <div className="aspect-square w-48 bg-white p-4 rounded-3xl border-2 border-slate-50 mx-auto lg:mx-0">
-                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${viewingRabbit.rabbit_id}`} alt="QR" className="w-full h-full" />
+                  <div className="space-y-8">
+                    <div className="space-y-4">
+                      <h3 className="text-xl font-black flex items-center gap-2"><Layers className="text-emerald-600" /> {t('lineage')}</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('mother')}</p>
+                          <p className="text-sm font-bold">{viewingRabbit.mother_id || 'Unknown'}</p>
+                        </div>
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('father')}</p>
+                          <p className="text-sm font-bold">{viewingRabbit.father_id || 'Unknown'}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/50">
-                      <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed">
-                        Scan this code at the cage to instantly open this rabbit's medical and growth records.
-                      </p>
+
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-black flex items-center gap-2"><QrCode className="text-emerald-600" /> Cage Neural Link</h3>
+                      <div className="aspect-square w-48 bg-white p-4 rounded-3xl border-2 border-slate-50 mx-auto lg:mx-0">
+                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${viewingRabbit.rabbit_id}`} alt="QR" className="w-full h-full" />
+                      </div>
+                      <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/50">
+                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                          Scan this code at the cage to instantly open this rabbit's medical and growth records.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -329,8 +366,21 @@ const Inventory = () => {
                 </div>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
-                    <input type="number" value={formData.price_dzd} onChange={(e) => setFormData({...formData, price_dzd: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('mother')}</label>
+                    <input type="text" value={formData.mother_id} onChange={(e) => setFormData({...formData, mother_id: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('father')}</label>
+                    <input type="text" value={formData.father_id} onChange={(e) => setFormData({...formData, father_id: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('vaccinationStatus')}</label>
+                    <select value={formData.vaccination_status} onChange={(e) => setFormData({...formData, vaccination_status: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
+                      <option value="Not Vaccinated">{t('notVaccinated')}</option>
+                      <option value="Vaccinated">{t('vaccinated')}</option>
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('status')}</label>
@@ -345,12 +395,8 @@ const Inventory = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Sale Category</label>
-                  <select value={formData.sale_category} onChange={(e) => setFormData({...formData, sale_category: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
-                    <option value="Young">{t('categoryYoung')}</option>
-                    <option value="Adult">{t('categoryAdult')}</option>
-                    <option value="Meat">{t('categoryMeat')}</option>
-                  </select>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('medicalHistory')}</label>
+                  <textarea value={formData.medical_history} onChange={(e) => setFormData({...formData, medical_history: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 min-h-[100px]" />
                 </div>
                 <button type="submit" className="farm-button w-full h-16 text-lg mt-4">{t('save')}</button>
               </form>

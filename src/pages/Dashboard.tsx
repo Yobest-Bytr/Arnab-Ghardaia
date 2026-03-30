@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap
+  Clock, ShieldCheck, Heart, FileText, Zap, Box
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -77,6 +77,14 @@ const Dashboard = () => {
     { label: t('healthy'), val: rabbits.filter(r => r.health_status === 'Healthy').length, icon: ShieldCheck, color: "bg-emerald-400" },
   ];
 
+  const cageMap = useMemo(() => {
+    const cages = Array.from({ length: 12 }, (_, i) => ({
+      id: (i + 1).toString(),
+      rabbit: rabbits.find(r => r.cage_number === (i + 1).toString())
+    }));
+    return cages;
+  }, [rabbits]);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
@@ -134,25 +142,23 @@ const Dashboard = () => {
 
             <div className="farm-card">
               <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
-                <TrendingUp className="text-emerald-600" size={20} />
-                {t('populationGrowth')}
+                <Box className="text-indigo-600" size={20} />
+                {t('cageMap')}
               </h3>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} fontWeight="bold" tickLine={false} axisLine={false} />
-                    <YAxis hide />
-                    <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                    <Area type="monotone" dataKey="count" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorCount)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                {cageMap.map((cage) => (
+                  <div key={cage.id} className={cn(
+                    "aspect-square rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
+                    cage.rabbit ? "bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/50" : "bg-slate-50 border-slate-100 dark:bg-slate-800/50 dark:border-slate-800"
+                  )}>
+                    <span className="text-[10px] font-black text-slate-400 uppercase">#{cage.id}</span>
+                    {cage.rabbit ? (
+                      <Rabbit size={20} className="text-emerald-600" />
+                    ) : (
+                      <div className="w-1 h-1 rounded-full bg-slate-200" />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
