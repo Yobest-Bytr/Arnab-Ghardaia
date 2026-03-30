@@ -6,7 +6,7 @@ import { storage } from '@/lib/storage';
 import { 
   Rabbit, ShoppingBag, Search, Filter, Tag, 
   MessageCircle, Sparkles, ArrowRight, Info, 
-  ShieldCheck, Zap, Star, Heart
+  ShieldCheck, Zap, Star, Heart, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
