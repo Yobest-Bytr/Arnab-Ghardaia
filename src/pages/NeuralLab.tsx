@@ -6,7 +6,7 @@ import {
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Loader2, Activity, Database, ArrowRight, Info, Clock, X,
   Layout, BarChart3, FileText, Palette, Target, Rocket, MessageSquare,
-  ChevronLeft, ChevronRight, Maximize2, Minimize2
+  ChevronLeft, ChevronRight, Maximize2, Minimize2, Wand2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -69,10 +69,11 @@ const NeuralLab = () => {
     setFarmSnapshot({ rabbits, sales, litters, expenses });
   };
 
-  const handleSend = async (e: React.FormEvent, image?: string) => {
-    if (!input.trim() && !image) return;
+  const handleSend = async (e: React.FormEvent | string, image?: string) => {
+    const prompt = typeof e === 'string' ? e : input;
+    if (!prompt.trim() && !image) return;
     
-    const userMsg = { id: Date.now(), role: 'user', content: input || "Analyze this image.", timestamp: new Date().toISOString(), image };
+    const userMsg = { id: Date.now(), role: 'user', content: prompt || "Analyze this image.", timestamp: new Date().toISOString(), image };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsGenerating(true);
@@ -98,7 +99,7 @@ const NeuralLab = () => {
       
       Respond in ${language === 'ar' ? 'Arabic' : 'English'}. When you provide a chart or plan, it will appear in the workspace to the right.`;
 
-      await grokChat(input || "Analyze this image.", { 
+      await grokChat(prompt || "Analyze this image.", { 
         modelId: 'yobest-ai', 
         userId: user?.id, 
         stream: true,
@@ -107,29 +108,13 @@ const NeuralLab = () => {
       }, (chunk) => {
         responseText += chunk;
         
-        // Extract tags for the workspace using the new robust delimiter
         const chartMatch = responseText.match(/<<<CHART:\s*([\s\S]*?)>>>/);
         const planMatch = responseText.match(/<<<PLAN:\s*([\s\S]*?)>>>/);
         const styleMatch = responseText.match(/<<<STYLE:\s*([\s\S]*?)>>>/);
 
-        if (chartMatch) {
-          try { 
-            const data = JSON.parse(chartMatch[1].trim());
-            setWorkspaceState((prev:any) => ({ ...prev, chart: data })); 
-          } catch(e) {}
-        }
-        
-        if (planMatch) {
-          const steps = planMatch[1].split('\n').filter(l => l.trim());
-          setWorkspaceState((prev:any) => ({ ...prev, plan: steps }));
-        }
-        
-        if (styleMatch) {
-          try { 
-            const style = JSON.parse(styleMatch[1].trim());
-            setWorkspaceState((prev:any) => ({ ...prev, style })); 
-          } catch(e) {}
-        }
+        if (chartMatch) try { setWorkspaceState((prev:any) => ({ ...prev, chart: JSON.parse(chartMatch[1].trim()) })); } catch(e) {}
+        if (planMatch) setWorkspaceState((prev:any) => ({ ...prev, plan: planMatch[1].split('\n').filter(l => l.trim()) }));
+        if (styleMatch) try { setWorkspaceState((prev:any) => ({ ...prev, style: JSON.parse(styleMatch[1].trim()) })); } catch(e) {}
 
         setMessages(prev => {
           const last = prev[prev.length - 1];
@@ -150,6 +135,12 @@ const NeuralLab = () => {
     }
   };
 
+  const quickActions = [
+    { label: "Analyze Profits", prompt: "Analyze my farm profits and show me a chart of revenue vs costs.", icon: BarChart3 },
+    { label: "Expansion Plan", prompt: "Give me a 4-step plan to expand my rabbit farm cages.", icon: Rocket },
+    { label: "Neural Theme", prompt: "Change the workspace style to a deep emerald theme.", icon: Palette },
+  ];
+
   return (
     <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
       <Navbar />
@@ -169,7 +160,19 @@ const NeuralLab = () => {
                 </div>
               )}
             </div>
-            <div className="p-6 border-t border-white/5">
+            
+            <div className="p-6 border-t border-white/5 space-y-4">
+              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                {quickActions.map((action, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => handleSend(action.prompt)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap"
+                  >
+                    <action.icon size={12} /> {action.label}
+                  </button>
+                ))}
+              </div>
               <ChatInput 
                 value={input} 
                 onChange={setInput} 

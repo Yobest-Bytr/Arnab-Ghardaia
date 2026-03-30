@@ -3,11 +3,10 @@
 import React, { useState, useMemo } from 'react';
 import { 
   ChevronRight, ChevronDown, CheckCircle2, Info, Clock, 
-  Play, ShoppingBag, Heart, Database, ListChecks, Sparkles, Palette
+  Play, ShoppingBag, Heart, Database, ListChecks, Sparkles, Palette, Cpu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { showSuccess, showError } from '@/utils/toast';
 import { storage } from '@/lib/storage';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
@@ -30,7 +29,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 }) => {
   const [isThoughtOpen, setIsThoughtOpen] = useState(false);
 
-  // Parse special AI tags using the new robust delimiter
   const parsedData = useMemo(() => {
     const chartMatch = content.match(/<<<CHART:\s*([\s\S]*?)>>>/);
     const planMatch = content.match(/<<<PLAN:\s*([\s\S]*?)>>>/);
@@ -52,7 +50,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       if (styleMatch) style = JSON.parse(styleMatch[1].trim());
     } catch (e) {}
 
-    // Clean content by removing tags
     const cleanContent = content
       .replace(/<<<CHART:[\s\S]*?>>>/g, "")
       .replace(/<<<PLAN:[\s\S]*?>>>/g, "")
@@ -79,15 +76,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   return (
     <div 
-      className="flex flex-col gap-4 mb-12 group animate-in fade-in slide-in-from-bottom-4 duration-700"
+      className="flex flex-col gap-4 mb-12 group animate-in fade-in slide-in-from-bottom-4 duration-700 relative"
       style={{ 
         color: parsedData.style?.color,
-        backgroundColor: parsedData.style?.bg ? `${parsedData.style.bg}10` : undefined,
-        padding: parsedData.style?.bg ? '2rem' : undefined,
-        borderRadius: parsedData.style?.bg ? '2.5rem' : undefined,
-        border: parsedData.style?.bg ? `1px solid ${parsedData.style.color}20` : undefined
       }}
     >
+      {/* Neural Glow Background */}
+      {role === 'assistant' && (
+        <div className="absolute -inset-4 bg-indigo-500/5 blur-3xl rounded-[3rem] -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+      )}
+
       {thought && (
         <div className="flex flex-col gap-2">
           <button 
@@ -96,7 +94,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           >
             {isThoughtOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="flex items-center gap-2">
-              <Info size={12} /> Neural Processing
+              <Cpu size={12} className="text-indigo-400" /> Neural Processing
             </span>
           </button>
           <AnimatePresence>
@@ -114,13 +112,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </div>
       )}
 
-      <div className="text-sm leading-relaxed whitespace-pre-wrap text-white/80 font-medium">
+      <div 
+        className={cn(
+          "text-sm leading-relaxed whitespace-pre-wrap font-medium p-6 rounded-[2.5rem] border transition-all duration-500",
+          parsedData.style?.bg ? "" : "bg-white/5 border-white/5 group-hover:border-white/10"
+        )}
+        style={{ 
+          backgroundColor: parsedData.style?.bg ? `${parsedData.style.bg}20` : undefined,
+          borderColor: parsedData.style?.bg ? `${parsedData.style.color}40` : undefined,
+          boxShadow: parsedData.style?.bg ? `0 0 40px ${parsedData.style.color}10` : undefined
+        }}
+      >
         {parsedData.cleanContent}
       </div>
 
       {/* Render AI Chart */}
       {parsedData.chart && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="my-6 p-8 rounded-[2.5rem] bg-white/5 border border-white/10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="my-6 p-8 rounded-[2.5rem] bg-white/5 border border-white/10 shadow-2xl">
           <h4 className="text-xs font-black uppercase tracking-widest text-white/40 mb-6 flex items-center gap-2">
             <Sparkles size={14} className="text-indigo-400" /> {parsedData.chart.title || "Neural Data Visualization"}
           </h4>
@@ -157,7 +165,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
       {/* Render AI Project Plan */}
       {parsedData.plan && (
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="my-6 p-8 rounded-[2.5rem] bg-indigo-600/10 border border-indigo-500/20">
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="my-6 p-8 rounded-[2.5rem] bg-indigo-600/10 border border-indigo-500/20 shadow-xl">
           <h4 className="text-xs font-black uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
             <ListChecks size={16} /> Strategic Project Plan
           </h4>
@@ -174,7 +182,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </motion.div>
       )}
 
-      <div className="flex items-center justify-between mt-2">
+      <div className="flex items-center justify-between mt-2 px-4">
         <div className="flex items-center gap-4 text-[10px] font-bold text-white/20">
           <Clock size={12} /> {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           <span className="mx-1">•</span>

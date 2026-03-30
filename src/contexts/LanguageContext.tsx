@@ -23,11 +23,34 @@ const translations: Translations = {
   about: { en: "About", ar: "حول", fr: "À propos" },
   contact: { en: "Contact", ar: "اتصل بنا", fr: "Contact" },
   
-  // Hero
+  // Hero & Index
   heroTitle: { en: "Smart Rabbit Farm Management", ar: "إدارة ذكية لمزارع الأرانب", fr: "Gestion Intelligente de Ferme" },
   heroSubtitle: { en: "The ultimate platform for breeders in Ghardaia. Track growth, manage cages, and optimize your sales with neural precision.", ar: "المنصة المثالية للمربين في غرداية. تتبع النمو، أدر الأقفاص، وحسن مبيعاتك بدقة عالية.", fr: "La plateforme ultime pour les éleveurs à Ghardaia. Suivez la croissance et optimisez vos ventes." },
   goDashboard: { en: "Go to Dashboard", ar: "اذهب للوحة التحكم", fr: "Aller au tableau de bord" },
   viewRabbits: { en: "View Rabbits", ar: "عرض الأرانب", fr: "Voir les lapins" },
+  happyCustomers: { en: "Happy Customers", ar: "عملاء سعداء", fr: "Clients Heureux" },
+  healthStatus: { en: "Health Status", ar: "الحالة الصحية", fr: "État de Santé" },
+  healthyRate: { en: "Healthy Rate", ar: "معدل الصحة", fr: "Taux de Santé" },
+  totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total Lapins" },
+  males: { en: "Males", ar: "ذكور", fr: "Mâles" },
+  females: { en: "Females", ar: "إناث", fr: "Femelles" },
+  newBorns: { en: "Newborns", ar: "مواليد جدد", fr: "Nouveau-nés" },
+
+  // Features
+  featuresTitle: { en: "Neural Farm Control", ar: "التحكم العصبي بالمزرعة", fr: "Contrôle Neural de Ferme" },
+  featuresSubtitle: { en: "Advanced tools designed for the modern breeder.", ar: "أدوات متطورة مصممة للمربي الحديث.", fr: "Outils avancés pour l'éleveur moderne." },
+  feature1Title: { en: "Neural Analytics", ar: "التحليلات العصبية", fr: "Analyses Neurales" },
+  feature1Desc: { en: "Get AI-driven insights into your farm's performance and growth.", ar: "احصل على رؤى مدعومة بالذكاء الاصطناعي حول أداء مزرعتك ونموها.", fr: "Obtenez des analyses IA sur les performances de votre ferme." },
+  feature2Title: { en: "Inventory Management", ar: "إدارة المخزون", fr: "Gestion de Stock" },
+  feature2Desc: { en: "Track every rabbit from birth to sale with detailed lineage and health records.", ar: "تتبع كل أرنب من الولادة إلى البيع مع سجلات مفصلة للنسب والصحة.", fr: "Suivez chaque lapin de la naissance à la vente." },
+  feature3Title: { en: "Breeding Cycles", ar: "دورات التزاوج", fr: "Cycles d'Élevage" },
+  feature3Desc: { en: "Never miss a litter with automated pregnancy tracking and birth alerts.", ar: "لا تفوت أي ولادة مع تتبع الحمل الآلي وتنبيهات الولادة.", fr: "Ne ratez jamais une portée avec le suivi automatique." },
+
+  // CTA
+  ctaTitle: { en: "Ready to scale your farm?", ar: "هل أنت مستعد لتوسيع مزرعتك؟", fr: "Prêt à agrandir votre ferme ?" },
+  ctaSubtitle: { en: "Join hundreds of breeders using Arnab Ghardaia to optimize their production.", ar: "انضم إلى مئات المربين الذين يستخدمون أرنب غرداية لتحسين إنتاجهم.", fr: "Rejoignez des centaines d'éleveurs utilisant Arnab Ghardaia." },
+  getStartedFree: { en: "Get Started Free", ar: "ابدأ مجاناً", fr: "Commencer Gratuitement" },
+  contactSales: { en: "Contact Sales", ar: "اتصل بالمبيعات", fr: "Contacter les Ventes" },
 
   // Finance & Costs
   totalRevenue: { en: "Total Revenue", ar: "إجمالي الإيرادات", fr: "Revenu Total" },
