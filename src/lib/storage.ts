@@ -21,12 +21,9 @@ export const storage = {
     return !navigator.onLine || masterOffline;
   },
 
-  setMasterOffline(status: boolean) {
-    masterOffline = status;
-  },
-
   async get(table: string, userId: string) {
-    const localData = localStorage.getItem(`${table}_${userId}`);
+    const localKey = `${table}_${userId}`;
+    const localData = localStorage.getItem(localKey);
     let data = localData ? JSON.parse(localData) : [];
 
     if (navigator.onLine && !masterOffline && isUUID(userId)) {
@@ -34,15 +31,15 @@ export const storage = {
         const { data: cloudData, error } = await supabase
           .from(table)
           .select('*')
-          .eq('user_id', userId)
+          .eq(table === 'profiles' ? 'id' : 'user_id', userId)
           .order('created_at', { ascending: false });
         
         if (!error && cloudData) {
-          localStorage.setItem(`${table}_${userId}`, JSON.stringify(cloudData));
+          localStorage.setItem(localKey, JSON.stringify(cloudData));
           data = cloudData;
         }
       } catch (e) {
-        console.warn("Cloud fetch failed, using local cache.");
+        console.warn(`Cloud fetch failed for ${table}, using local cache.`);
       }
     }
     return data;
@@ -52,12 +49,13 @@ export const storage = {
     const newItem = { 
       ...item, 
       id: item.id || Math.random().toString(36).substr(2, 9),
-      user_id: userId, 
+      [table === 'profiles' ? 'id' : 'user_id']: userId, 
       created_at: item.created_at || new Date().toISOString() 
     };
     
-    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
-    localStorage.setItem(`${table}_${userId}`, JSON.stringify([newItem, ...localData]));
+    const localKey = `${table}_${userId}`;
+    const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
+    localStorage.setItem(localKey, JSON.stringify([newItem, ...localData]));
     
     if (isUUID(userId)) {
       this.addToSyncQueue({ id: newItem.id, table, action: 'INSERT', data: newItem, timestamp: Date.now() });
@@ -66,11 +64,12 @@ export const storage = {
   },
 
   async update(table: string, userId: string, id: string, updates: any) {
-    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
+    const localKey = `${table}_${userId}`;
+    const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     const updatedData = localData.map((item: any) => 
       item.id === id ? { ...item, ...updates, updated_at: new Date().toISOString() } : item
     );
-    localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
+    localStorage.setItem(localKey, JSON.stringify(updatedData));
     
     if (isUUID(userId)) {
       this.addToSyncQueue({ id, table, action: 'UPDATE', data: updates, timestamp: Date.now() });
@@ -79,25 +78,12 @@ export const storage = {
   },
 
   async delete(table: string, userId: string, id: string) {
-    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
-    localStorage.setItem(`${table}_${userId}`, JSON.stringify(localData.filter((i: any) => i.id !== id)));
+    const localKey = `${table}_${userId}`;
+    const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
+    localStorage.setItem(localKey, JSON.stringify(localData.filter((i: any) => i.id !== id)));
     
     if (isUUID(userId)) {
       this.addToSyncQueue({ id, table, action: 'DELETE', data: null, timestamp: Date.now() });
-    }
-  },
-
-  async syncToCloud(table: string, userId: string) {
-    if (!navigator.onLine || masterOffline) return { success: false, message: "Network offline." };
-    try {
-      const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
-      if (localData.length === 0) return { success: true, message: "Nothing to sync." };
-      
-      const { error } = await supabase.from(table).upsert(localData);
-      if (error) throw error;
-      return { success: true, message: `${table} synced successfully.` };
-    } catch (e: any) {
-      return { success: false, message: e.message };
     }
   },
 
@@ -117,7 +103,7 @@ export const storage = {
       try {
         let error;
         if (item.action === 'INSERT') {
-          ({ error } = await supabase.from(item.table).insert([item.data]));
+          ({ error } = await supabase.from(item.table).upsert([item.data]));
         } else if (item.action === 'UPDATE') {
           ({ error } = await supabase.from(item.table).update(item.data).eq('id', item.id));
         } else if (item.action === 'DELETE') {

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield, Globe, Settings, Sparkles, Loader2, LogOut, Check, Palette, Bell, ShieldCheck, Mail } from 'lucide-react';
+import { User, Shield, Settings, Sparkles, Loader2, LogOut, Check, Palette, Bell, ShieldCheck, Mail } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
 
@@ -16,19 +17,36 @@ const Profile = () => {
 
   useEffect(() => {
     if (user) {
-      const savedName = localStorage.getItem(`display_name_${user.id}`);
-      setDisplayName(savedName || user.email?.split('@')[0] || '');
+      fetchProfile();
     }
   }, [user]);
 
-  const handleUpdateProfile = () => {
+  const fetchProfile = async () => {
+    if (!user) return;
+    const profiles = await storage.get('profiles', user.id);
+    if (profiles && profiles.length > 0) {
+      setDisplayName(profiles[0].display_name || user.email?.split('@')[0] || '');
+    } else {
+      setDisplayName(user.email?.split('@')[0] || '');
+    }
+  };
+
+  const handleUpdateProfile = async () => {
     if (user) {
       setLoading(true);
-      localStorage.setItem(`display_name_${user.id}`, displayName);
-      setTimeout(() => {
+      try {
+        const profiles = await storage.get('profiles', user.id);
+        if (profiles && profiles.length > 0) {
+          await storage.update('profiles', user.id, profiles[0].id, { display_name: displayName });
+        } else {
+          await storage.insert('profiles', user.id, { display_name: displayName, email: user.email });
+        }
+        showSuccess('Profile updated in cloud.');
+      } catch (err) {
+        showError('Failed to update profile.');
+      } finally {
         setLoading(false);
-        showSuccess('Profile updated successfully');
-      }, 800);
+      }
     }
   };
 
