@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 const NeuralLab = () => {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -28,12 +30,14 @@ const NeuralLab = () => {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: "Neural Link Established. I have access to your farm data. I can analyze images, scan QR codes, and perform actions like adding or editing rabbits. How can I assist you?",
+        content: language === 'ar' 
+          ? "تم إنشاء الرابط العصبي. لدي حق الوصول إلى بيانات مزرعتك. يمكنني تحليل الصور ومسح رموز QR وتنفيذ إجراءات مثل إضافة أو تعديل الأرانب. كيف يمكنني مساعدتك؟"
+          : "Neural Link Established. I have access to your farm data. I can analyze images, scan QR codes, and perform actions like adding or editing rabbits. How can I assist you?",
         timestamp: new Date().toISOString(),
         model: 'Yobest AI 4.1'
       }]);
     }
-  }, [user]);
+  }, [user, language]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -70,19 +74,29 @@ const NeuralLab = () => {
       let responseText = "";
       const systemPrompt = `You are the Yobest AI Neural Architect. You manage a rabbit farm in Ghardaia.
       
+      LANGUAGE: Respond strictly in ${language === 'ar' ? 'Arabic' : language === 'fr' ? 'French' : 'English'}.
+      
+      RESPONSE STYLE:
+      - Use symbols to organize information:
+        🧬 Lineage/Genetics
+        🏥 Health/Medical
+        💰 Sales/Revenue
+        🏠 Housing/Cages
+        📈 Growth/Analytics
+        ⚠️ Alerts/Warnings
+      - Keep responses concise and professional.
+      
       NEURAL SNAPSHOT:
       - Rabbits: ${farmSnapshot.rabbits.length} total
       - Sales: ${farmSnapshot.sales.length} total
       - Litters: ${farmSnapshot.litters.length} total
       
       ACTION CAPABILITIES:
-      If you want to add a rabbit, include this tag in your response:
+      If you want to perform an action, include the tag:
       [ACTION: ADD_RABBIT {"name": "...", "breed": "...", "gender": "...", "weight": "..."}]
-      
-      If you want to update a rabbit, include this tag:
       [ACTION: UPDATE_RABBIT {"id": "...", "updates": {"status": "..."}}]
-      
-      Be professional, data-driven, and helpful.`;
+      [ACTION: RECORD_SALE {"customer_name": "...", "price": 0, "category": "..."}]
+      [ACTION: RECORD_MATING {"mother_name": "...", "father_name": "...", "mating_date": "..."}]`;
 
       await grokChat(input || "Analyze this image.", { 
         modelId: 'yobest-ai', 

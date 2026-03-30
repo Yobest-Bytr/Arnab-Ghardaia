@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   Send, Plus, ChevronDown, Sparkles, X, Cpu, Zap, 
-  Layers, FileUp, Box, Wand2, MessageSquare, ArrowRight, Camera, QrCode, Loader2
+  Layers, FileUp, Box, Wand2, MessageSquare, ArrowRight, Camera, QrCode, Loader2, Mic, MicOff
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 
 const MODELS = [
   { id: 'yobest-ai', name: 'Yobest AI 4.1', icon: Sparkles, desc: 'Native Cognitive Engine' },
@@ -40,7 +40,49 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
+  
   const selectedModel = MODELS.find(m => m.id === selectedModelId) || MODELS[0];
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = document.documentElement.lang || 'en-US';
+
+      rec.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        onChange(value ? `${value} ${transcript}` : transcript);
+        setIsListening(false);
+        showSuccess("Voice captured.");
+      };
+
+      rec.onerror = () => {
+        setIsListening(false);
+        showError("Voice recognition failed.");
+      };
+
+      rec.onend = () => setIsListening(false);
+
+      setRecognition(rec);
+    }
+  }, [onChange, value]);
+
+  const toggleListening = () => {
+    if (!recognition) {
+      showError("Speech recognition not supported in this browser.");
+      return;
+    }
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,13 +124,25 @@ const ChatInput: React.FC<ChatInputProps> = ({
             placeholder="Ask Yobest AI to analyze, add, or edit..."
             className="w-full bg-transparent p-6 pr-16 text-sm text-white outline-none resize-none min-h-[120px] max-h-[300px] custom-scrollbar font-medium"
           />
-          <button 
-            type="submit" 
-            disabled={isGenerating || !value.trim()}
-            className="absolute right-6 top-6 w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-500 transition-all disabled:opacity-30 shadow-lg shadow-indigo-500/20"
-          >
-            {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight size={24} />}
-          </button>
+          <div className="absolute right-6 top-6 flex flex-col gap-2">
+            <button 
+              type="submit" 
+              disabled={isGenerating || !value.trim()}
+              className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-500 transition-all disabled:opacity-30 shadow-lg shadow-indigo-500/20"
+            >
+              {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight size={24} />}
+            </button>
+            <button 
+              type="button"
+              onClick={toggleListening}
+              className={cn(
+                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-lg",
+                isListening ? "bg-rose-600 animate-pulse text-white" : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"
+              )}
+            >
+              {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+            </button>
+          </div>
         </form>
 
         <div className="px-6 py-4 bg-white/5 border-t border-white/5 flex items-center justify-between">

@@ -5,7 +5,7 @@ import {
   ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, 
   Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, 
   Activity, X, Info, CornerDownRight, Clock, FileEdit, FilePlus,
-  Check as CheckIcon, X as CloseIcon, Trash2, Sparkles, Database, Play
+  Check as CheckIcon, X as CloseIcon, Trash2, Sparkles, Database, Play, ShoppingBag, Heart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,7 +32,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const [isThoughtOpen, setIsThoughtOpen] = useState(true);
   const [actionExecuted, setActionExecuted] = useState(false);
 
-  // Parse for Neural Actions: [ACTION: TYPE {DATA}]
   const { mainContent, action } = useMemo(() => {
     const actionMatch = content.match(/\[ACTION:\s*(\w+)\s*(\{[\s\S]*?\})\]/);
     if (actionMatch) {
@@ -59,6 +58,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       } else if (action.type === 'UPDATE_RABBIT') {
         await storage.update('rabbits', userId, action.data.id, action.data.updates);
         showSuccess(`Neural Action: Updated ${action.data.id}.`);
+      } else if (action.type === 'RECORD_SALE') {
+        await storage.insert('sales', userId, action.data);
+        showSuccess(`Neural Action: Recorded sale for ${action.data.customer_name}.`);
+      } else if (action.type === 'RECORD_MATING') {
+        await storage.insert('litters', userId, { ...action.data, status: 'Pregnant' });
+        showSuccess(`Neural Action: Recorded mating cycle.`);
       }
       
       setActionExecuted(true);
@@ -81,6 +86,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       </div>
     );
   }
+
+  const getActionIcon = () => {
+    switch (action?.type) {
+      case 'RECORD_SALE': return ShoppingBag;
+      case 'RECORD_MATING': return Heart;
+      default: return Database;
+    }
+  };
+
+  const ActionIcon = getActionIcon();
 
   return (
     <div className="flex flex-col gap-4 mb-12 group animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -126,7 +141,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", actionExecuted ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-400")}>
-                <Database size={24} />
+                <ActionIcon size={24} />
               </div>
               <div>
                 <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Proposed Neural Action</p>
