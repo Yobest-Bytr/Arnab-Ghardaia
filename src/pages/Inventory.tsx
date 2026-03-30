@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
 import { grokChat } from '@/lib/puter';
@@ -92,11 +93,10 @@ const Inventory = () => {
 
     if (field === 'breed') {
       list = BREEDS.filter(b => b.toLowerCase().includes(val.toLowerCase()));
-      if (list.length === 0) list = BREEDS;
+      if (list.length === 0 && val.length > 0) list = [val]; // Allow custom breed
     } else if (field === 'cage_number') {
       const existingCages = Array.from(new Set(rabbits.map(r => r.cage_number).filter(Boolean)));
       list = existingCages.filter(c => c.includes(val));
-      if (list.length === 0) list = existingCages;
     } else if (field === 'mother_id' || field === 'father_id') {
       const gender = field === 'mother_id' ? 'Female' : 'Male';
       list = rabbits.filter(r => 
@@ -156,8 +156,12 @@ const Inventory = () => {
     e.preventDefault();
     if (!user) return;
     const currentWeight = parseFloat(formData.weight) || 0;
-    const weightEntry = { date: new Date().toISOString().split('T')[0], weight: currentWeight };
-    const updatedHistory = editingRabbit ? [...(editingRabbit.weight_history || []), weightEntry].slice(-10) : [weightEntry];
+    const weightEntry = { 
+      date: new Date().toLocaleDateString(), 
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      weight: currentWeight 
+    };
+    const updatedHistory = editingRabbit ? [...(editingRabbit.weight_history || []), weightEntry].slice(-20) : [weightEntry];
     const finalData = { ...formData, weight_history: updatedHistory };
     
     try {
@@ -309,8 +313,11 @@ const Inventory = () => {
 
               <div className="px-8 pb-10 overflow-y-auto custom-scrollbar">
                 <div className="flex flex-col md:flex-row gap-8 items-start mb-12">
-                  <div className="w-32 h-32 rounded-[2.5rem] bg-white shadow-2xl border-4 border-white flex items-center justify-center text-emerald-600 shrink-0">
+                  <div className="w-32 h-32 rounded-[2.5rem] bg-white shadow-2xl border-4 border-white flex items-center justify-center text-emerald-600 shrink-0 relative">
                     <Rabbit size={64} />
+                    <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white p-2 rounded-xl shadow-lg">
+                      <QRCodeSVG value={viewingRabbit.rabbit_id} size={48} />
+                    </div>
                   </div>
                   <div className="pt-4">
                     <div className="flex items-center gap-3 mb-2">
@@ -363,7 +370,10 @@ const Inventory = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#00000005" />
                             <XAxis dataKey="date" hide />
                             <YAxis hide />
-                            <Tooltip />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                              labelStyle={{ fontWeight: 'bold', color: '#10b981' }}
+                            />
                             <Area type="monotone" dataKey="weight" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorWeight)" />
                           </AreaChart>
                         </ResponsiveContainer>

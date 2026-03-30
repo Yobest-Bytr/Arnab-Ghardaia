@@ -7,7 +7,7 @@ import {
   ShoppingBag, Plus, Calendar, User, Tag, 
   DollarSign, TrendingUp, PieChart as PieIcon, 
   ArrowUpRight, X, Loader2, Trash2, Rabbit,
-  CheckCircle2, Wallet, Wand2, Sparkles, ChevronRight
+  CheckCircle2, Wallet, Wand2, Sparkles, ChevronRight, MessageSquare, BrainCircuit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -23,6 +23,8 @@ const Sales = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiAdvice, setAiAdvice] = useState<string>('');
+  const [isAskingAi, setIsAskingAi] = useState(false);
 
   const [formData, setFormData] = useState({
     rabbit_id: '',
@@ -36,7 +38,10 @@ const Sales = () => {
   const [suggestions, setSuggestions] = useState<{ field: string, list: any[] }>({ field: '', list: [] });
 
   useEffect(() => {
-    if (user) fetchData();
+    if (user) {
+      fetchData();
+      getBreedAdvice();
+    }
   }, [user]);
 
   const fetchData = async () => {
@@ -48,6 +53,25 @@ const Sales = () => {
     setSales(salesData);
     setInventory(rabbitData.filter(r => r.status !== 'Sold'));
     setLoading(false);
+  };
+
+  const getBreedAdvice = async () => {
+    if (!user) return;
+    setIsAskingAi(true);
+    try {
+      const breeds = Array.from(new Set(inventory.map(r => r.breed)));
+      const prompt = `Analyze this rabbit inventory: ${breeds.join(', ')}. 
+      Which breeds are currently best for selling in the Ghardaia market? 
+      Provide a concise, professional recommendation based on breed characteristics and market demand. 
+      Keep it under 4 sentences.`;
+      
+      const response = await grokChat(prompt, { userId: user.id, stream: false });
+      setAiAdvice(response);
+    } catch (err) {
+      setAiAdvice("Neural link busy. Try again later.");
+    } finally {
+      setIsAskingAi(false);
+    }
   };
 
   const showInstantSuggestions = (field: string) => {
@@ -162,6 +186,28 @@ const Sales = () => {
             <Plus size={20} /> {t('recordSale')}
           </button>
         </header>
+
+        {/* AI Breed Advisor */}
+        <div className="mb-12 p-8 rounded-[3rem] bg-indigo-600 text-white relative overflow-hidden shadow-2xl shadow-indigo-500/20">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+            <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center shrink-0">
+              <BrainCircuit size={40} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-black mb-2 flex items-center gap-2">
+                Neural Breed Advisor
+                <Sparkles size={20} className="text-indigo-300" />
+              </h3>
+              <p className="text-indigo-100 font-medium leading-relaxed">
+                {isAskingAi ? "Analyzing market trends and inventory..." : aiAdvice}
+              </p>
+            </div>
+            <button onClick={getBreedAdvice} className="px-8 h-14 rounded-2xl bg-white text-indigo-600 font-black text-sm hover:scale-105 transition-transform shrink-0">
+              Refresh Advice
+            </button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="farm-card bg-emerald-600 text-white border-none shadow-xl shadow-emerald-500/20">
