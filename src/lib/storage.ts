@@ -10,6 +10,12 @@ interface SyncItem {
   timestamp: number;
 }
 
+// Helper to validate UUID format
+const isUUID = (str: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export const storage = {
   isOffline() {
     return !navigator.onLine;
@@ -19,7 +25,8 @@ export const storage = {
     const localData = localStorage.getItem(`${table}_${userId}`);
     let data = localData ? JSON.parse(localData) : [];
 
-    if (navigator.onLine) {
+    // Only fetch from cloud if online AND userId is a valid UUID
+    if (navigator.onLine && isUUID(userId)) {
       try {
         const { data: cloudData, error } = await supabase
           .from(table)
@@ -49,7 +56,9 @@ export const storage = {
     const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
     localStorage.setItem(`${table}_${userId}`, JSON.stringify([newItem, ...localData]));
     
-    this.addToSyncQueue({ id: newItem.id, table, action: 'INSERT', data: newItem, timestamp: Date.now() });
+    if (isUUID(userId)) {
+      this.addToSyncQueue({ id: newItem.id, table, action: 'INSERT', data: newItem, timestamp: Date.now() });
+    }
     return newItem;
   },
 
@@ -60,7 +69,9 @@ export const storage = {
     );
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
-    this.addToSyncQueue({ id, table, action: 'UPDATE', data: updates, timestamp: Date.now() });
+    if (isUUID(userId)) {
+      this.addToSyncQueue({ id, table, action: 'UPDATE', data: updates, timestamp: Date.now() });
+    }
     return updates;
   },
 
@@ -68,7 +79,9 @@ export const storage = {
     const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(localData.filter((i: any) => i.id !== id)));
     
-    this.addToSyncQueue({ id, table, action: 'DELETE', data: null, timestamp: Date.now() });
+    if (isUUID(userId)) {
+      this.addToSyncQueue({ id, table, action: 'DELETE', data: null, timestamp: Date.now() });
+    }
   },
 
   addToSyncQueue(item: SyncItem) {
@@ -99,11 +112,10 @@ export const storage = {
           localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(currentQueue.filter((q: any) => q.timestamp !== item.timestamp)));
         }
       } catch (e) {
-        break; // Stop processing if cloud is unreachable
+        break; 
       }
     }
   }
 };
 
-// Auto-sync when coming back online
 window.addEventListener('online', () => storage.processSyncQueue());

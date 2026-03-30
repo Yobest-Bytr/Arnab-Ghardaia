@@ -9,11 +9,29 @@ interface Translations {
 }
 
 const translations: Translations = {
+  // Hero Section
+  heroTitle: { 
+    en: "Smart Rabbit Farm Management", 
+    ar: "إدارة ذكية لمزارع الأرانب", 
+    fr: "Gestion Intelligente de Ferme de Lapins" 
+  },
+  heroSubtitle: { 
+    en: "The ultimate platform for breeders in Ghardaia. Track growth, manage cages, and optimize your sales with neural precision.", 
+    ar: "المنصة المثالية للمربين في غرداية. تتبع النمو، أدر الأقفاص، وحسن مبيعاتك بدقة عالية.", 
+    fr: "La plateforme ultime pour les éleveurs à Ghardaia. Suivez la croissance, gérez les cages et optimisez vos ventes." 
+  },
+  goDashboard: { en: "Go to Dashboard", ar: "اذهب للوحة التحكم", fr: "Aller au tableau de bord" },
+  viewRabbits: { en: "View Rabbits", ar: "عرض الأرانب", fr: "Voir les lapins" },
+  happyCustomers: { en: "Happy Breeders", ar: "مربي سعيد", fr: "Éleveurs satisfaits" },
+
   // General & Currency
   appName: { en: "Arnab Ghardaia", ar: "أرنب غرداية", fr: "Arnab Ghardaia" },
   currencyUsd: { en: "USD ($)", ar: "دولار ($)", fr: "USD ($)" },
   currencyDzd: { en: "DZD (DA)", ar: "دج (DA)", fr: "DZD (DA)" },
   save: { en: "Save Changes", ar: "حفظ التغييرات", fr: "Enregistrer" },
+  home: { en: "Home", ar: "الرئيسية", fr: "Accueil" },
+  login: { en: "Login", ar: "تسجيل الدخول", fr: "Connexion" },
+  profile: { en: "Profile", ar: "الملف الشخصي", fr: "Profil" },
   
   // Sales Categories
   categoryYoung: { en: "Young (1 Month)", ar: "صغير (شهر)", fr: "Jeune (1 mois)" },
@@ -25,6 +43,7 @@ const translations: Translations = {
   scanQr: { en: "Scan QR Code", ar: "مسح رمز QR", fr: "Scanner QR" },
   qrSearch: { en: "Search by QR", ar: "بحث بالرمز", fr: "Recherche par QR" },
   cameraAccess: { en: "Requesting Camera...", ar: "جاري طلب الكاميرا...", fr: "Accès caméra..." },
+  searchPlaceholder: { en: "Search by name or ID...", ar: "ابحث بالاسم أو الرقم...", fr: "Rechercher par nom ou ID..." },
 
   // Weight & Age
   weightHistory: { en: "Weight History", ar: "سجل الوزن", fr: "Historique du poids" },
@@ -37,7 +56,7 @@ const translations: Translations = {
   assignCage: { en: "Assign to Cage", ar: "تعيين في قفص", fr: "Assigner à une cage" },
   cageNumber: { en: "Cage #", ar: "رقم القفص", fr: "N° Cage" },
 
-  // Existing keys (truncated for brevity but preserved in code)
+  // Dashboard & Inventory
   dashboard: { en: "Dashboard", ar: "لوحة التحكم", fr: "Tableau de bord" },
   inventory: { en: "Inventory", ar: "المخزون", fr: "Inventaire" },
   breeding: { en: "Breeding", ar: "التزاوج", fr: "Élevage" },
@@ -49,6 +68,9 @@ const translations: Translations = {
   died: { en: "Died", ar: "نافق", fr: "Mort" },
   healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },
   sick: { en: "Sick", ar: "مريض", fr: "Malade" },
+  edit: { en: "Edit", ar: "تعديل", fr: "Modifier" },
+  performanceMetrics: { en: "Performance Metrics", ar: "مقاييس الأداء", fr: "Mesures de performance" },
+  downloadPDF: { en: "Download PDF", ar: "تحميل PDF", fr: "Télécharger PDF" },
 };
 
 interface LanguageContextType {
