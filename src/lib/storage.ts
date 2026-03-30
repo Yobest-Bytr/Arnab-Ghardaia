@@ -132,25 +132,26 @@ export const storage = {
         } else {
           console.error(`Sync error for ${item.table}:`, error.message);
           
-          // AUTO-RECOVERY: If column is missing in DB, strip it and retry
+          // AUTO-RECOVERY: Detect missing column from error message and strip it
           if (error.message.includes('column') && (error.message.includes('not found') || error.message.includes('cache'))) {
-            const match = error.message.match(/column "(.+?)"/);
-            const columnName = match ? match[1] : 'is_public';
+            // Match 'column_name' or "column_name"
+            const match = error.message.match(/column ['"](.+?)['"]/);
+            const columnName = match ? match[1] : null;
             
-            console.warn(`Neural Recovery: Stripping missing column '${columnName}' from ${item.table} payload.`);
-            
-            const { [columnName]: _, ...sanitizedData } = item.data;
-            updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
-            hasChanges = true;
-            
-            // If we've retried too many times, just skip this item
-            if ((item.retryCount || 0) > 5) {
-              updatedQueue.splice(i, 1);
-              i--;
+            if (columnName && item.data[columnName] !== undefined) {
+              console.warn(`Neural Recovery: Stripping missing column '${columnName}' from ${item.table} payload.`);
+              const { [columnName]: _, ...sanitizedData } = item.data;
+              updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
+              hasChanges = true;
+              
+              if ((item.retryCount || 0) > 10) {
+                updatedQueue.splice(i, 1);
+                i--;
+              }
+              continue; 
             }
-            continue; 
           }
-          break; // Stop processing for other errors (like network)
+          break; 
         }
       } catch (e) {
         break; 
