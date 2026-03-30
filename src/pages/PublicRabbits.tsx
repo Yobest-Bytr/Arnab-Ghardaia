@@ -6,7 +6,7 @@ import { storage } from '@/lib/storage';
 import { 
   Rabbit, ShoppingBag, Search, Filter, Tag, 
   MessageCircle, Sparkles, ArrowRight, Info, 
-  ShieldCheck, Zap, Star, Heart, Loader2
+  ShieldCheck, Zap, Star, Heart, Loader2, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -24,11 +24,8 @@ const PublicRabbits = () => {
 
   const fetchRabbits = async () => {
     setLoading(true);
-    // In a real app, we'd fetch from a public endpoint. 
-    // Here we fetch all rabbits and filter for 'Available'
     const data = await storage.get('rabbits', 'public-access'); 
     
-    // If no data, we'll use high-quality demo data for the "Great UI" feel
     const displayData = data.length > 0 ? data.filter(r => r.status === 'Available') : [
       { id: '1', name: 'Snowball', breed: 'New Zealand White', price_dzd: '4500', gender: 'Female', age: '3 Months', image: 'https://images.unsplash.com/photo-1585110396050-c99b13f8c543?auto=format&fit=crop&q=80&w=800' },
       { id: '2', name: 'Rusty', breed: 'Flemish Giant', price_dzd: '8500', gender: 'Male', age: '5 Months', image: 'https://images.unsplash.com/photo-1591382386627-349b692688ff?auto=format&fit=crop&q=80&w=800' },
@@ -52,7 +49,7 @@ const PublicRabbits = () => {
   });
 
   const handleInquiry = (rabbit: any) => {
-    const phone = "213698894019"; // Farm WhatsApp
+    const phone = "213698894019";
     const message = `Hello Arnab Ghardaia! I am interested in ${rabbit.name}, the ${rabbit.breed} rabbit listed for ${rabbit.price_dzd || '4500'} DA. Is it still available?`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
   };
@@ -62,7 +59,6 @@ const PublicRabbits = () => {
       <Navbar />
       
       <main className="pt-40 pb-32 px-6 max-w-7xl mx-auto relative">
-        {/* Decorative Background Elements */}
         <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-emerald-500/5 blur-[120px] -z-10 rounded-full" />
         <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-blue-500/5 blur-[120px] -z-10 rounded-full" />
 
@@ -83,7 +79,6 @@ const PublicRabbits = () => {
           </p>
         </header>
 
-        {/* Search & Filter Bar */}
         <div className="flex flex-col md:flex-row gap-4 mb-16">
           <div className="flex-1 relative group">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={20} />
@@ -113,7 +108,6 @@ const PublicRabbits = () => {
           </div>
         </div>
 
-        {/* Grid */}
         {loading ? (
           <div className="h-96 flex flex-col items-center justify-center gap-4">
             <Loader2 className="animate-spin text-emerald-600" size={48} />

@@ -7,7 +7,7 @@ import {
   ShoppingBag, Plus, Calendar, User, Tag, 
   DollarSign, TrendingUp, PieChart as PieIcon, 
   ArrowUpRight, X, Loader2, Trash2, Rabbit,
-  CheckCircle2, Wallet, Wand2, Sparkles
+  CheckCircle2, Wallet, Wand2, Sparkles, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -33,6 +33,8 @@ const Sales = () => {
     notes: ''
   });
 
+  const [suggestions, setSuggestions] = useState<{ field: string, list: any[] }>({ field: '', list: [] });
+
   useEffect(() => {
     if (user) fetchData();
   }, [user]);
@@ -46,6 +48,37 @@ const Sales = () => {
     setSales(salesData);
     setInventory(rabbitData.filter(r => r.status !== 'Sold'));
     setLoading(false);
+  };
+
+  const showInstantSuggestions = (field: string) => {
+    let list: any[] = [];
+    const val = formData[field as keyof typeof formData] as string;
+
+    if (field === 'customer_name') {
+      const customers = Array.from(new Set(sales.map(s => s.customer_name).filter(Boolean)));
+      list = customers.filter(c => c.toLowerCase().includes(val.toLowerCase()));
+      if (list.length === 0) list = customers;
+    } else if (field === 'rabbit_id') {
+      list = inventory.filter(r => 
+        val === '' || r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase())
+      );
+    }
+    
+    setSuggestions({ field, list: list.slice(0, 6) });
+  };
+
+  const selectSuggestion = (val: any, field: string) => {
+    if (field === 'rabbit_id') {
+      setFormData(prev => ({ 
+        ...prev, 
+        rabbit_id: val.id, 
+        price: val.price_dzd || prev.price,
+        category: val.sale_category || prev.category
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: val }));
+    }
+    setSuggestions({ field: '', list: [] });
   };
 
   const handleNeuralSuggest = async () => {
@@ -238,9 +271,25 @@ const Sales = () => {
               <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-400"><X size={24} /></button>
               <h2 className="text-3xl font-black mb-8 tracking-tight">{t('recordSale')}</h2>
               <form onSubmit={handleRecordSale} className="space-y-6">
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('customerName')}</label>
-                  <input type="text" required value={formData.customer_name} onChange={(e) => setFormData({...formData, customer_name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  <input 
+                    type="text" 
+                    required 
+                    value={formData.customer_name} 
+                    onFocus={() => showInstantSuggestions('customer_name')}
+                    onChange={(e) => { setFormData({...formData, customer_name: e.target.value}); showInstantSuggestions('customer_name'); }} 
+                    className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                  />
+                  {suggestions.field === 'customer_name' && suggestions.list.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                      {suggestions.list.map(c => (
+                        <button key={c} type="button" onClick={() => selectSuggestion(c, 'customer_name')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors flex items-center justify-between">
+                          {c} <ChevronRight size={14} className="text-slate-300" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-6">
@@ -263,14 +312,28 @@ const Sales = () => {
                   <input type="date" required value={formData.sale_date} onChange={(e) => setFormData({...formData, sale_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Select Rabbit (Optional)</label>
-                  <select value={formData.rabbit_id} onChange={(e) => setFormData({...formData, rabbit_id: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
-                    <option value="">Manual Entry</option>
-                    {inventory.map(r => (
-                      <option key={r.id} value={r.id}>{r.name || r.rabbit_id} ({r.breed})</option>
-                    ))}
-                  </select>
+                  <input 
+                    type="text" 
+                    placeholder="Search inventory..."
+                    onFocus={() => showInstantSuggestions('rabbit_id')}
+                    onChange={(e) => showInstantSuggestions('rabbit_id')}
+                    className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                  />
+                  {suggestions.field === 'rabbit_id' && suggestions.list.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                      {suggestions.list.map(r => (
+                        <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'rabbit_id')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Rabbit size={14} className="text-emerald-600" />
+                            <span>{r.name || r.rabbit_id}</span>
+                          </div>
+                          <ChevronRight size={14} className="text-slate-300" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

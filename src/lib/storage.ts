@@ -10,7 +10,6 @@ interface SyncItem {
   timestamp: number;
 }
 
-// Helper to validate UUID format
 const isUUID = (str: string) => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
@@ -25,7 +24,6 @@ export const storage = {
     const localData = localStorage.getItem(`${table}_${userId}`);
     let data = localData ? JSON.parse(localData) : [];
 
-    // Only fetch from cloud if online AND userId is a valid UUID
     if (navigator.onLine && isUUID(userId)) {
       try {
         const { data: cloudData, error } = await supabase
@@ -50,7 +48,7 @@ export const storage = {
       ...item, 
       id: item.id || Math.random().toString(36).substr(2, 9),
       user_id: userId, 
-      created_at: new Date().toISOString() 
+      created_at: item.created_at || new Date().toISOString() 
     };
     
     const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
