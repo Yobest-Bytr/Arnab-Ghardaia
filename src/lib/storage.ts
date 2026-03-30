@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 const SYNC_QUEUE_KEY = 'arnab_sync_queue';
+let masterOffline = false;
 
 interface SyncItem {
   id: string;
@@ -17,14 +18,18 @@ const isUUID = (str: string) => {
 
 export const storage = {
   isOffline() {
-    return !navigator.onLine;
+    return !navigator.onLine || masterOffline;
+  },
+
+  setMasterOffline(status: boolean) {
+    masterOffline = status;
   },
 
   async get(table: string, userId: string) {
     const localData = localStorage.getItem(`${table}_${userId}`);
     let data = localData ? JSON.parse(localData) : [];
 
-    if (navigator.onLine && isUUID(userId)) {
+    if (navigator.onLine && !masterOffline && isUUID(userId)) {
       try {
         const { data: cloudData, error } = await supabase
           .from(table)
@@ -82,6 +87,20 @@ export const storage = {
     }
   },
 
+  async syncToCloud(table: string, userId: string) {
+    if (!navigator.onLine || masterOffline) return { success: false, message: "Network offline." };
+    try {
+      const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
+      if (localData.length === 0) return { success: true, message: "Nothing to sync." };
+      
+      const { error } = await supabase.from(table).upsert(localData);
+      if (error) throw error;
+      return { success: true, message: `${table} synced successfully.` };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  },
+
   addToSyncQueue(item: SyncItem) {
     const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify([...queue, item]));
@@ -89,7 +108,7 @@ export const storage = {
   },
 
   async processSyncQueue() {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine || masterOffline) return;
     
     const queue: SyncItem[] = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     if (queue.length === 0) return;

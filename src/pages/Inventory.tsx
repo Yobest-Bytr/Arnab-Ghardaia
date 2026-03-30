@@ -57,7 +57,6 @@ const Inventory = () => {
     if (user) fetchRabbits();
   }, [user]);
 
-  // Fix: Ensure 'reader' element exists before initializing scanner
   useEffect(() => {
     let scanner: any = null;
     if (isScannerOpen) {
@@ -118,13 +117,18 @@ const Inventory = () => {
     if (!user) return;
     setIsGenerating(true);
     try {
-      const prompt = `Write a professional ${field.replace('_', ' ')} for a rabbit with the following details:
-      Name: ${formData.name}
+      const prompt = `You are a professional rabbit farm veterinarian. Write a concise, factual ${field.replace('_', ' ')} for a rabbit.
+      DETAILS:
+      Name: ${formData.name || 'Unnamed'}
       Breed: ${formData.breed}
       Health: ${formData.health_status}
-      Status: ${formData.status}
       Weight: ${formData.weight}kg
-      Keep it concise and professional.`;
+      
+      RULES:
+      1. DO NOT use placeholders like "[To be provided]" or "[Name]".
+      2. Use the actual data provided above.
+      3. Keep it under 3 sentences.
+      4. Be professional and clinical.`;
       
       const response = await grokChat(prompt, { userId: user.id, stream: false });
       setFormData(prev => ({ ...prev, [field]: response }));
