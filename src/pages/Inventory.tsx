@@ -110,6 +110,18 @@ const Inventory = () => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'available': return 'bg-emerald-50 text-emerald-600';
+      case 'sold': return 'bg-blue-50 text-blue-600';
+      case 'died': return 'bg-slate-100 text-slate-600';
+      case 'sick': return 'bg-rose-50 text-rose-600';
+      case 'quarantined': return 'bg-amber-50 text-amber-600';
+      case 'recovering': return 'bg-indigo-50 text-indigo-600';
+      default: return 'bg-slate-50 text-slate-600';
+    }
+  };
+
   const filteredRabbits = rabbits.filter(r => 
     r.name?.toLowerCase().includes(search.toLowerCase()) || 
     r.rabbit_id?.toLowerCase().includes(search.toLowerCase())
@@ -189,7 +201,7 @@ const Inventory = () => {
                 <span className="text-sm font-black text-emerald-600">{rabbit.price_dzd || '0'} DA</span>
                 <span className={cn(
                   "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                  rabbit.status === 'Sold' ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"
+                  getStatusColor(rabbit.status)
                 )}>{t(rabbit.status.toLowerCase())}</span>
               </div>
             </motion.div>
@@ -307,6 +319,9 @@ const Inventory = () => {
                       <option value="Available">{t('available')}</option>
                       <option value="Sold">{t('sold')}</option>
                       <option value="Died">{t('died')}</option>
+                      <option value="Sick">{t('sick')}</option>
+                      <option value="Quarantined">{t('quarantined')}</option>
+                      <option value="Recovering">{t('recovering')}</option>
                     </select>
                   </div>
                 </div>

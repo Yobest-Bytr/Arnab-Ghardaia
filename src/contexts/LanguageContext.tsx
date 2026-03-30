@@ -64,6 +64,8 @@ const translations: Translations = {
   died: { en: "Died", ar: "نافق", fr: "Mort" },
   healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },
   sick: { en: "Sick", ar: "مريض", fr: "Malade" },
+  quarantined: { en: "Quarantined", ar: "في الحجر", fr: "En quarantaine" },
+  recovering: { en: "Recovering", ar: "يتعافى", fr: "En récupération" },
   edit: { en: "Edit", ar: "تعديل", fr: "Modifier" },
   age: { en: "Age", ar: "العمر", fr: "Âge" },
   months: { en: "Months", ar: "أشهر", fr: "Mois" },
