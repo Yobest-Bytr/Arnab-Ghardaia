@@ -16,6 +16,18 @@ const isUUID = (str: string) => {
   return uuidRegex.test(str);
 };
 
+// Helper to generate a valid UUID if crypto.randomUUID is available, 
+// otherwise fallback to a compliant manual generator
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export const storage = {
   isOffline() {
     return !navigator.onLine || masterOffline;
@@ -46,9 +58,10 @@ export const storage = {
   },
 
   async insert(table: string, userId: string, item: any) {
+    // Ensure we use a valid UUID for the ID
     const newItem = { 
       ...item, 
-      id: item.id || Math.random().toString(36).substr(2, 9),
+      id: item.id && isUUID(item.id) ? item.id : generateUUID(),
       [table === 'profiles' ? 'id' : 'user_id']: userId, 
       created_at: item.created_at || new Date().toISOString() 
     };
@@ -71,7 +84,7 @@ export const storage = {
     );
     localStorage.setItem(localKey, JSON.stringify(updatedData));
     
-    if (isUUID(userId)) {
+    if (isUUID(userId) && isUUID(id)) {
       this.addToSyncQueue({ id, table, action: 'UPDATE', data: updates, timestamp: Date.now() });
     }
     return updates;
@@ -82,7 +95,7 @@ export const storage = {
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify(localData.filter((i: any) => i.id !== id)));
     
-    if (isUUID(userId)) {
+    if (isUUID(userId) && isUUID(id)) {
       this.addToSyncQueue({ id, table, action: 'DELETE', data: null, timestamp: Date.now() });
     }
   },
@@ -113,6 +126,11 @@ export const storage = {
         if (!error) {
           const currentQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
           localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(currentQueue.filter((q: any) => q.timestamp !== item.timestamp)));
+        } else {
+          console.error(`Sync error for ${item.table}:`, error.message);
+          // If it's a 400 error, it might be bad data in the queue, we might need to skip it 
+          // but for now we'll just stop processing to avoid infinite loops
+          break;
         }
       } catch (e) {
         break; 
