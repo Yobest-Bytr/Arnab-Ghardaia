@@ -9,6 +9,7 @@ interface SyncItem {
   action: 'INSERT' | 'UPDATE' | 'DELETE';
   data: any;
   timestamp: number;
+  retryCount?: number;
 }
 
 const isUUID = (str: string) => {
@@ -109,7 +110,11 @@ export const storage = {
     const queue: SyncItem[] = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     if (queue.length === 0) return;
 
-    for (const item of queue) {
+    const updatedQueue = [...queue];
+    let hasChanges = false;
+
+    for (let i = 0; i < updatedQueue.length; i++) {
+      const item = updatedQueue[i];
       try {
         let error;
         if (item.action === 'INSERT') {
@@ -121,21 +126,39 @@ export const storage = {
         }
 
         if (!error) {
-          const currentQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
-          localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(currentQueue.filter((q: any) => q.timestamp !== item.timestamp)));
+          updatedQueue.splice(i, 1);
+          i--;
+          hasChanges = true;
         } else {
           console.error(`Sync error for ${item.table}:`, error.message);
-          // If it's a schema error (400), we skip it to avoid blocking the queue
-          if (error.code === 'PGRST204' || error.message.includes('column')) {
-            const currentQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
-            localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(currentQueue.filter((q: any) => q.timestamp !== item.timestamp)));
-            continue;
+          
+          // AUTO-RECOVERY: If column is missing in DB, strip it and retry
+          if (error.message.includes('column') && (error.message.includes('not found') || error.message.includes('cache'))) {
+            const match = error.message.match(/column "(.+?)"/);
+            const columnName = match ? match[1] : 'is_public';
+            
+            console.warn(`Neural Recovery: Stripping missing column '${columnName}' from ${item.table} payload.`);
+            
+            const { [columnName]: _, ...sanitizedData } = item.data;
+            updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
+            hasChanges = true;
+            
+            // If we've retried too many times, just skip this item
+            if ((item.retryCount || 0) > 5) {
+              updatedQueue.splice(i, 1);
+              i--;
+            }
+            continue; 
           }
-          break;
+          break; // Stop processing for other errors (like network)
         }
       } catch (e) {
         break; 
       }
+    }
+
+    if (hasChanges) {
+      localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueue));
     }
   }
 };
