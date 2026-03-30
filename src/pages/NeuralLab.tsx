@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Loader2, Activity, Database, ArrowRight, Info, Clock, X
-} from 'lucide-center';
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
 import { storage } from '@/lib/storage';
@@ -107,14 +107,13 @@ const NeuralLab = () => {
       });
     } finally {
       setIsGenerating(false);
-      fetchFarmSnapshot(); // Refresh data after potential actions
+      fetchFarmSnapshot(); 
     }
   };
 
   const handleQrScan = (decodedText: string) => {
     setIsScannerOpen(false);
     setInput(`Analyze this Neural ID: ${decodedText}`);
-    // Trigger send automatically
     const fakeEvent = { preventDefault: () => {} } as any;
     handleSend(fakeEvent);
   };

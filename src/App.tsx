@@ -23,6 +23,7 @@ import Profile from "./pages/Profile";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Changelog from "./pages/Changelog";
+import NeuralLab from "./pages/NeuralLab";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,11 @@ const App = () => (
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/neural-lab" element={
+                  <ProtectedRoute>
+                    <NeuralLab />
                   </ProtectedRoute>
                 } />
                 <Route path="/inventory" element={
