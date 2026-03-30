@@ -9,12 +9,11 @@ interface Translations {
 }
 
 const translations: Translations = {
-  // ... existing translations
   heroTitle: { en: "Smart Rabbit Farm Management", ar: "إدارة ذكية لمزارع الأرانب", fr: "Gestion Intelligente de Ferme de Lapins" },
   heroSubtitle: { en: "The ultimate platform for breeders in Ghardaia. Track growth, manage cages, and optimize your sales with neural precision.", ar: "المنصة المثالية للمربين في غرداية. تتبع النمو، أدر الأقفاص، وحسن مبيعاتك بدقة عالية.", fr: "La plateforme ultime pour les éleveurs à Ghardaia. Suivez la croissance, gérez les cages et optimisez vos ventes." },
   goDashboard: { en: "Go to Dashboard", ar: "اذهب للوحة التحكم", fr: "Aller au tableau de bord" },
   viewRabbits: { en: "View Rabbits", ar: "عرض الأرانب", fr: "Voir les lapins" },
-  happyCustomers: { en: "Happy Breeders", ar: "مربي سعيد", fr: "Éleveurs satisfاكت" },
+  happyCustomers: { en: "Happy Breeders", ar: "مربي سعيد", fr: "Éleveurs satisfaits" },
   healthStatus: { en: "Health Status", ar: "الحالة الصحية", fr: "État de santé" },
   healthyRate: { en: "Healthy Rate", ar: "معدل الصحة", fr: "Taux de santé" },
   featuresTitle: { en: "Powerful Features", ar: "مميزات قوية", fr: "Fonctionnalités puissantes" },
@@ -86,7 +85,7 @@ const translations: Translations = {
   copyright: { en: "© 2026 Arnab Ghardaia. All rights reserved.", ar: "© 2026 أرنب غرداية. جميع الحقوق محفوظة.", fr: "© 2026 Arnab Ghardaia. Tous droits réservés." },
   privacyPolicy: { en: "Privacy Policy", ar: "سياسة الخصوصية", fr: "Politique de confidentialité" },
   termsOfService: { en: "Terms of Service", ar: "شروط الخدمة", fr: "Conditions d'utilisation" },
-  dataSecurity: { en: "Data Security", ar: "أمن البيانات", fr: "Sécurité des données" },
+  dataSecurity: { en: "Data Security", ar: "أمن البيانات", fr: "Sécurité des بيانات" },
   dataSecurityDesc: { en: "Your farm data is encrypted and stored securely.", ar: "بيانات مزرعتك مشفرة ومخزنة بشكل آمن.", fr: "Vos données sont cryptées et sécurisées." },
   userResponsibility: { en: "User Responsibility", ar: "مسؤولية المستخدم", fr: "Responsabilité" },
   userResponsibilityDesc: { en: "You are responsible for the accuracy of your records.", ar: "أنت مسؤول عن دقة سجلاتك.", fr: "Vous êtes responsable de l'exactitude." },
@@ -121,6 +120,12 @@ const translations: Translations = {
   totalSales: { en: "Total Sales", ar: "إجمالي المبيعات", fr: "Ventes totales" },
   bestSelling: { en: "Best Selling", ar: "الأكثر مبيعاً", fr: "Meilleures ventes" },
   revenueByCategory: { en: "Revenue by Category", ar: "الإيرادات حسب الفئة", fr: "Revenu par catégorie" },
+
+  // Helper Texts
+  helpSelectRabbit: { en: "Start typing to find a rabbit from your inventory.", ar: "ابدأ الكتابة للعثور على أرنب من مخزونك.", fr: "Commencez à taper pour trouver un lapin." },
+  helpCustomer: { en: "Enter the buyer's name for your records.", ar: "أدخل اسم المشتري لسجلاتك.", fr: "Entrez le nom de l'acheteur." },
+  helpMatingDate: { en: "The expected birth date will be calculated automatically (31 days).", ar: "سيتم حساب تاريخ الولادة المتوقع تلقائياً (31 يوماً).", fr: "La date de naissance sera calculée automatiquement." },
+  successRate: { en: "Breeding Success Rate", ar: "معدل نجاح التزاوج", fr: "Taux de réussite" },
 };
 
 interface LanguageContextType {

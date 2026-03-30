@@ -5,7 +5,7 @@ import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Heart, Calendar, Plus, History, 
-  AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity, X, Info, Trash2, Search, ChevronRight
+  AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity, X, Info, Trash2, Search, ChevronRight, TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -55,6 +55,12 @@ const Breeding = () => {
     setInventory(rabbitData);
     setLoading(false);
   };
+
+  const successRate = useMemo(() => {
+    if (litters.length === 0) return 0;
+    const successful = litters.filter(l => l.kit_count > 0).length;
+    return Math.round((successful / litters.length) * 100);
+  }, [litters]);
 
   const showInstantSuggestions = (type: 'mother' | 'father') => {
     const val = formData[type === 'mother' ? 'mother_name' : 'father_name'];
@@ -110,10 +116,19 @@ const Breeding = () => {
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('breeding')}</h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Manage mating pairs and track pregnancy cycles.</p>
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="farm-button w-full md:w-auto flex items-center justify-center gap-2 h-14 px-8">
-            <Plus size={20} />
-            {t('recordMating')}
-          </button>
+          <div className="flex gap-4">
+            <div className="px-6 h-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center gap-3 shadow-sm">
+              <TrendingUp className="text-emerald-600" size={20} />
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('successRate')}</p>
+                <p className="text-lg font-black text-emerald-600">{successRate}%</p>
+              </div>
+            </div>
+            <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center justify-center gap-2 h-14 px-8">
+              <Plus size={20} />
+              {t('recordMating')}
+            </button>
+          </div>
         </header>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -207,7 +222,6 @@ const Breeding = () => {
 
               <form onSubmit={handleAddMating} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Mother Input with Instant Suggestions */}
                   <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('mother')}</label>
                     <input 
@@ -218,6 +232,7 @@ const Breeding = () => {
                       onChange={(e) => { setFormData({...formData, mother_name: e.target.value}); showInstantSuggestions('mother'); }} 
                       className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
                     />
+                    <p className="text-[10px] text-slate-400 font-medium ml-2">{t('helpSelectRabbit')}</p>
                     {suggestions.type === 'mother' && suggestions.list.length > 0 && (
                       <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                         {suggestions.list.map(r => (
@@ -233,7 +248,6 @@ const Breeding = () => {
                     )}
                   </div>
 
-                  {/* Father Input with Instant Suggestions */}
                   <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('father')}</label>
                     <input 
@@ -244,6 +258,7 @@ const Breeding = () => {
                       onChange={(e) => { setFormData({...formData, father_name: e.target.value}); showInstantSuggestions('father'); }} 
                       className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
                     />
+                    <p className="text-[10px] text-slate-400 font-medium ml-2">{t('helpSelectRabbit')}</p>
                     {suggestions.type === 'father' && suggestions.list.length > 0 && (
                       <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                         {suggestions.list.map(r => (
@@ -264,6 +279,7 @@ const Breeding = () => {
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('matingDate')}</label>
                     <input type="date" required value={formData.mating_date} onChange={(e) => setFormData({...formData, mating_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <p className="text-[10px] text-slate-400 font-medium ml-2">{t('helpMatingDate')}</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('expectedBirth')}</label>
