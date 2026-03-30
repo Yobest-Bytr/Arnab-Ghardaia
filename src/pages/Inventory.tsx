@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
   QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
-  Stethoscope, Heart, Layers, Wand2, Sparkles
+  Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -76,23 +76,26 @@ const Inventory = () => {
     setLoading(false);
   };
 
-  const handleAutocomplete = (val: string, field: string) => {
-    setFormData(prev => ({ ...prev, [field]: val }));
-    if (val.length > 0) {
-      let list: any[] = [];
-      if (field === 'breed') {
-        list = BREEDS.filter(b => b.toLowerCase().includes(val.toLowerCase()));
-      } else if (field === 'cage_number') {
-        const existingCages = Array.from(new Set(rabbits.map(r => r.cage_number).filter(Boolean)));
-        list = existingCages.filter(c => c.includes(val));
-      } else if (field === 'mother_id' || field === 'father_id') {
-        const gender = field === 'mother_id' ? 'Female' : 'Male';
-        list = rabbits.filter(r => r.gender === gender && (r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase())));
-      }
-      setSuggestions({ field, list: list.slice(0, 5) });
-    } else {
-      setSuggestions({ field: '', list: [] });
+  const showInstantSuggestions = (field: string) => {
+    let list: any[] = [];
+    const val = formData[field as keyof typeof formData] as string;
+
+    if (field === 'breed') {
+      list = BREEDS.filter(b => b.toLowerCase().includes(val.toLowerCase()));
+      if (list.length === 0) list = BREEDS;
+    } else if (field === 'cage_number') {
+      const existingCages = Array.from(new Set(rabbits.map(r => r.cage_number).filter(Boolean)));
+      list = existingCages.filter(c => c.includes(val));
+      if (list.length === 0) list = existingCages;
+    } else if (field === 'mother_id' || field === 'father_id') {
+      const gender = field === 'mother_id' ? 'Female' : 'Male';
+      list = rabbits.filter(r => 
+        r.gender === gender && 
+        (val === '' || r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase()))
+      );
     }
+    
+    setSuggestions({ field, list: list.slice(0, 6) });
   };
 
   const selectSuggestion = (val: any, field: string) => {
@@ -132,17 +135,6 @@ const Inventory = () => {
     if (isNaN(diffDays)) return 'N/A';
     const months = Math.floor(diffDays / 30);
     return months > 0 ? `${months} ${t('months')}` : `${diffDays} ${t('days')}`;
-  };
-
-  const handleDownloadQR = (rabbitId: string) => {
-    const canvas = document.querySelector('img[alt="QR"]') as HTMLImageElement;
-    if (canvas) {
-      const link = document.createElement('a');
-      link.href = canvas.src;
-      link.download = `QR_${rabbitId}.png`;
-      link.click();
-      showSuccess("QR Code downloaded.");
-    }
   };
 
   const handleAction = async (e: React.FormEvent) => {
@@ -219,14 +211,6 @@ const Inventory = () => {
           />
         </div>
 
-        {isScannerOpen && (
-          <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center p-6">
-            <button onClick={() => setIsScannerOpen(false)} className="absolute top-10 right-10 text-white"><X size={32} /></button>
-            <div id="reader" className="w-full max-w-md bg-white rounded-3xl overflow-hidden" />
-            <p className="text-white mt-8 font-bold">{t('cameraAccess')}</p>
-          </div>
-        )}
-
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRabbits.map((rabbit) => (
             <motion.div key={rabbit.id} layout className="farm-card group">
@@ -270,94 +254,22 @@ const Inventory = () => {
         </div>
       </main>
 
-      {/* View Modal */}
-      <AnimatePresence>
-        {isViewModalOpen && viewingRabbit && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="max-w-5xl w-full bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-              <button onClick={() => setIsViewModalOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 z-10"><X size={24} /></button>
-              <div className="p-10">
-                <div className="flex items-center justify-between mb-10">
-                  <div className="flex items-center gap-6">
-                    <div className="w-24 h-24 rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-600">
-                      <Rabbit size={48} />
-                    </div>
-                    <div>
-                      <h2 className="text-3xl font-black tracking-tight">{viewingRabbit.name}</h2>
-                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{viewingRabbit.breed} • {calculateAge(viewingRabbit.birth_date)}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => handleDownloadQR(viewingRabbit.rabbit_id)} className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all">
-                    <Download size={16} /> {t('downloadQr')}
-                  </button>
-                </div>
-                <div className="grid lg:grid-cols-2 gap-10">
-                  <div className="space-y-8">
-                    <h3 className="text-xl font-black flex items-center gap-2"><TrendingUp className="text-emerald-600" /> {t('weightHistory')}</h3>
-                    <div className="h-64 w-full bg-slate-50 dark:bg-slate-800/30 rounded-[2rem] p-6">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={viewingRabbit.weight_history || []}>
-                          <defs>
-                            <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#00000005" />
-                          <XAxis dataKey="date" hide />
-                          <YAxis hide />
-                          <Tooltip />
-                          <Area type="monotone" dataKey="weight" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorWeight)" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="space-y-4">
-                      <h3 className="text-xl font-black flex items-center gap-2"><Stethoscope className="text-emerald-600" /> {t('medicalHistory')}</h3>
-                      <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('vaccinationStatus')}</span>
-                          <span className={cn("px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest", viewingRabbit.vaccination_status === 'Vaccinated' ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")}>{t(viewingRabbit.vaccination_status === 'Vaccinated' ? 'vaccinated' : 'notVaccinated')}</span>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{viewingRabbit.medical_history || 'No medical records found.'}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-8">
-                    <div className="space-y-4">
-                      <h3 className="text-xl font-black flex items-center gap-2"><Layers className="text-emerald-600" /> {t('lineage')}</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                          <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('mother')}</p>
-                          <p className="text-sm font-bold">{viewingRabbit.mother_id || 'Unknown'}</p>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                          <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('father')}</p>
-                          <p className="text-sm font-bold">{viewingRabbit.father_id || 'Unknown'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-6">
-                      <h3 className="text-xl font-black flex items-center gap-2"><QrCode className="text-emerald-600" /> Cage Neural Link</h3>
-                      <div className="aspect-square w-48 bg-white p-4 rounded-3xl border-2 border-slate-50 mx-auto lg:mx-0">
-                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${viewingRabbit.rabbit_id}`} alt="QR" className="w-full h-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal - Optimized for Mobile */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-2xl w-full bg-white dark:bg-slate-900 p-6 md:p-10 rounded-[2.5rem] shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-              <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-400"><X size={24} /></button>
-              <h2 className="text-3xl font-black mb-8 tracking-tight">{editingRabbit ? t('edit') : t('addRabbit')}</h2>
-              <form onSubmit={handleAction} className="space-y-6">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, y: 100 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: 100 }} 
+              className="w-full h-full sm:h-auto sm:max-w-2xl bg-white dark:bg-slate-900 sm:rounded-[2.5rem] shadow-2xl relative flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between shrink-0">
+                <h2 className="text-2xl font-black tracking-tight">{editingRabbit ? t('edit') : t('addRabbit')}</h2>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400"><X size={24} /></button>
+              </div>
+
+              <form onSubmit={handleAction} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Name</label>
@@ -365,16 +277,26 @@ const Inventory = () => {
                   </div>
                   <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Breed</label>
-                    <input type="text" required value={formData.breed} onChange={(e) => handleAutocomplete(e.target.value, 'breed')} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                      type="text" 
+                      required 
+                      value={formData.breed} 
+                      onFocus={() => showInstantSuggestions('breed')}
+                      onChange={(e) => { setFormData({...formData, breed: e.target.value}); showInstantSuggestions('breed'); }} 
+                      className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                    />
                     {suggestions.field === 'breed' && suggestions.list.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                         {suggestions.list.map(b => (
-                          <button key={b} type="button" onClick={() => selectSuggestion(b, 'breed')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors">{b}</button>
+                          <button key={b} type="button" onClick={() => selectSuggestion(b, 'breed')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors flex items-center justify-between">
+                            {b} <ChevronRight size={14} className="text-slate-300" />
+                          </button>
                         ))}
                       </div>
                     )}
                   </div>
                 </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Gender</label>
@@ -388,6 +310,7 @@ const Inventory = () => {
                     <input type="date" required value={formData.birth_date} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Weight (kg)</label>
@@ -395,40 +318,66 @@ const Inventory = () => {
                   </div>
                   <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('cageNumber')}</label>
-                    <input type="text" value={formData.cage_number} onChange={(e) => handleAutocomplete(e.target.value, 'cage_number')} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                      type="text" 
+                      value={formData.cage_number} 
+                      onFocus={() => showInstantSuggestions('cage_number')}
+                      onChange={(e) => { setFormData({...formData, cage_number: e.target.value}); showInstantSuggestions('cage_number'); }} 
+                      className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                    />
                     {suggestions.field === 'cage_number' && suggestions.list.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                         {suggestions.list.map(c => (
-                          <button key={c} type="button" onClick={() => selectSuggestion(c, 'cage_number')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors">Cage {c}</button>
+                          <button key={c} type="button" onClick={() => selectSuggestion(c, 'cage_number')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors flex items-center justify-between">
+                            Cage {c} <ChevronRight size={14} className="text-slate-300" />
+                          </button>
                         ))}
                       </div>
                     )}
                   </div>
                 </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('mother')}</label>
-                    <input type="text" value={formData.mother_id} onChange={(e) => handleAutocomplete(e.target.value, 'mother_id')} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                      type="text" 
+                      value={formData.mother_id} 
+                      onFocus={() => showInstantSuggestions('mother_id')}
+                      onChange={(e) => { setFormData({...formData, mother_id: e.target.value}); showInstantSuggestions('mother_id'); }} 
+                      className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                    />
                     {suggestions.field === 'mother_id' && suggestions.list.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                         {suggestions.list.map(r => (
-                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'mother_id')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors">{r.name || r.rabbit_id}</button>
+                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'mother_id')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors flex items-center justify-between">
+                            {r.name || r.rabbit_id} <ChevronRight size={14} className="text-slate-300" />
+                          </button>
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('father')}</label>
-                    <input type="text" value={formData.father_id} onChange={(e) => handleAutocomplete(e.target.value, 'father_id')} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                      type="text" 
+                      value={formData.father_id} 
+                      onFocus={() => showInstantSuggestions('father_id')}
+                      onChange={(e) => { setFormData({...formData, father_id: e.target.value}); showInstantSuggestions('father_id'); }} 
+                      className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                    />
                     {suggestions.field === 'father_id' && suggestions.list.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                         {suggestions.list.map(r => (
-                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'father_id')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors">{r.name || r.rabbit_id}</button>
+                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'father_id')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors flex items-center justify-between">
+                            {r.name || r.rabbit_id} <ChevronRight size={14} className="text-slate-300" />
+                          </button>
                         ))}
                       </div>
                     )}
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('medicalHistory')}</label>
@@ -438,6 +387,7 @@ const Inventory = () => {
                   </div>
                   <textarea value={formData.medical_history} onChange={(e) => setFormData({...formData, medical_history: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 min-h-[100px]" />
                 </div>
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('notes')}</label>
@@ -447,8 +397,11 @@ const Inventory = () => {
                   </div>
                   <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 min-h-[100px]" />
                 </div>
-                <button type="submit" className="farm-button w-full h-16 text-lg mt-4">{t('save')}</button>
               </form>
+
+              <div className="p-6 border-t border-slate-50 dark:border-slate-800 shrink-0">
+                <button onClick={handleAction} className="farm-button w-full h-16 text-lg">{t('save')}</button>
+              </div>
             </motion.div>
           </div>
         )}

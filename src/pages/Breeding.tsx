@@ -5,7 +5,7 @@ import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Heart, Calendar, Plus, History, 
-  AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity, X, Info, Trash2, Search
+  AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity, X, Info, Trash2, Search, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -56,18 +56,16 @@ const Breeding = () => {
     setLoading(false);
   };
 
-  const handleParentInput = (val: string, type: 'mother' | 'father') => {
-    setFormData(prev => ({ ...prev, [`${type}_name`]: val }));
+  const showInstantSuggestions = (type: 'mother' | 'father') => {
+    const val = formData[type === 'mother' ? 'mother_name' : 'father_name'];
+    const gender = type === 'mother' ? 'Female' : 'Male';
     
-    if (val.length > 0) {
-      const filtered = inventory.filter(r => 
-        r.gender === (type === 'mother' ? 'Female' : 'Male') &&
-        (r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase()))
-      );
-      setSuggestions({ type, list: filtered.slice(0, 5) });
-    } else {
-      setSuggestions({ type, list: [] });
-    }
+    const filtered = inventory.filter(r => 
+      r.gender === gender &&
+      (val === '' || r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase()))
+    );
+    
+    setSuggestions({ type, list: filtered.slice(0, 6) });
   };
 
   const selectSuggestion = (rabbit: any, type: 'mother' | 'father') => {
@@ -195,56 +193,73 @@ const Breeding = () => {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-lg w-full bg-white dark:bg-slate-900 p-6 md:p-10 rounded-[2.5rem] shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-              <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 dark:hover:text-white"><X size={24} /></button>
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-8 tracking-tight">{t('recordMating')}</h2>
-              <form onSubmit={handleAddMating} className="space-y-6">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, y: 100 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: 100 }} 
+              className="w-full h-full sm:h-auto sm:max-w-lg bg-white dark:bg-slate-900 sm:rounded-[2.5rem] shadow-2xl relative flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between shrink-0">
+                <h2 className="text-2xl font-black tracking-tight">{t('recordMating')}</h2>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400"><X size={24} /></button>
+              </div>
+
+              <form onSubmit={handleAddMating} className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Mother Input with Autocomplete */}
+                  {/* Mother Input with Instant Suggestions */}
                   <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('mother')}</label>
                     <input 
                       type="text" 
                       required 
                       value={formData.mother_name} 
-                      onChange={(e) => handleParentInput(e.target.value, 'mother')} 
+                      onFocus={() => showInstantSuggestions('mother')}
+                      onChange={(e) => { setFormData({...formData, mother_name: e.target.value}); showInstantSuggestions('mother'); }} 
                       className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
                     />
                     {suggestions.type === 'mother' && suggestions.list.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                         {suggestions.list.map(r => (
-                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'mother')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors">
-                            <Rabbit size={14} className="text-emerald-600" />
-                            <span className="text-sm font-bold">{r.name || r.rabbit_id}</span>
+                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'mother')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center justify-between transition-colors">
+                            <div className="flex items-center gap-3">
+                              <Rabbit size={14} className="text-emerald-600" />
+                              <span className="text-sm font-bold">{r.name || r.rabbit_id}</span>
+                            </div>
+                            <ChevronRight size={14} className="text-slate-300" />
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Father Input with Autocomplete */}
+                  {/* Father Input with Instant Suggestions */}
                   <div className="space-y-2 relative">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('father')}</label>
                     <input 
                       type="text" 
                       required 
                       value={formData.father_name} 
-                      onChange={(e) => handleParentInput(e.target.value, 'father')} 
+                      onFocus={() => showInstantSuggestions('father')}
+                      onChange={(e) => { setFormData({...formData, father_name: e.target.value}); showInstantSuggestions('father'); }} 
                       className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
                     />
                     {suggestions.type === 'father' && suggestions.list.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                         {suggestions.list.map(r => (
-                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'father')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors">
-                            <Rabbit size={14} className="text-emerald-600" />
-                            <span className="text-sm font-bold">{r.name || r.rabbit_id}</span>
+                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'father')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center justify-between transition-colors">
+                            <div className="flex items-center gap-3">
+                              <Rabbit size={14} className="text-emerald-600" />
+                              <span className="text-sm font-bold">{r.name || r.rabbit_id}</span>
+                            </div>
+                            <ChevronRight size={14} className="text-slate-300" />
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('matingDate')}</label>
@@ -255,12 +270,16 @@ const Breeding = () => {
                     <input type="date" readOnly value={formData.expected_birth_date} className="w-full h-14 px-6 bg-slate-100 dark:bg-slate-800 border-none rounded-xl font-bold text-emerald-600" />
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('notes')}</label>
                   <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 min-h-[100px]" />
                 </div>
-                <button type="submit" className="farm-button w-full h-16 text-lg mt-4">{t('recordMating')}</button>
               </form>
+
+              <div className="p-6 border-t border-slate-50 dark:border-slate-800 shrink-0">
+                <button onClick={handleAddMating} className="farm-button w-full h-16 text-lg">{t('recordMating')}</button>
+              </div>
             </motion.div>
           </div>
         )}
