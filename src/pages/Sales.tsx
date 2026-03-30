@@ -7,12 +7,13 @@ import {
   ShoppingBag, Plus, Calendar, User, Tag, 
   DollarSign, TrendingUp, PieChart as PieIcon, 
   ArrowUpRight, X, Loader2, Trash2, Rabbit,
-  CheckCircle2, Wallet
+  CheckCircle2, Wallet, Wand2, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import { grokChat } from '@/lib/puter';
 
 const Sales = () => {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ const Sales = () => {
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [formData, setFormData] = useState({
     rabbit_id: '',
@@ -46,6 +48,27 @@ const Sales = () => {
     setLoading(false);
   };
 
+  const handleNeuralSuggest = async () => {
+    if (!user) return;
+    setIsGenerating(true);
+    try {
+      const prompt = `Write a professional sales note for a rabbit transaction:
+      Customer: ${formData.customer_name}
+      Category: ${formData.category}
+      Price: ${formData.price} DA
+      Date: ${formData.sale_date}
+      Keep it professional and include a thank you message.`;
+      
+      const response = await grokChat(prompt, { userId: user.id, stream: false });
+      setFormData(prev => ({ ...prev, notes: response }));
+      showSuccess("Neural suggestion applied.");
+    } catch (err) {
+      showError("Neural link failed.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleRecordSale = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -59,7 +82,6 @@ const Sales = () => {
       
       await storage.insert('sales', user.id, saleRecord);
       
-      // If a specific rabbit was selected, mark it as sold in inventory
       if (formData.rabbit_id) {
         await storage.update('rabbits', user.id, formData.rabbit_id, { status: 'Sold' });
       }
@@ -212,7 +234,7 @@ const Sales = () => {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-lg w-full bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl relative">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-lg w-full bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
               <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-400"><X size={24} /></button>
               <h2 className="text-3xl font-black mb-8 tracking-tight">{t('recordSale')}</h2>
               <form onSubmit={handleRecordSale} className="space-y-6">
@@ -249,6 +271,16 @@ const Sales = () => {
                       <option key={r.id} value={r.id}>{r.name || r.rabbit_id} ({r.breed})</option>
                     ))}
                   </select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between ml-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('notes')}</label>
+                    <button type="button" onClick={handleNeuralSuggest} disabled={isGenerating} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors">
+                      {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Neural Suggest
+                    </button>
+                  </div>
+                  <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 min-h-[100px]" />
                 </div>
 
                 <button type="submit" className="farm-button w-full h-16 text-lg mt-4">{t('recordSale')}</button>
