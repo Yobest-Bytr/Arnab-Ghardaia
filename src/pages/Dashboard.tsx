@@ -120,6 +120,36 @@ const Dashboard = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <div className="farm-card">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <TrendingUp className="text-emerald-600" size={20} />
+                  {t('populationGrowth')}
+                </h3>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last 6 Months</span>
+              </div>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#00000005" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                    <YAxis hide />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      itemStyle={{ fontWeight: 'bold', fontSize: '12px' }}
+                    />
+                    <Area type="monotone" dataKey="count" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorCount)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="farm-card">
               <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                 <Zap className="text-amber-500" size={20} />
                 {t('quickActions')}
@@ -137,28 +167,6 @@ const Dashboard = () => {
                   <FileText className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
                   <p className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">{t('reports')}</p>
                 </Link>
-              </div>
-            </div>
-
-            <div className="farm-card">
-              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
-                <Box className="text-indigo-600" size={20} />
-                {t('cageMap')}
-              </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                {cageMap.map((cage) => (
-                  <div key={cage.id} className={cn(
-                    "aspect-square rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all",
-                    cage.rabbit ? "bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/50" : "bg-slate-50 border-slate-100 dark:bg-slate-800/50 dark:border-slate-800"
-                  )}>
-                    <span className="text-[10px] font-black text-slate-400 uppercase">#{cage.id}</span>
-                    {cage.rabbit ? (
-                      <Rabbit size={20} className="text-emerald-600" />
-                    ) : (
-                      <div className="w-1 h-1 rounded-full bg-slate-200" />
-                    )}
-                  </div>
-                ))}
               </div>
             </div>
           </div>
