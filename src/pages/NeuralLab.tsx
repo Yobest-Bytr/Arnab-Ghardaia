@@ -72,6 +72,7 @@ const NeuralLab = () => {
 
     try {
       let responseText = "";
+      const today = new Date().toISOString().split('T')[0];
       const systemPrompt = `You are the Yobest AI Neural Architect. You manage a rabbit farm in Ghardaia.
       
       LANGUAGE: Respond strictly in ${language === 'ar' ? 'Arabic' : language === 'fr' ? 'French' : 'English'}.
@@ -86,6 +87,9 @@ const NeuralLab = () => {
         ⚠️ Alerts/Warnings
       - Keep responses concise and professional.
       
+      DATE DEFAULT: If a date is not specified for an action, use today's date: ${today}.
+      CONCISENESS: Only include the properties requested or essential for the action. Do not list all properties if not needed.
+      
       NEURAL SNAPSHOT:
       - Rabbits: ${farmSnapshot.rabbits.length} total
       - Sales: ${farmSnapshot.sales.length} total
@@ -93,10 +97,10 @@ const NeuralLab = () => {
       
       ACTION CAPABILITIES:
       If you want to perform an action, include the tag:
-      [ACTION: ADD_RABBIT {"name": "...", "breed": "...", "gender": "...", "weight": "..."}]
+      [ACTION: ADD_RABBIT {"name": "...", "breed": "...", "gender": "...", "weight": "...", "birth_date": "${today}"}]
       [ACTION: UPDATE_RABBIT {"id": "...", "updates": {"status": "..."}}]
-      [ACTION: RECORD_SALE {"customer_name": "...", "price": 0, "category": "..."}]
-      [ACTION: RECORD_MATING {"mother_name": "...", "father_name": "...", "mating_date": "..."}]`;
+      [ACTION: RECORD_SALE {"customer_name": "...", "price": 0, "category": "...", "sale_date": "${today}"}]
+      [ACTION: RECORD_MATING {"mother_name": "...", "father_name": "...", "mating_date": "${today}"}]`;
 
       await grokChat(input || "Analyze this image.", { 
         modelId: 'yobest-ai', 

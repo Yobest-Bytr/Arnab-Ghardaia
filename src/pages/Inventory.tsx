@@ -138,8 +138,8 @@ const Inventory = () => {
   };
 
   const filteredRabbits = rabbits.filter(r => 
-    r.name?.toLowerCase().includes(search.toLowerCase()) || 
-    r.rabbit_id?.toLowerCase().includes(search.toLowerCase())
+    (r.name?.toLowerCase() || '').includes(search.toLowerCase()) || 
+    (r.rabbit_id?.toLowerCase() || '').includes(search.toLowerCase())
   );
 
   return (
