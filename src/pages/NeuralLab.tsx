@@ -6,7 +6,7 @@ import {
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Loader2, Activity, Database, ArrowRight, Info, Clock, X,
   Layout, BarChart3, FileText, Palette, Target, Rocket, MessageSquare,
-  ChevronLeft, ChevronRight, Maximize2, Minimize2, Wand2, Layers, Box
+  ChevronLeft, ChevronRight, Maximize2, Minimize2, Wand2, Layers, Box, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -15,6 +15,7 @@ import { ChatMessage } from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 import QrScanner from '@/components/QrScanner';
 import { cn } from "@/lib/utils";
+import { showSuccess, showError } from '@/utils/toast';
 import { 
   ResizableHandle, 
   ResizablePanel, 
@@ -32,7 +33,8 @@ const NeuralLab = () => {
   const [workspaceState, setWorkspaceState] = useState<any>({
     chart: null,
     plan: null,
-    style: { color: '#6366f1', bg: '#020408' }
+    style: { color: '#6366f1', bg: '#020408' },
+    lastAction: null
   });
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -44,8 +46,8 @@ const NeuralLab = () => {
         id: 'welcome',
         role: 'assistant',
         content: language === 'ar' 
-          ? "تم تفعيل المختبر العصبي. أنا مهندسك المعماري الآن. يمكنني إنشاء الرسوم البيانية، تخطيط المشاريع، وتغيير واجهة المستخدم بناءً على أوامرك."
-          : "Neural Lab Activated. I am your Architect now. I can generate live charts, project plans, and modify the UI based on your commands.",
+          ? "تم تفعيل المختبر العصبي. أنا مهندسك المعماري الآن. يمكنني تنفيذ الأوامر مباشرة، إنشاء الرسوم البيانية، وتغيير واجهة المستخدم."
+          : "Neural Lab Activated. I am your Architect now. I can execute commands directly, generate live charts, and modify the UI.",
         timestamp: new Date().toISOString(),
         model: 'Yobest AI 4.1'
       }]);
@@ -86,10 +88,11 @@ const NeuralLab = () => {
 
       const systemPrompt = `You are the Yobest AI Neural Architect.
       
-      COMMANDS (Use these tags to update the Workspace):
+      COMMANDS (Use these tags to update the Workspace or execute actions):
       - <<<CHART: {"type": "bar|area", "title": "...", "data": [{"label": "...", "value": 10}]}>>>
       - <<<PLAN: Step 1\\nStep 2>>>
       - <<<STYLE: {"color": "#hex", "bg": "#hex"}>>>
+      - <<<ADD_RABBIT: {"name": "...", "breed": "...", "cage_number": "...", "gender": "Male|Female", "health_status": "Healthy|Sick"}>>>
       
       FARM DATA:
       - Rabbits: ${farmSnapshot.rabbits.length}
@@ -97,7 +100,7 @@ const NeuralLab = () => {
       - Costs/Losses: ${costs} DA
       - Net Profit: ${profit} DA
       
-      Respond in ${language === 'ar' ? 'Arabic' : 'English'}. When you provide a chart or plan, it will appear in the workspace to the right.`;
+      Respond in ${language === 'ar' ? 'Arabic' : 'English'}. When you execute an action like ADD_RABBIT, confirm it to the user.`;
 
       await grokChat(prompt || "Analyze this image.", { 
         modelId: 'yobest-ai', 
@@ -105,16 +108,30 @@ const NeuralLab = () => {
         stream: true,
         image,
         systemPrompt
-      }, (chunk) => {
+      }, async (chunk) => {
         responseText += chunk;
         
         const chartMatch = responseText.match(/<<<CHART:\s*([\s\S]*?)>>>/);
         const planMatch = responseText.match(/<<<PLAN:\s*([\s\S]*?)>>>/);
         const styleMatch = responseText.match(/<<<STYLE:\s*([\s\S]*?)>>>/);
+        const addRabbitMatch = responseText.match(/<<<ADD_RABBIT:\s*([\s\S]*?)>>>/);
 
         if (chartMatch) try { setWorkspaceState((prev:any) => ({ ...prev, chart: JSON.parse(chartMatch[1].trim()) })); } catch(e) {}
         if (planMatch) setWorkspaceState((prev:any) => ({ ...prev, plan: planMatch[1].split('\n').filter(l => l.trim()) }));
         if (styleMatch) try { setWorkspaceState((prev:any) => ({ ...prev, style: JSON.parse(styleMatch[1].trim()) })); } catch(e) {}
+        
+        if (addRabbitMatch && !workspaceState.lastAction) {
+          try {
+            const rabbitData = JSON.parse(addRabbitMatch[1].trim());
+            await storage.insert('rabbits', user!.id, {
+              ...rabbitData,
+              rabbit_id: `RAB-${Math.floor(1000 + Math.random() * 9000)}`
+            });
+            setWorkspaceState((prev:any) => ({ ...prev, lastAction: 'ADD_RABBIT' }));
+            showSuccess(t('addRabbit'));
+            fetchFarmSnapshot();
+          } catch(e) {}
+        }
 
         setMessages(prev => {
           const last = prev[prev.length - 1];
@@ -131,14 +148,14 @@ const NeuralLab = () => {
       });
     } finally {
       setIsGenerating(false);
-      fetchFarmSnapshot(); 
+      setWorkspaceState((prev:any) => ({ ...prev, lastAction: null }));
     }
   };
 
   const quickActions = [
+    { label: "Add Rabbit", prompt: "Add a new New Zealand White rabbit named 'Snowy' in cage 12. It is a healthy female.", icon: Plus },
     { label: "Analyze Profits", prompt: "Analyze my farm profits and show me a chart of revenue vs costs.", icon: BarChart3 },
     { label: "Expansion Plan", prompt: "Give me a 4-step plan to expand my rabbit farm cages.", icon: Rocket },
-    { label: "Neural Theme", prompt: "Change the workspace style to a deep emerald theme.", icon: Palette },
   ];
 
   return (
@@ -276,10 +293,10 @@ const NeuralLab = () => {
                         <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
                           <Sparkles size={24} />
                         </div>
-                        <h4 className="text-2xl font-black tracking-tight">AI Ready</h4>
+                        <h4 className="text-2xl font-black tracking-tight">{t('aiActionExecuted')}</h4>
                       </div>
                       <p className="text-sm font-medium opacity-80 leading-relaxed max-w-md">
-                        The Neural Architect is synchronized with your farm data. Ask for financial analysis, growth projections, or cage expansion plans.
+                        The Neural Architect is synchronized with your farm data. Ask for financial analysis, growth projections, or execute actions like adding rabbits directly.
                       </p>
                     </div>
                   </div>
