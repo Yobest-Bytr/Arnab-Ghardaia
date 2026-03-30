@@ -55,19 +55,6 @@ const Index = () => {
                 </button>
               </Link>
             </div>
-            
-            <div className="flex items-center gap-6 pt-4">
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 overflow-hidden">
-                    <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm font-bold text-slate-400">
-                <span className="text-slate-900 dark:text-white">500+</span> {t('happyCustomers')}
-              </p>
-            </div>
           </motion.div>
 
           <motion.div
@@ -82,45 +69,8 @@ const Index = () => {
                 alt="Rabbit Farm" 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-60" />
             </div>
-            
-            {/* Floating Stats Card */}
-            <motion.div 
-              animate={{ y: [0, -15, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -bottom-8 -left-8 bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl border border-emerald-50 dark:border-slate-800 flex items-center gap-4 z-20"
-            >
-              <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600">
-                <ShieldCheck size={28} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('healthStatus')}</p>
-                <p className="text-xl font-black text-emerald-600">98.4% {t('healthyRate')}</p>
-              </div>
-            </motion.div>
           </motion.div>
-        </div>
-      </section>
-
-      {/* Quick Stats */}
-      <section className="py-24 bg-slate-50 dark:bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ y: -10 }}
-                className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-xl border border-emerald-50 dark:border-slate-800 text-center group transition-all"
-              >
-                <div className={cn("w-16 h-16 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform", stat.bg, stat.color)}>
-                  <stat.icon size={32} />
-                </div>
-                <h3 className="text-4xl font-black text-slate-900 dark:text-white mb-2 tracking-tighter">{stat.val}</h3>
-                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -165,7 +115,6 @@ const Index = () => {
       <section className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="bg-emerald-600 rounded-[4rem] p-12 md:p-24 text-center text-white relative overflow-hidden shadow-2xl shadow-emerald-500/20">
-            <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
             <div className="relative z-10">
               <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight">{t('ctaTitle')}</h2>
               <p className="text-xl text-emerald-100 font-medium mb-12 max-w-xl mx-auto">{t('ctaSubtitle')}</p>

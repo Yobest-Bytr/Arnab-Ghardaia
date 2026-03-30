@@ -69,7 +69,7 @@ const translations: Translations = {
   neuralLab: { en: "Neural Lab", ar: "المختبر العصبي", fr: "Labo Neural" },
   aiStrategy: { en: "AI Strategy", ar: "استراتيجية الذكاء", fr: "Stratégie IA" },
   generatePlan: { en: "Generate Project Plan", ar: "إنشاء خطة مشروع", fr: "Générer un plan" },
-  visualInsights: { en: "Visual Insights", ar: "رؤى بصرية", fr: "Aperçus visuels" },
+  visualInsights: { en: "Visual Insights", ar: "رؤى بصرية", fr: "Aperçوس visuels" },
   neuralStyle: { en: "Neural Styling", ar: "التنسيق العصبي", fr: "Style Neural" },
   
   // Inventory
