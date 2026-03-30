@@ -1,54 +1,44 @@
 import { supabase } from '@/integrations/supabase/client';
 
-const FAILED_TABLES_KEY = 'failed_supabase_tables';
-const MASTER_OFFLINE_KEY = 'supabase_master_offline';
+const SYNC_QUEUE_KEY = 'arnab_sync_queue';
 
-let failedTables = new Set<string>(JSON.parse(localStorage.getItem(FAILED_TABLES_KEY) || '[]'));
-let isMasterOffline = localStorage.getItem(MASTER_OFFLINE_KEY) === 'true';
-
-function updateFailedTables() {
-  localStorage.setItem(FAILED_TABLES_KEY, JSON.stringify(Array.from(failedTables)));
+interface SyncItem {
+  id: string;
+  table: string;
+  action: 'INSERT' | 'UPDATE' | 'DELETE';
+  data: any;
+  timestamp: number;
 }
 
 export const storage = {
   isOffline() {
-    return isMasterOffline;
+    return !navigator.onLine;
   },
 
   async get(table: string, userId: string) {
     const localData = localStorage.getItem(`${table}_${userId}`);
-    if (localData) return JSON.parse(localData);
+    let data = localData ? JSON.parse(localData) : [];
 
-    if (isMasterOffline || failedTables.has(table)) return [];
-
-    try {
-      const { data, error, status } = await supabase
-        .from(table)
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (status === 404 || status === 401) {
-        failedTables.add(table);
-        updateFailedTables();
-        return [];
+    if (navigator.onLine) {
+      try {
+        const { data: cloudData, error } = await supabase
+          .from(table)
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+        
+        if (!error && cloudData) {
+          localStorage.setItem(`${table}_${userId}`, JSON.stringify(cloudData));
+          data = cloudData;
+        }
+      } catch (e) {
+        console.warn("Cloud fetch failed, using local cache.");
       }
-      
-      if (error) throw error;
-      
-      if (data) {
-        localStorage.setItem(`${table}_${userId}`, JSON.stringify(data));
-        return data;
-      }
-    } catch (err) {
-      failedTables.add(table);
-      updateFailedTables();
     }
-    return [];
+    return data;
   },
 
   async insert(table: string, userId: string, item: any) {
-    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
     const newItem = { 
       ...item, 
       id: item.id || Math.random().toString(36).substr(2, 9),
@@ -56,98 +46,64 @@ export const storage = {
       created_at: new Date().toISOString() 
     };
     
-    const updatedData = [newItem, ...localData];
-    localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
+    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
+    localStorage.setItem(`${table}_${userId}`, JSON.stringify([newItem, ...localData]));
     
-    if (!isMasterOffline && !failedTables.has(table)) {
-      // Using async/await to avoid PromiseLike issues
-      (async () => {
-        try {
-          const { status } = await supabase.from(table).insert([newItem]);
-          if (status === 404 || status === 401) {
-            failedTables.add(table);
-            updateFailedTables();
-          }
-        } catch (e) {
-          failedTables.add(table);
-          updateFailedTables();
-        }
-      })();
-    }
-
+    this.addToSyncQueue({ id: newItem.id, table, action: 'INSERT', data: newItem, timestamp: Date.now() });
     return newItem;
   },
 
-  async update(table: string, userId: string, id: any, updates: any) {
+  async update(table: string, userId: string, id: string, updates: any) {
     const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
     const updatedData = localData.map((item: any) => 
       item.id === id ? { ...item, ...updates, updated_at: new Date().toISOString() } : item
     );
     localStorage.setItem(`${table}_${userId}`, JSON.stringify(updatedData));
     
-    if (!isMasterOffline && !failedTables.has(table)) {
-      (async () => {
-        try {
-          const { status } = await supabase.from(table).update(updates).eq('id', id);
-          if (status === 404 || status === 401) {
-            failedTables.add(table);
-            updateFailedTables();
-          }
-        } catch (e) {
-          failedTables.add(table);
-          updateFailedTables();
-        }
-      })();
-    }
-
+    this.addToSyncQueue({ id, table, action: 'UPDATE', data: updates, timestamp: Date.now() });
     return updates;
   },
 
-  async delete(table: string, userId: string, id: any) {
+  async delete(table: string, userId: string, id: string) {
     const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
-    const filteredData = localData.filter((item: any) => item.id !== id);
-    localStorage.setItem(`${table}_${userId}`, JSON.stringify(filteredData));
+    localStorage.setItem(`${table}_${userId}`, JSON.stringify(localData.filter((i: any) => i.id !== id)));
     
-    if (!isMasterOffline && !failedTables.has(table)) {
-      (async () => {
-        try {
-          const { status } = await supabase.from(table).delete().eq('id', id);
-          if (status === 404 || status === 401) {
-            failedTables.add(table);
-            updateFailedTables();
-          }
-        } catch (e) {
-          failedTables.add(table);
-          updateFailedTables();
+    this.addToSyncQueue({ id, table, action: 'DELETE', data: null, timestamp: Date.now() });
+  },
+
+  addToSyncQueue(item: SyncItem) {
+    const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+    localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify([...queue, item]));
+    this.processSyncQueue();
+  },
+
+  async processSyncQueue() {
+    if (!navigator.onLine) return;
+    
+    const queue: SyncItem[] = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+    if (queue.length === 0) return;
+
+    for (const item of queue) {
+      try {
+        let error;
+        if (item.action === 'INSERT') {
+          ({ error } = await supabase.from(item.table).insert([item.data]));
+        } else if (item.action === 'UPDATE') {
+          ({ error } = await supabase.from(item.table).update(item.data).eq('id', item.id));
+        } else if (item.action === 'DELETE') {
+          ({ error } = await supabase.from(item.table).delete().eq('id', item.id));
         }
-      })();
-    }
-  },
 
-  setMasterOffline(status: boolean) {
-    isMasterOffline = status;
-    localStorage.setItem(MASTER_OFFLINE_KEY, String(status));
-  },
-
-  async syncToCloud(table: string, userId: string) {
-    const localData = JSON.parse(localStorage.getItem(`${table}_${userId}`) || '[]');
-    if (localData.length === 0) return { success: false, message: "No local data to sync." };
-
-    try {
-      const { error, status } = await supabase
-        .from(table)
-        .upsert(localData.map(item => ({ ...item, user_id: userId })));
-      
-      if (status === 404 || status === 401) {
-        failedTables.add(table);
-        updateFailedTables();
-        return { success: false, message: "Cloud sync unavailable (Table missing)." };
+        if (!error) {
+          const currentQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+          localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(currentQueue.filter((q: any) => q.timestamp !== item.timestamp)));
+        }
+      } catch (e) {
+        break; // Stop processing if cloud is unreachable
       }
-
-      if (error) throw error;
-      return { success: true, message: "Cloud sync complete." };
-    } catch (err: any) {
-      return { success: false, message: "Sync failed. Check connection." };
     }
   }
 };
+
+// Auto-sync when coming back online
+window.addEventListener('online', () => storage.processSyncQueue());
