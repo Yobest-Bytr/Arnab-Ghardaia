@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -78,7 +78,7 @@ const Dashboard = () => {
   ];
 
   const cageMap = useMemo(() => {
-    const cages = Array.from({ length: 12 }, (_, i) => ({
+    const cages = Array.from({ length: 24 }, (_, i) => ({
       id: (i + 1).toString(),
       rabbit: rabbits.find(r => r.cage_number === (i + 1).toString())
     }));
@@ -151,11 +151,14 @@ const Dashboard = () => {
 
             {/* Visual Cage Map */}
             <div className="farm-card">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <LayoutGrid className="text-blue-600" size={20} />
-                  {t('cageMap')}
-                </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <LayoutGrid className="text-blue-600" size={20} />
+                    {t('cageMap')}
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('cageMapDesc')}</p>
+                </div>
                 <div className="flex gap-4">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-emerald-500" />
@@ -167,27 +170,31 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+              
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                 {cageMap.map((cage) => (
                   <div 
                     key={cage.id}
                     className={cn(
-                      "aspect-square rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all group relative",
+                      "aspect-square rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all group relative",
                       cage.rabbit 
-                        ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50" 
+                        ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50 shadow-sm" 
                         : "bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 border-dashed"
                     )}
                   >
-                    <span className="text-[10px] font-black text-slate-400 uppercase">Cage {cage.id}</span>
+                    <span className={cn(
+                      "text-[10px] font-black uppercase",
+                      cage.rabbit ? "text-emerald-600" : "text-slate-300"
+                    )}>{cage.id}</span>
                     {cage.rabbit ? (
                       <>
-                        <Rabbit size={20} className="text-emerald-600" />
-                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 truncate px-2 w-full text-center">
-                          {cage.rabbit.name}
-                        </span>
+                        <Rabbit size={16} className="text-emerald-600" />
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-emerald-600/90 rounded-2xl flex items-center justify-center transition-opacity cursor-pointer">
+                          <span className="text-[8px] font-black text-white uppercase text-center px-1">{cage.rabbit.name}</span>
+                        </div>
                       </>
                     ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-slate-200 dark:border-slate-800" />
+                      <div className="w-4 h-4 rounded-full border-2 border-slate-200 dark:border-slate-800" />
                     )}
                   </div>
                 ))}

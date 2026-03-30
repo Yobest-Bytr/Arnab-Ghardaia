@@ -3,6 +3,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Rabbit, ShoppingBag, Search, Filter, Tag, 
   MessageCircle, Sparkles, ArrowRight, Info, 
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils';
 
 const PublicRabbits = () => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,19 +22,21 @@ const PublicRabbits = () => {
 
   useEffect(() => {
     fetchRabbits();
-  }, []);
+  }, [user]);
 
   const fetchRabbits = async () => {
     setLoading(true);
-    const data = await storage.get('rabbits', 'public-access'); 
+    // In a real app, this would be a global query. 
+    // For this demo, we fetch the current user's public rabbits + some featured ones.
+    const userData = user ? await storage.get('rabbits', user.id) : [];
+    const publicRabbits = userData.filter(r => r.is_public);
     
-    const displayData = data.length > 0 ? data.filter(r => r.status === 'Available') : [
-      { id: '1', name: 'Snowball', breed: 'New Zealand White', price_dzd: '4500', gender: 'Female', age: '3 Months', image: 'https://images.unsplash.com/photo-1585110396050-c99b13f8c543?auto=format&fit=crop&q=80&w=800' },
-      { id: '2', name: 'Rusty', breed: 'Flemish Giant', price_dzd: '8500', gender: 'Male', age: '5 Months', image: 'https://images.unsplash.com/photo-1591382386627-349b692688ff?auto=format&fit=crop&q=80&w=800' },
-      { id: '3', name: 'Shadow', breed: 'Netherland Dwarf', price_dzd: '3200', gender: 'Male', age: '2 Months', image: 'https://images.unsplash.com/photo-1535241749838-299277b6305f?auto=format&fit=crop&q=80&w=800' },
-      { id: '4', name: 'Luna', breed: 'Rex', price_dzd: '5500', gender: 'Female', age: '4 Months', image: 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?auto=format&fit=crop&q=80&w=800' },
+    const featuredData = [
+      { id: 'f1', name: 'Snowball', breed: 'New Zealand White', price_dzd: '4500', gender: 'Female', age: '3 Months', image: 'https://images.unsplash.com/photo-1585110396050-c99b13f8c543?auto=format&fit=crop&q=80&w=800' },
+      { id: 'f2', name: 'Rusty', breed: 'Flemish Giant', price_dzd: '8500', gender: 'Male', age: '5 Months', image: 'https://images.unsplash.com/photo-1591382386627-349b692688ff?auto=format&fit=crop&q=80&w=800' },
     ];
-    setRabbits(displayData);
+
+    setRabbits([...publicRabbits, ...featuredData]);
     setLoading(false);
   };
 

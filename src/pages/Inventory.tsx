@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
   QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
-  Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight, ArrowLeft
+  Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight, ArrowLeft, ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -47,7 +47,8 @@ const Inventory = () => {
     father_id: '',
     vaccination_status: 'Not Vaccinated',
     medical_history: '',
-    weight_history: [] as any[]
+    weight_history: [] as any[],
+    is_public: false
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -257,7 +258,10 @@ const Inventory = () => {
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
-                <span className="text-sm font-black text-emerald-600">{rabbit.price_dzd || '0'} DA</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-emerald-600">{rabbit.price_dzd || '0'} DA</span>
+                  {rabbit.is_public && <ShoppingBag size={14} className="text-blue-500" title="Listed in Boutique" />}
+                </div>
                 <span className={cn(
                   "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
                   getStatusColor(rabbit.status)
@@ -501,6 +505,37 @@ const Inventory = () => {
                       </div>
                     )}
                   </div>
+                </div>
+
+                <div className="p-6 rounded-3xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ShoppingBag className="text-blue-600" size={20} />
+                      <div>
+                        <p className="text-sm font-black text-slate-900 dark:text-white">{t('publishToShop')}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('publishDesc')}</p>
+                      </div>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({...formData, is_public: !formData.is_public})}
+                      className={cn(
+                        "w-12 h-6 rounded-full relative transition-colors",
+                        formData.is_public ? "bg-emerald-500" : "bg-slate-300"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                        formData.is_public ? "right-1" : "left-1"
+                      )} />
+                    </button>
+                  </div>
+                  {formData.is_public && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
+                      <input type="number" required value={formData.price_dzd} onChange={(e) => setFormData({...formData, price_dzd: e.target.value})} className="w-full h-12 px-6 bg-white dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">

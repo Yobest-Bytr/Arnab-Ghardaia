@@ -126,6 +126,11 @@ const translations: Translations = {
   helpCustomer: { en: "Enter the buyer's name for your records.", ar: "أدخل اسم المشتري لسجلاتك.", fr: "Entrez le nom de l'acheteur." },
   helpMatingDate: { en: "The expected birth date will be calculated automatically (31 days).", ar: "سيتم حساب تاريخ الولادة المتوقع تلقائياً (31 يوماً).", fr: "La date de naissance sera calculée automatiquement." },
   successRate: { en: "Breeding Success Rate", ar: "معدل نجاح التزاوج", fr: "Taux de réussite" },
+
+  // New Keys
+  publishToShop: { en: "Publish to Boutique", ar: "نشر في المتجر", fr: "Publier en Boutique" },
+  publishDesc: { en: "Make this rabbit visible to public buyers in the Boutique.", ar: "اجعل هذا الأرنب مرئياً للمشترين في المتجر العام.", fr: "Rendre ce lapin visible dans la Boutique." },
+  cageMapDesc: { en: "Visual overview of your farm's housing capacity.", ar: "نظرة عامة مرئية على سعة استيعاب مزرعتك.", fr: "Aperçu visuel de la capacité de votre ferme." },
 };
 
 interface LanguageContextType {

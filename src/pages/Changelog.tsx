@@ -7,6 +7,20 @@ import { Rocket, Sparkles, Bug, Zap, ShieldCheck, Globe } from 'lucide-react';
 
 const updates = [
   {
+    version: "v1.4.0",
+    date: "May 2026",
+    title: "Boutique Launch & Visual Cages",
+    description: "Major update to farm visualization and public commerce.",
+    type: "feature",
+    changes: [
+      "Enhanced Cage Map with clear numbering and status indicators",
+      "New 'Publish to Boutique' feature to list rabbits for sale",
+      "Improved form guidance with helpful text boxes",
+      "Expanded translation support for all new features",
+      "Optimized Boutique layout for better browsing"
+    ]
+  },
+  {
     version: "v1.3.0",
     date: "May 2026",
     title: "Neural Link Restoration",
@@ -27,14 +41,6 @@ const updates = [
     description: "Launched the new PDF export system with custom branding and summary analytics.",
     type: "feature",
     changes: ["Branded PDF reports", "Summary statistics in exports", "Enhanced table formatting"]
-  },
-  {
-    version: "v1.1.5",
-    date: "September 2023",
-    title: "Dynamic Dashboard",
-    description: "Real-time activity feed and population growth charts are now live.",
-    type: "improvement",
-    changes: ["Real-time activity tracking", "Dynamic population charts", "Improved mobile responsiveness"]
   }
 ];
 
