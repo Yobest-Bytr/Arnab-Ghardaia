@@ -50,15 +50,15 @@ const Inventory = () => {
       setFormData({ name: '', cage_number: '', breed: '', birth_date: '', health_status: 'Healthy', gender: 'Female' });
       showSuccess(t('addRabbit'));
     } catch (err) {
-      showError("Failed to add rabbit.");
+      showError(t('addError'));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!user || !confirm("Delete this rabbit?")) return;
+    if (!user || !confirm(t('deleteConfirm'))) return;
     await storage.delete('rabbits', user.id, id);
     setRabbits(prev => prev.filter(r => r.id !== id));
-    showSuccess("Rabbit removed.");
+    showSuccess(t('deleteSuccess'));
   };
 
   const filteredRabbits = rabbits.filter(r => 
@@ -74,7 +74,7 @@ const Inventory = () => {
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('inventory')}</h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Manage your high-performance rabbit breeds.</p>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t('inventorySubtitle')}</p>
           </div>
           <div className="flex gap-3">
             <div className="relative group">
@@ -112,7 +112,7 @@ const Inventory = () => {
                       <Rabbit size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-black text-slate-900 dark:text-white">{rabbit.name || 'Unnamed'}</h3>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white">{rabbit.name || t('unnamed')}</h3>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{rabbit.rabbit_id}</p>
                     </div>
                   </div>
@@ -124,17 +124,17 @@ const Inventory = () => {
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('cageNumber')}</p>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">#{rabbit.cage_number || 'N/A'}</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">#{rabbit.cage_number || t('notAvailable')}</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('healthStatus')}</p>
-                    <p className="text-sm font-bold text-emerald-600">{t(rabbit.health_status.toLowerCase())}</p>
+                    <p className="text-sm font-bold text-emerald-600">{t(rabbit.health_status?.toLowerCase() || 'healthy')}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
                   <span className="text-xs font-bold text-slate-400">{rabbit.breed}</span>
-                  <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest">{t(rabbit.gender.toLowerCase())}</span>
+                  <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest">{t(rabbit.gender?.toLowerCase() || 'female')}</span>
                 </div>
               </motion.div>
             ))}

@@ -67,12 +67,16 @@ const translations: Translations = {
   
   // AI & Neural Lab
   neuralLab: { en: "Neural Lab", ar: "المختبر العصبي", fr: "Labo Neural" },
+  neuralArchitect: { en: "Neural Architect", ar: "المهندس العصبي", fr: "Architecte Neural" },
+  workspace: { en: "Workspace", ar: "مساحة العمل", fr: "Espace de travail" },
+  livePreview: { en: "Live Preview", ar: "معاينة مباشرة", fr: "Aperçu en direct" },
   aiStrategy: { en: "AI Strategy", ar: "استراتيجية الذكاء", fr: "Stratégie IA" },
   generatePlan: { en: "Generate Project Plan", ar: "إنشاء خطة مشروع", fr: "Générer un plan" },
   visualInsights: { en: "Visual Insights", ar: "رؤى بصرية", fr: "Aperçus visuels" },
   neuralStyle: { en: "Neural Styling", ar: "التنسيق العصبي", fr: "Style Neural" },
   
   // Inventory
+  inventorySubtitle: { en: "Manage your high-performance rabbit breeds.", ar: "إدارة سلالات الأرانب عالية الأداء.", fr: "Gérez vos races de lapins performantes." },
   addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un Lapin" },
   rabbitName: { en: "Rabbit Name", ar: "اسم الأرنب", fr: "Nom du Lapin" },
   cageNumber: { en: "Cage #", ar: "رقم القفص", fr: "N° Cage" },
@@ -88,6 +92,11 @@ const translations: Translations = {
   months: { en: "Months", ar: "أشهر", fr: "Mois" },
   days: { en: "Days", ar: "أيام", fr: "Jours" },
   searchPlaceholder: { en: "Search by name or ID...", ar: "ابحث بالاسم أو المعرف...", fr: "Rechercher par nom..." },
+  unnamed: { en: "Unnamed", ar: "بدون اسم", fr: "Sans nom" },
+  notAvailable: { en: "N/A", ar: "غير متوفر", fr: "N/A" },
+  deleteConfirm: { en: "Are you sure you want to delete this rabbit?", ar: "هل أنت متأكد من حذف هذا الأرنب؟", fr: "Êtes-vous sûr de vouloir supprimer ce lapin ?" },
+  deleteSuccess: { en: "Rabbit removed successfully.", ar: "تمت إزالة الأرنب بنجاح.", fr: "Lapin supprimé avec succès." },
+  addError: { en: "Failed to add rabbit.", ar: "فشل في إضافة الأرنب.", fr: "Échec de l'ajout du lapin." },
   
   // Actions
   save: { en: "Save Changes", ar: "حفظ التغييرات", fr: "Enregistrer" },
