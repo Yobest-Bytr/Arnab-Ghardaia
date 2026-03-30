@@ -232,7 +232,7 @@ const Inventory = () => {
                   <span className={cn(
                     "px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border",
                     rabbit.status === 'Available' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-white/5 text-white/40 border-white/10"
-                  )}>{t(rabbit.status.toLowerCase())}</span>
+                  )}>{t((rabbit.status || 'Available').toLowerCase())}</span>
                 </div>
               </motion.div>
             ))}
