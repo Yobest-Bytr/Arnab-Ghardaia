@@ -16,8 +16,6 @@ const isUUID = (str: string) => {
   return uuidRegex.test(str);
 };
 
-// Helper to generate a valid UUID if crypto.randomUUID is available, 
-// otherwise fallback to a compliant manual generator
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -58,7 +56,6 @@ export const storage = {
   },
 
   async insert(table: string, userId: string, item: any) {
-    // Ensure we use a valid UUID for the ID
     const newItem = { 
       ...item, 
       id: item.id && isUUID(item.id) ? item.id : generateUUID(),
@@ -128,8 +125,12 @@ export const storage = {
           localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(currentQueue.filter((q: any) => q.timestamp !== item.timestamp)));
         } else {
           console.error(`Sync error for ${item.table}:`, error.message);
-          // If it's a 400 error, it might be bad data in the queue, we might need to skip it 
-          // but for now we'll just stop processing to avoid infinite loops
+          // If it's a schema error (400), we skip it to avoid blocking the queue
+          if (error.code === 'PGRST204' || error.message.includes('column')) {
+            const currentQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+            localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(currentQueue.filter((q: any) => q.timestamp !== item.timestamp)));
+            continue;
+          }
           break;
         }
       } catch (e) {

@@ -8,7 +8,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, Database, ExternalLink, Trash2
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, Database, ExternalLink, Trash2, RefreshCw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -61,8 +61,16 @@ const Dashboard = () => {
 
   const handleClearQueue = () => {
     localStorage.removeItem('arnab_sync_queue');
-    showSuccess("Sync queue cleared. You can now try adding data again.");
+    showSuccess("Sync queue cleared.");
     window.location.reload();
+  };
+
+  const handleResetLocal = () => {
+    if (confirm("This will clear all local data and re-fetch from the cloud. Continue?")) {
+      localStorage.clear();
+      showSuccess("Local cache cleared.");
+      window.location.reload();
+    }
   };
 
   const chartData = useMemo(() => {
@@ -286,17 +294,25 @@ const Dashboard = () => {
           </DialogHeader>
           
           <div className="space-y-6 py-4">
-            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Trash2 className="text-rose-600" size={20} />
-                <div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <Trash2 className="text-rose-600" size={20} />
                   <p className="text-sm font-bold text-rose-900 dark:text-rose-400">Clear Sync Queue</p>
-                  <p className="text-xs text-rose-700 dark:text-rose-500">If sync is stuck, clear the local queue.</p>
                 </div>
+                <button onClick={handleClearQueue} className="w-full py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all">
+                  Clear Queue
+                </button>
               </div>
-              <button onClick={handleClearQueue} className="px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all">
-                Clear Queue
-              </button>
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="text-amber-600" size={20} />
+                  <p className="text-sm font-bold text-amber-900 dark:text-amber-400">Reset Local Cache</p>
+                </div>
+                <button onClick={handleResetLocal} className="w-full py-2 bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all">
+                  Reset Cache
+                </button>
+              </div>
             </div>
 
             <ol className="list-decimal pl-6 space-y-6 text-sm font-medium text-slate-600 dark:text-slate-400">
