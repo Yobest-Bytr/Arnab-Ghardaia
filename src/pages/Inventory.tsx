@@ -7,12 +7,13 @@ import {
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
   QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
   Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight, ArrowLeft, ShoppingBag,
-  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid
+  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
+import QrScanner from '@/components/QrScanner';
 
 const BREEDS = ['New Zealand White', 'Flemish Giant', 'Netherland Dwarf', 'Rex', 'California', 'Angora', 'Dutch', 'Lionhead'];
 
@@ -24,6 +25,7 @@ const Inventory = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingRabbit, setEditingRabbit] = useState<any>(null);
   const [viewingRabbit, setViewingRabbit] = useState<any>(null);
   
@@ -76,13 +78,31 @@ const Inventory = () => {
     if (!user) return;
     
     try {
+      const weightVal = parseFloat(formData.weight);
+      let updatedWeightHistory = [...(formData.weight_history || [])];
+      
+      // Track weight changes
+      if (editingRabbit && editingRabbit.weight !== formData.weight) {
+        updatedWeightHistory.push({
+          weight: weightVal,
+          date: new Date().toISOString()
+        });
+      } else if (!editingRabbit && formData.weight) {
+        updatedWeightHistory = [{
+          weight: weightVal,
+          date: new Date().toISOString()
+        }];
+      }
+
+      const finalData = { ...formData, weight_history: updatedWeightHistory };
+
       if (editingRabbit) {
-        await storage.update('rabbits', user.id, editingRabbit.id, formData);
-        setRabbits(prev => prev.map(r => r.id === editingRabbit.id ? { ...r, ...formData } : r));
+        await storage.update('rabbits', user.id, editingRabbit.id, finalData);
+        setRabbits(prev => prev.map(r => r.id === editingRabbit.id ? { ...r, ...finalData } : r));
         showSuccess(t('save'));
       } else {
         const newRabbit = await storage.insert('rabbits', user.id, { 
-          ...formData, 
+          ...finalData, 
           rabbit_id: `RAB-${Math.floor(1000 + Math.random() * 9000)}` 
         });
         setRabbits([newRabbit, ...rabbits]);
@@ -93,6 +113,20 @@ const Inventory = () => {
       setFormData(initialForm);
     } catch (err) {
       showError("Operation failed.");
+    }
+  };
+
+  const handleScanSuccess = (decodedText: string) => {
+    setIsScannerOpen(false);
+    // Assuming QR contains the rabbit ID or a URL with ID
+    const id = decodedText.split('/').pop();
+    const rabbit = rabbits.find(r => r.id === id || r.rabbit_id === decodedText);
+    if (rabbit) {
+      setViewingRabbit(rabbit);
+      setIsViewModalOpen(true);
+      showSuccess("Rabbit identified.");
+    } else {
+      showError("Rabbit not found in database.");
     }
   };
 
@@ -127,6 +161,9 @@ const Inventory = () => {
           </motion.div>
           
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-wrap gap-4">
+            <button onClick={() => setIsScannerOpen(true)} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-xl">
+              <QrCode size={24} />
+            </button>
             <div className="relative group min-w-[300px]">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-indigo-400 transition-colors" size={20} />
               <input 
@@ -203,6 +240,21 @@ const Inventory = () => {
         </div>
       </main>
 
+      {/* QR Scanner Modal */}
+      <AnimatePresence>
+        {isScannerOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl">
+            <div className="max-w-lg w-full p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black tracking-tight">Scan Neural ID</h2>
+                <button onClick={() => setIsScannerOpen(false)} className="p-2 rounded-xl bg-white/5 text-white/40"><X size={24} /></button>
+              </div>
+              <QrScanner onScanSuccess={handleScanSuccess} />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* View Profile Modal */}
       <AnimatePresence>
         {isViewModalOpen && viewingRabbit && (
@@ -246,6 +298,27 @@ const Inventory = () => {
                     </div>
 
                     <div className="space-y-6">
+                      <h3 className="text-xl font-black flex items-center gap-3"><TrendingUp className="text-indigo-400" /> Weight Velocity</h3>
+                      <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/5">
+                        {viewingRabbit.weight_history?.length > 0 ? (
+                          <div className="space-y-4">
+                            {viewingRabbit.weight_history.map((w: any, i: number) => (
+                              <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl">
+                                <div className="flex items-center gap-3">
+                                  <Scale size={16} className="text-emerald-400" />
+                                  <span className="text-sm font-bold">{w.weight} kg</span>
+                                </div>
+                                <span className="text-[10px] font-black text-white/20 uppercase">{new Date(w.date).toLocaleDateString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-white/40 font-medium italic">No weight history recorded.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
                       <h3 className="text-xl font-black flex items-center gap-3"><Stethoscope className="text-emerald-400" /> {t('medicalHistory')}</h3>
                       <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/5">
                         <div className="flex items-center justify-between mb-6">
@@ -259,15 +332,6 @@ const Inventory = () => {
                         </div>
                         <p className="text-white/40 font-medium leading-relaxed">
                           {viewingRabbit.medical_history || "No medical incidents recorded for this neural node."}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <h3 className="text-xl font-black flex items-center gap-3"><History className="text-indigo-400" /> {t('notes')}</h3>
-                      <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/5">
-                        <p className="text-white/40 font-medium leading-relaxed italic">
-                          "{viewingRabbit.notes || "No additional neural logs available."}"
                         </p>
                       </div>
                     </div>
@@ -354,6 +418,21 @@ const Inventory = () => {
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Weight (kg)</label>
                     <input type="number" step="0.1" required value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold focus:border-indigo-500 transition-all outline-none" />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageNumber')}</label>
+                    <input type="text" value={formData.cage_number} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold focus:border-indigo-500 transition-all outline-none" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('mother')}</label>
+                    <input type="text" value={formData.mother_id} onChange={(e) => setFormData({...formData, mother_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold focus:border-indigo-500 transition-all outline-none" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('father')}</label>
+                    <input type="text" value={formData.father_id} onChange={(e) => setFormData({...formData, father_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold focus:border-indigo-500 transition-all outline-none" />
                   </div>
                 </div>
 
