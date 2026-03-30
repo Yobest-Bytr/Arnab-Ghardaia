@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import CodeFrame from './CodeFrame';
 import { showSuccess, showError } from '@/utils/toast';
 import { storage } from '@/lib/storage';
 
@@ -19,19 +18,18 @@ interface ChatMessageProps {
   thought?: string;
   model?: string;
   timestamp: string;
-  onApplyCode?: (code: string, path: string, mode: 'replace' | 'append') => void;
+  image?: string;
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ 
   role, 
   content, 
-  thought: initialThought, 
+  thought, 
   model, 
   timestamp,
-  onApplyCode 
+  image
 }) => {
   const [isThoughtOpen, setIsThoughtOpen] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [actionExecuted, setActionExecuted] = useState(false);
 
   // Parse for Neural Actions: [ACTION: TYPE {DATA}]
@@ -54,12 +52,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     if (!action) return;
     try {
       const userId = JSON.parse(localStorage.getItem('yobest_demo_user') || '{}').id || 'demo-user';
+      
       if (action.type === 'ADD_RABBIT') {
         await storage.insert('rabbits', userId, action.data);
         showSuccess(`Neural Action: Added ${action.data.name} to inventory.`);
-      } else if (action.type === 'UPDATE_STATUS') {
-        // Logic for update
+      } else if (action.type === 'UPDATE_RABBIT') {
+        await storage.update('rabbits', userId, action.data.id, action.data.updates);
+        showSuccess(`Neural Action: Updated ${action.data.id}.`);
       }
+      
       setActionExecuted(true);
     } catch (err) {
       showError("Neural Action failed to execute.");
@@ -68,16 +69,21 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   if (role === 'user') {
     return (
-      <div className="flex justify-end mb-6">
-        <div className="max-w-[85%] bg-indigo-600 text-white p-5 rounded-[2rem] rounded-tr-none shadow-xl border border-white/10">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap font-bold">{content}</p>
+      <div className="flex justify-end mb-8">
+        <div className="max-w-[80%] space-y-3">
+          {image && (
+            <img src={image} alt="User Upload" className="w-full max-w-sm rounded-[2rem] border border-white/10 shadow-2xl ml-auto" />
+          )}
+          <div className="bg-indigo-600 text-white p-6 rounded-[2.5rem] rounded-tr-none shadow-xl border border-white/10">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap font-bold">{content}</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 mb-10 group animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="flex flex-col gap-4 mb-12 group animate-in fade-in slide-in-from-bottom-4 duration-700">
       {thought && (
         <div className="flex flex-col gap-2">
           <button 
@@ -113,35 +119,35 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className={cn(
-            "p-6 rounded-[2rem] border transition-all duration-500",
-            actionExecuted ? "bg-emerald-500/10 border-emerald-500/30" : "bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_30px_rgba(79,70,229,0.1)]"
+            "p-8 rounded-[2.5rem] border transition-all duration-500",
+            actionExecuted ? "bg-emerald-500/10 border-emerald-500/30" : "bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.1)]"
           )}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", actionExecuted ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-400")}>
-                <Database size={20} />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", actionExecuted ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-400")}>
+                <Database size={24} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Proposed Action</p>
-                <p className="text-sm font-black">{action.type.replace('_', ' ')}</p>
+                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Proposed Neural Action</p>
+                <p className="text-lg font-black">{action.type.replace('_', ' ')}</p>
               </div>
             </div>
             {actionExecuted ? (
               <div className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
-                <CheckCircle size={14} /> Executed
+                <CheckCircle size={16} /> Executed
               </div>
             ) : (
               <button 
                 onClick={handleExecuteAction}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20"
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20"
               >
-                <Play size={12} className="fill-current" /> Run Action
+                <Play size={14} className="fill-current" /> Run Action
               </button>
             )}
           </div>
-          <div className="bg-black/40 rounded-xl p-4 font-mono text-[10px] text-indigo-300/60 overflow-x-auto">
-            {JSON.stringify(action.data, null, 2)}
+          <div className="bg-black/40 rounded-2xl p-6 font-mono text-[11px] text-indigo-300/60 overflow-x-auto border border-white/5">
+            <pre>{JSON.stringify(action.data, null, 2)}</pre>
           </div>
         </motion.div>
       )}

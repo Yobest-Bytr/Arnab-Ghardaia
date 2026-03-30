@@ -17,20 +17,10 @@ export const grokChat = async (
 ) => {
   const { modelId = 'yobest-ai', userId, image, stream = true, systemPrompt } = options;
   
-  const savedKeys = userId ? JSON.parse(localStorage.getItem(`ai_keys_${userId}`) || '{}') : {};
   const targetModel = modelMapping[modelId] || modelMapping['yobest-ai'];
   
-  // Check for custom Gemini key if selected
-  const isCustomModel = modelId !== 'yobest-ai';
-  const userKey = isCustomModel ? (
-    modelId.includes('gpt') ? savedKeys.openai :
-    modelId.includes('gemini') ? savedKeys.gemini :
-    modelId.includes('claude') ? savedKeys.anthropic :
-    savedKeys.grok
-  ) : null;
-
   if (!(window as any).puter) {
-    return "AI Engine Offline: Puter.js not loaded";
+    return "AI Engine Offline: Puter.js not loaded. Please refresh the page.";
   }
 
   try {
@@ -39,6 +29,8 @@ export const grokChat = async (
       : `User: ${prompt}`;
 
     let content: any = fullPrompt;
+    
+    // Handle Multi-modal (Images)
     if (image) {
       content = [
         { type: 'text', text: fullPrompt },
@@ -51,16 +43,12 @@ export const grokChat = async (
       stream: !!streamCallback && stream,
     };
 
-    // If user provided a key, we could theoretically inject it here if the provider supports it,
-    // but Puter handles keys via their own dashboard. We simulate the "Neural Link" here.
     const response = await (window as any).puter.ai.chat(content, chatOptions);
 
     if (streamCallback && stream) {
-      let fullText = "";
       if (typeof response[Symbol.asyncIterator] === 'function') {
         for await (const part of response) {
           if (part?.text) {
-            fullText += part.text;
             streamCallback(part.text);
           }
         }
