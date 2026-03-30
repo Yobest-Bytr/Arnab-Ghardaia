@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
   QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
-  Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight
+  Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight, ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -57,15 +57,25 @@ const Inventory = () => {
     if (user) fetchRabbits();
   }, [user]);
 
+  // Fix: Ensure 'reader' element exists before initializing scanner
   useEffect(() => {
+    let scanner: any = null;
     if (isScannerOpen) {
-      const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
-      scanner.render((decodedText) => {
-        setSearch(decodedText);
-        setIsScannerOpen(false);
-        scanner.clear();
-      }, (err) => {});
-      return () => scanner.clear();
+      const timer = setTimeout(() => {
+        const element = document.getElementById("reader");
+        if (element) {
+          scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+          scanner.render((decodedText: string) => {
+            setSearch(decodedText);
+            setIsScannerOpen(false);
+            scanner.clear();
+          }, (err: any) => {});
+        }
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        if (scanner) scanner.clear();
+      };
     }
   }, [isScannerOpen]);
 
@@ -225,9 +235,9 @@ const Inventory = () => {
                   </div>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => { setViewingRabbit(rabbit); setIsViewModalOpen(true); }} className="p-2 rounded-lg bg-slate-50 text-blue-600"><Eye size={16} /></button>
-                  <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="p-2 rounded-lg bg-slate-50 text-slate-600"><Edit2 size={16} /></button>
-                  <button onClick={() => { if(confirm('Delete?')) storage.delete('rabbits', user?.id || '', rabbit.id).then(fetchRabbits); }} className="p-2 rounded-lg bg-slate-50 text-rose-600"><Trash2 size={16} /></button>
+                  <button onClick={() => { setViewingRabbit(rabbit); setIsViewModalOpen(true); }} className="p-2 rounded-lg bg-slate-50 text-blue-600 hover:bg-blue-50 transition-colors"><Eye size={16} /></button>
+                  <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="p-2 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors"><Edit2 size={16} /></button>
+                  <button onClick={() => { if(confirm('Delete?')) storage.delete('rabbits', user?.id || '', rabbit.id).then(fetchRabbits); }} className="p-2 rounded-lg bg-slate-50 text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 size={16} /></button>
                 </div>
               </div>
 
@@ -254,7 +264,159 @@ const Inventory = () => {
         </div>
       </main>
 
-      {/* Add/Edit Modal - Optimized for Mobile */}
+      {/* Scanner Modal */}
+      <AnimatePresence>
+        {isScannerOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+            <div className="w-full max-w-md bg-white rounded-[2.5rem] overflow-hidden relative">
+              <button onClick={() => setIsScannerOpen(false)} className="absolute top-6 right-6 z-10 p-2 bg-black/10 rounded-full text-black"><X size={24} /></button>
+              <div className="p-8 text-center">
+                <h3 className="text-2xl font-black mb-2">Scan Cage QR</h3>
+                <p className="text-slate-400 font-medium mb-8">Point your camera at the cage label.</p>
+                <div id="reader" className="w-full rounded-2xl overflow-hidden border-4 border-emerald-500" />
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* View Rabbit Modal - Full Profile */}
+      <AnimatePresence>
+        {isViewModalOpen && viewingRabbit && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }} 
+              className="w-full h-full sm:h-auto sm:max-w-4xl bg-white dark:bg-slate-900 sm:rounded-[3rem] shadow-2xl relative flex flex-col overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-32 bg-emerald-600 -z-10" />
+              <div className="p-6 flex items-center justify-between">
+                <button onClick={() => setIsViewModalOpen(false)} className="p-2 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-all"><ArrowLeft size={24} /></button>
+                <div className="flex gap-2">
+                  <button onClick={() => { setEditingRabbit(viewingRabbit); setFormData(viewingRabbit); setIsViewModalOpen(false); setIsModalOpen(true); }} className="p-2 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-all"><Edit2 size={20} /></button>
+                  <button onClick={() => setIsViewModalOpen(false)} className="p-2 rounded-xl bg-white/20 text-white hover:bg-white/30 transition-all"><X size={24} /></button>
+                </div>
+              </div>
+
+              <div className="px-8 pb-10 overflow-y-auto custom-scrollbar">
+                <div className="flex flex-col md:flex-row gap-8 items-start mb-12">
+                  <div className="w-32 h-32 rounded-[2.5rem] bg-white shadow-2xl border-4 border-white flex items-center justify-center text-emerald-600 shrink-0">
+                    <Rabbit size={64} />
+                  </div>
+                  <div className="pt-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-4xl font-black tracking-tight">{viewingRabbit.name}</h2>
+                      <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", getStatusColor(viewingRabbit.status))}>
+                        {t(viewingRabbit.status.toLowerCase())}
+                      </span>
+                    </div>
+                    <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-xs">{viewingRabbit.breed} • {viewingRabbit.rabbit_id}</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6 mb-12">
+                  <div className="farm-card bg-slate-50 dark:bg-slate-800/50 border-none">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center"><Weight size={20} /></div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Weight</p>
+                    </div>
+                    <p className="text-3xl font-black">{viewingRabbit.weight} kg</p>
+                  </div>
+                  <div className="farm-card bg-slate-50 dark:bg-slate-800/50 border-none">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><Calendar size={20} /></div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Age</p>
+                    </div>
+                    <p className="text-3xl font-black">{calculateAge(viewingRabbit.birth_date)}</p>
+                  </div>
+                  <div className="farm-card bg-slate-50 dark:bg-slate-800/50 border-none">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center"><Heart size={20} /></div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender</p>
+                    </div>
+                    <p className="text-3xl font-black">{viewingRabbit.gender}</p>
+                  </div>
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-8">
+                  <div className="space-y-8">
+                    <section>
+                      <h3 className="text-xl font-black mb-6 flex items-center gap-2"><TrendingUp className="text-emerald-600" size={20} /> Weight Velocity</h3>
+                      <div className="h-48 w-full bg-slate-50 dark:bg-slate-800/30 rounded-3xl p-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={viewingRabbit.weight_history || []}>
+                            <defs>
+                              <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#00000005" />
+                            <XAxis dataKey="date" hide />
+                            <YAxis hide />
+                            <Tooltip />
+                            <Area type="monotone" dataKey="weight" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorWeight)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-xl font-black mb-6 flex items-center gap-2"><Layers className="text-blue-600" size={20} /> {t('lineage')}</h3>
+                      <div className="space-y-3">
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center"><Heart size={14} /></div>
+                            <span className="text-xs font-bold text-slate-400 uppercase">{t('mother')}</span>
+                          </div>
+                          <span className="text-sm font-black">{viewingRabbit.mother_id || 'Unknown'}</span>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Heart size={14} /></div>
+                            <span className="text-xs font-bold text-slate-400 uppercase">{t('father')}</span>
+                          </div>
+                          <span className="text-sm font-black">{viewingRabbit.father_id || 'Unknown'}</span>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+
+                  <div className="space-y-8">
+                    <section>
+                      <h3 className="text-xl font-black mb-6 flex items-center gap-2"><Stethoscope className="text-rose-500" size={20} /> Health Report</h3>
+                      <div className="farm-card border-2 border-slate-50 dark:border-slate-800">
+                        <div className="flex items-center justify-between mb-6">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vaccination Status</span>
+                          <span className={cn("px-3 py-1 rounded-full text-[9px] font-black uppercase", viewingRabbit.vaccination_status === 'Vaccinated' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400')}>
+                            {viewingRabbit.vaccination_status}
+                          </span>
+                        </div>
+                        <p className="text-sm font-bold text-slate-500 mb-2 uppercase text-[10px] tracking-widest">Medical History</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                          {viewingRabbit.medical_history || 'No medical incidents recorded.'}
+                        </p>
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-xl font-black mb-6 flex items-center gap-2"><Info className="text-amber-500" size={20} /> {t('notes')}</h3>
+                      <div className="p-6 rounded-[2rem] bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20">
+                        <p className="text-sm text-amber-800 dark:text-amber-400 font-medium leading-relaxed italic">
+                          "{viewingRabbit.notes || 'No additional notes.'}"
+                        </p>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add/Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
