@@ -67,9 +67,6 @@ const translations: Translations = {
   
   // AI & Neural Lab
   neuralLab: { en: "Neural Lab", ar: "المختبر العصبي", fr: "Labo Neural" },
-  neuralArchitect: { en: "Neural Architect", ar: "المهندس العصبي", fr: "Architecte Neural" },
-  workspace: { en: "Workspace", ar: "مساحة العمل", fr: "Espace de travail" },
-  livePreview: { en: "Live Preview", ar: "معاينة مباشرة", fr: "Aperçu en direct" },
   aiStrategy: { en: "AI Strategy", ar: "استراتيجية الذكاء", fr: "Stratégie IA" },
   generatePlan: { en: "Generate Project Plan", ar: "إنشاء خطة مشروع", fr: "Générer un plan" },
   visualInsights: { en: "Visual Insights", ar: "رؤى بصرية", fr: "Aperçus visuels" },
@@ -77,10 +74,17 @@ const translations: Translations = {
   
   // Inventory
   addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un Lapin" },
+  rabbitName: { en: "Rabbit Name", ar: "اسم الأرنب", fr: "Nom du Lapin" },
   cageNumber: { en: "Cage #", ar: "رقم القفص", fr: "N° Cage" },
   breed: { en: "Breed", ar: "السلالة", fr: "Race" },
   healthStatus: { en: "Health Status", ar: "الحالة الصحية", fr: "État de santé" },
   age: { en: "Age", ar: "العمر", fr: "Âge" },
+  gender: { en: "Gender", ar: "الجنس", fr: "Sexe" },
+  male: { en: "Male", ar: "ذكر", fr: "Mâle" },
+  female: { en: "Female", ar: "أنثى", fr: "Femelle" },
+  healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },
+  sick: { en: "Sick", ar: "مريض", fr: "Malade" },
+  quarantine: { en: "Quarantine", ar: "حجر صحي", fr: "Quarantaine" },
   months: { en: "Months", ar: "أشهر", fr: "Mois" },
   days: { en: "Days", ar: "أيام", fr: "Jours" },
   searchPlaceholder: { en: "Search by name or ID...", ar: "ابحث بالاسم أو المعرف...", fr: "Rechercher par nom..." },
