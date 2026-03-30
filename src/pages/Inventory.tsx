@@ -7,7 +7,7 @@ import {
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
   QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
   Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight, ArrowLeft, ShoppingBag,
-  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale
+  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -23,6 +23,7 @@ const Inventory = () => {
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -63,6 +64,14 @@ const Inventory = () => {
     setLoading(false);
   };
 
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    await storage.processSyncQueue();
+    await fetchRabbits();
+    setIsSyncing(false);
+    showSuccess("Neural Sync Processed.");
+  };
+
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return 'N/A';
     const birth = new Date(birthDate);
@@ -81,7 +90,6 @@ const Inventory = () => {
       const weightVal = parseFloat(formData.weight);
       let updatedWeightHistory = [...(formData.weight_history || [])];
       
-      // Track weight changes
       if (editingRabbit && editingRabbit.weight !== formData.weight) {
         updatedWeightHistory.push({
           weight: weightVal,
@@ -118,7 +126,6 @@ const Inventory = () => {
 
   const handleScanSuccess = (decodedText: string) => {
     setIsScannerOpen(false);
-    // Assuming QR contains the rabbit ID or a URL with ID
     const id = decodedText.split('/').pop();
     const rabbit = rabbits.find(r => r.id === id || r.rabbit_id === decodedText);
     if (rabbit) {
@@ -161,6 +168,14 @@ const Inventory = () => {
           </motion.div>
           
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-wrap gap-4">
+            <button 
+              onClick={handleForceSync} 
+              disabled={isSyncing}
+              className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-xl disabled:opacity-50"
+              title="Force Neural Sync"
+            >
+              <RefreshCw size={24} className={cn(isSyncing && "animate-spin")} />
+            </button>
             <button onClick={() => setIsScannerOpen(true)} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-xl">
               <QrCode size={24} />
             </button>
