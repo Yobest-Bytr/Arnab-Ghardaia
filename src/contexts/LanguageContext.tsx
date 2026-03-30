@@ -107,8 +107,6 @@ const translations: Translations = {
   cageMap: { en: "Cage Map", ar: "خريطة الأقفاص", fr: "Plan des cages" },
   vaccinated: { en: "Vaccinated", ar: "مُطعم", fr: "Vacciné" },
   notVaccinated: { en: "Not Vaccinated", ar: "غير مُطعم", fr: "Non vacciné" },
-
-  // Sales Keys
   sales: { en: "Sales", ar: "المبيعات", fr: "Ventes" },
   recordSale: { en: "Record Sale", ar: "تسجيل عملية بيع", fr: "Enregistrer une vente" },
   saleDate: { en: "Sale Date", ar: "تاريخ البيع", fr: "Date de vente" },
@@ -120,14 +118,10 @@ const translations: Translations = {
   totalSales: { en: "Total Sales", ar: "إجمالي المبيعات", fr: "Ventes totales" },
   bestSelling: { en: "Best Selling", ar: "الأكثر مبيعاً", fr: "Meilleures ventes" },
   revenueByCategory: { en: "Revenue by Category", ar: "الإيرادات حسب الفئة", fr: "Revenu par catégorie" },
-
-  // Helper Texts
   helpSelectRabbit: { en: "Start typing to find a rabbit from your inventory.", ar: "ابدأ الكتابة للعثور على أرنب من مخزونك.", fr: "Commencez à taper pour trouver un lapin." },
   helpCustomer: { en: "Enter the buyer's name for your records.", ar: "أدخل اسم المشتري لسجلاتك.", fr: "Entrez le nom de l'acheteur." },
   helpMatingDate: { en: "The expected birth date will be calculated automatically (31 days).", ar: "سيتم حساب تاريخ الولادة المتوقع تلقائياً (31 يوماً).", fr: "La date de naissance sera calculée automatiquement." },
   successRate: { en: "Breeding Success Rate", ar: "معدل نجاح التزاوج", fr: "Taux de réussite" },
-
-  // New Keys
   publishToShop: { en: "Publish to Boutique", ar: "نشر في المتجر", fr: "Publier en Boutique" },
   publishDesc: { en: "Make this rabbit visible to public buyers in the Boutique.", ar: "اجعل هذا الأرنب مرئياً للمشترين في المتجر العام.", fr: "Rendre ce lapin visible dans la Boutique." },
   cageMapDesc: { en: "Visual overview of your farm's housing capacity.", ar: "نظرة عامة مرئية على سعة استيعاب مزرعتك.", fr: "Aperçu visuel de la capacité de votre ferme." },
