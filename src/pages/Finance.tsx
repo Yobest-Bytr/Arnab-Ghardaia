@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Wallet, Plus, Trash2, TrendingDown, TrendingUp, 
   DollarSign, PieChart as PieIcon, Calendar, Tag, 
-  ArrowDownRight, ArrowUpRight, Loader2, X, ShoppingBag, Utensils, Stethoscope, Settings
+  ArrowDownRight, ArrowUpRight, Loader2, X, ShoppingBag, Utensils, Stethoscope, Settings, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -50,14 +50,14 @@ const Finance = () => {
   }, [sales, expenses]);
 
   const categoryData = useMemo(() => {
-    const cats: Record<string, number> = { 'Food': 0, 'Medicine': 0, 'Equipment': 0, 'Other': 0 };
+    const cats: Record<string, number> = { 'Food': 0, 'Medicine': 0, 'Equipment': 0, 'Losses': 0, 'Other': 0 };
     expenses.forEach(e => {
       if (cats[e.category] !== undefined) cats[e.category] += parseFloat(e.amount) || 0;
     });
     return Object.entries(cats).map(([name, value]) => ({ name: t(name.toLowerCase()), value }));
   }, [expenses, t]);
 
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#6366f1'];
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,10 +77,10 @@ const Finance = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user || !confirm("Delete this expense?")) return;
+    if (!user || !confirm("Delete this record?")) return;
     await storage.delete('expenses', user.id, id);
     setExpenses(prev => prev.filter(e => e.id !== id));
-    showSuccess("Expense removed.");
+    showSuccess("Record removed.");
   };
 
   return (
@@ -129,7 +129,7 @@ const Finance = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 farm-card p-0 overflow-hidden">
             <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="text-xl font-black">Expense Log</h3>
+              <h3 className="text-xl font-black">Financial Log</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left rtl:text-right">
@@ -146,14 +146,22 @@ const Finance = () => {
                     <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                            {exp.category === 'Food' ? <Utensils size={14} /> : exp.category === 'Medicine' ? <Stethoscope size={14} /> : <Settings size={14} />}
+                          <div className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center",
+                            exp.category === 'Losses' ? "bg-rose-100 text-rose-600" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                          )}>
+                            {exp.category === 'Food' ? <Utensils size={14} /> : 
+                             exp.category === 'Medicine' ? <Stethoscope size={14} /> : 
+                             exp.category === 'Losses' ? <AlertTriangle size={14} /> : <Settings size={14} />}
                           </div>
                           <span className="text-sm font-bold">{t(exp.category.toLowerCase())}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-black text-rose-500">-{exp.amount} DA</span>
+                        <span className={cn(
+                          "text-sm font-black",
+                          exp.category === 'Losses' ? "text-rose-600" : "text-slate-900 dark:text-white"
+                        )}>-{exp.amount} DA</span>
                       </td>
                       <td className="px-6 py-4 text-xs font-bold text-slate-400">{exp.date}</td>
                       <td className="px-6 py-4">
@@ -171,7 +179,7 @@ const Finance = () => {
           <div className="farm-card">
             <h3 className="text-xl font-black mb-8 flex items-center gap-2">
               <PieIcon className="text-blue-600" size={20} />
-              Expense Distribution
+              Cost Distribution
             </h3>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -211,6 +219,7 @@ const Finance = () => {
                     <option value="Food">{t('food')}</option>
                     <option value="Medicine">{t('medicine')}</option>
                     <option value="Equipment">{t('equipment')}</option>
+                    <option value="Losses">{t('losses')}</option>
                     <option value="Other">{t('other')}</option>
                   </select>
                 </div>

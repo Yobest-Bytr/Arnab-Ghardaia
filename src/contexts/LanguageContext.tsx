@@ -38,6 +38,7 @@ const translations: Translations = {
   food: { en: "Food/Feed", ar: "العلف/الغذاء", fr: "Nourriture" },
   medicine: { en: "Medicine", ar: "الدواء", fr: "Médecine" },
   equipment: { en: "Equipment", ar: "المعدات", fr: "Équipement" },
+  losses: { en: "Losses", ar: "الخسائر", fr: "Pertes" },
   other: { en: "Other", ar: "أخرى", fr: "Autre" },
   amount: { en: "Amount", ar: "المبلغ", fr: "Montant" },
   
