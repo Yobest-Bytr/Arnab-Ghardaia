@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -149,52 +149,86 @@ const Dashboard = () => {
               </div>
             </div>
 
+            {/* Visual Cage Map */}
             <div className="farm-card">
-              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                <Zap className="text-amber-500" size={20} />
-                {t('quickActions')}
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <Link to="/inventory" className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-100 transition-all group">
-                  <Plus className="text-emerald-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
-                  <p className="text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">{t('addRabbit')}</p>
-                </Link>
-                <Link to="/breeding" className="p-4 rounded-2xl bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-900/50 hover:bg-pink-100 transition-all group">
-                  <Heart className="text-pink-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
-                  <p className="text-xs font-black text-pink-700 dark:text-pink-400 uppercase tracking-widest">{t('recordMating')}</p>
-                </Link>
-                <Link to="/reports" className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 hover:bg-blue-100 transition-all group">
-                  <FileText className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
-                  <p className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">{t('reports')}</p>
-                </Link>
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <LayoutGrid className="text-blue-600" size={20} />
+                  {t('cageMap')}
+                </h3>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase">Occupied</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-800" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase">Empty</span>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                {cageMap.map((cage) => (
+                  <div 
+                    key={cage.id}
+                    className={cn(
+                      "aspect-square rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all group relative",
+                      cage.rabbit 
+                        ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50" 
+                        : "bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 border-dashed"
+                    )}
+                  >
+                    <span className="text-[10px] font-black text-slate-400 uppercase">Cage {cage.id}</span>
+                    {cage.rabbit ? (
+                      <>
+                        <Rabbit size={20} className="text-emerald-600" />
+                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 truncate px-2 w-full text-center">
+                          {cage.rabbit.name}
+                        </span>
+                      </>
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-slate-200 dark:border-slate-800" />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="farm-card">
-            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
-              <Clock className="text-emerald-600" size={20} />
-              {t('recentActivity')}
-            </h3>
-            <div className="space-y-6">
-              {recentActivity.map((activity, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className={cn("w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0", activity.color)}>
-                    <activity.icon size={20} />
+          <div className="space-y-8">
+            <div className="farm-card">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
+                <Clock className="text-emerald-600" size={20} />
+                {t('recentActivity')}
+              </h3>
+              <div className="space-y-6">
+                {recentActivity.map((activity, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className={cn("w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0", activity.color)}>
+                      <activity.icon size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-slate-900 dark:text-white">{activity.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{activity.desc}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{activity.time}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-black text-slate-900 dark:text-white">{activity.title}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{activity.desc}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <Link to="/inventory" className="block w-full mt-8">
+                <button className="w-full py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-all">
+                  {t('viewAll')}
+                </button>
+              </Link>
             </div>
-            <Link to="/inventory" className="block w-full mt-8">
-              <button className="w-full py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-all">
-                {t('viewAll')}
-              </button>
-            </Link>
+
+            <div className="farm-card bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-none shadow-xl shadow-emerald-500/20">
+              <Zap className="mb-4" size={32} />
+              <h3 className="text-xl font-black mb-2">Pro Tip</h3>
+              <p className="text-sm text-emerald-50 font-medium leading-relaxed">
+                Regularly update rabbit weights to get more accurate growth velocity insights in your reports.
+              </p>
+            </div>
           </div>
         </div>
       </main>
