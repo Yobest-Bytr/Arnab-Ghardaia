@@ -5,7 +5,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Loader2, Activity, Database, ArrowRight, Info, Clock, X,
-  Layout, BarChart3, FileText, Palette, Target, Rocket
+  Layout, BarChart3, FileText, Palette, Target, Rocket, MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
