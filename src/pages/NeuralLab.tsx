@@ -6,7 +6,7 @@ import {
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Loader2, Activity, Database, ArrowRight, Info, Clock, X,
   Layout, BarChart3, FileText, Palette, Target, Rocket, MessageSquare,
-  ChevronLeft, ChevronRight, Maximize2, Minimize2, Wand2
+  ChevronLeft, ChevronRight, Maximize2, Minimize2, Wand2, Layers, Box
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -148,28 +148,47 @@ const NeuralLab = () => {
       <main className="flex-1 mt-20 w-full relative z-10 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           {/* Chat Panel */}
-          <ResizablePanel defaultSize={40} minSize={30} className="flex flex-col border-r border-white/5 bg-black/20">
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar space-y-8" ref={scrollRef}>
+          <ResizablePanel defaultSize={40} minSize={30} className="flex flex-col border-r border-white/5 bg-black/40 backdrop-blur-3xl">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                  <BrainCircuit size={20} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black tracking-tight uppercase">{t('neuralArchitect')}</h2>
+                  <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">Active Session</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Online</span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 md:p-10 custom-scrollbar space-y-12" ref={scrollRef}>
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} {...msg} />
               ))}
               {isGenerating && (
-                <div className="flex gap-4 animate-pulse">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20" />
-                  <div className="h-4 w-48 bg-white/5 rounded-full mt-3" />
+                <div className="flex gap-6 animate-pulse">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/20" />
+                  <div className="space-y-3 flex-1">
+                    <div className="h-4 w-3/4 bg-white/5 rounded-full" />
+                    <div className="h-4 w-1/2 bg-white/5 rounded-full" />
+                  </div>
                 </div>
               )}
             </div>
             
-            <div className="p-6 border-t border-white/5 space-y-4">
-              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            <div className="p-8 border-t border-white/5 space-y-6 bg-black/40">
+              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
                 {quickActions.map((action, i) => (
                   <button 
                     key={i}
                     onClick={() => handleSend(action.prompt)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-indigo-600 hover:border-indigo-500 transition-all whitespace-nowrap group"
                   >
-                    <action.icon size={12} /> {action.label}
+                    <action.icon size={14} className="group-hover:scale-110 transition-transform" /> {action.label}
                   </button>
                 ))}
               </div>
@@ -185,26 +204,27 @@ const NeuralLab = () => {
             </div>
           </ResizablePanel>
 
-          <ResizableHandle withHandle className="bg-white/5 hover:bg-indigo-500/50 transition-colors w-1.5" />
+          <ResizableHandle withHandle className="bg-white/5 hover:bg-indigo-500/50 transition-colors w-2" />
 
           {/* Workspace Panel */}
           <ResizablePanel defaultSize={60} minSize={30} className="bg-[#020408] relative overflow-hidden">
-            <div className="absolute inset-0 auron-radial opacity-30 pointer-events-none" />
+            <div className="absolute inset-0 auron-radial opacity-40 pointer-events-none" />
             
-            <div className="h-full overflow-y-auto p-10 custom-scrollbar relative z-10">
-              <div className="max-w-4xl mx-auto space-y-12">
+            <div className="h-full overflow-y-auto p-12 custom-scrollbar relative z-10">
+              <div className="max-w-5xl mx-auto space-y-16">
                 <header className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20">
-                      <Layout size={24} />
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 rounded-[2rem] bg-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-indigo-500/30 border border-white/10">
+                      <Layout size={32} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black tracking-tight">Neural Workspace</h2>
-                      <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Live Architect Preview</p>
+                      <h2 className="text-3xl font-black tracking-tighter">{t('workspace')}</h2>
+                      <p className="text-[11px] font-black text-white/20 uppercase tracking-[0.4em] mt-1">{t('livePreview')}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                  <div className="flex gap-4">
+                    <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-[11px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: workspaceState.style.color }} />
                       {workspaceState.style.color}
                     </div>
                   </div>
@@ -214,23 +234,23 @@ const NeuralLab = () => {
                   {workspaceState.chart ? (
                     <motion.div 
                       key="chart"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-8 rounded-[3rem] bg-white/5 border border-white/10"
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      className="p-12 rounded-[4rem] bg-white/5 border border-white/10 backdrop-blur-3xl shadow-2xl"
                     >
                       <ChatMessage role="assistant" content={`<<<CHART: ${JSON.stringify(workspaceState.chart)}>>>`} timestamp={new Date().toISOString()} />
                     </motion.div>
                   ) : (
-                    <div className="h-64 rounded-[3rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-white/10">
-                      <BarChart3 size={48} className="mb-4" />
-                      <p className="text-xs font-black uppercase tracking-widest">No Active Visualization</p>
+                    <div className="h-80 rounded-[4rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-white/10 group hover:border-indigo-500/20 transition-colors">
+                      <BarChart3 size={64} className="mb-6 group-hover:scale-110 transition-transform duration-700" />
+                      <p className="text-sm font-black uppercase tracking-[0.3em]">No Active Visualization</p>
                     </div>
                   )}
 
                   {workspaceState.plan && (
                     <motion.div 
                       key="plan"
-                      initial={{ opacity: 0, x: 20 }}
+                      initial={{ opacity: 0, x: 40 }}
                       animate={{ opacity: 1, x: 0 }}
                     >
                       <ChatMessage role="assistant" content={`<<<PLAN: ${workspaceState.plan.join('\n')}>>>`} timestamp={new Date().toISOString()} />
@@ -238,18 +258,30 @@ const NeuralLab = () => {
                   )}
                 </AnimatePresence>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/10">
-                    <h4 className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">Neural Style</h4>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl border border-white/10" style={{ backgroundColor: workspaceState.style.color }} />
-                      <div className="w-12 h-12 rounded-2xl border border-white/10" style={{ backgroundColor: workspaceState.style.bg }} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="p-10 rounded-[3rem] bg-white/5 border border-white/10 backdrop-blur-xl group hover:border-indigo-500/30 transition-all">
+                    <h4 className="text-[11px] font-black text-white/20 uppercase tracking-widest mb-8 flex items-center gap-2">
+                      <Palette size={14} /> {t('neuralStyle')}
+                    </h4>
+                    <div className="flex items-center gap-6">
+                      <div className="w-16 h-16 rounded-[1.5rem] border-2 border-white/10 shadow-xl group-hover:scale-110 transition-transform" style={{ backgroundColor: workspaceState.style.color }} />
+                      <div className="w-16 h-16 rounded-[1.5rem] border-2 border-white/10 shadow-xl group-hover:scale-110 transition-transform delay-75" style={{ backgroundColor: workspaceState.style.bg }} />
                     </div>
                   </div>
-                  <div className="p-8 rounded-[2.5rem] bg-indigo-600 text-white">
-                    <Sparkles className="mb-4" />
-                    <h4 className="text-lg font-black mb-2">AI Ready</h4>
-                    <p className="text-xs font-medium opacity-80 leading-relaxed">Tell the AI to "Create a chart of my sales" or "Plan a new cage expansion".</p>
+                  
+                  <div className="md:col-span-2 p-10 rounded-[3rem] bg-indigo-600 text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-[80px] rounded-full -mr-32 -mt-32 group-hover:scale-125 transition-transform duration-1000" />
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                          <Sparkles size={24} />
+                        </div>
+                        <h4 className="text-2xl font-black tracking-tight">AI Ready</h4>
+                      </div>
+                      <p className="text-sm font-medium opacity-80 leading-relaxed max-w-md">
+                        The Neural Architect is synchronized with your farm data. Ask for financial analysis, growth projections, or cage expansion plans.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -260,11 +292,16 @@ const NeuralLab = () => {
 
       <AnimatePresence>
         {isScannerOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
-            <div className="max-w-lg w-full">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-black tracking-tight">Neural Scan</h2>
-                <button onClick={() => setIsScannerOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40"><X size={24} /></button>
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-8">
+            <div className="max-w-xl w-full">
+              <div className="flex justify-between items-center mb-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white">
+                    <Layers size={24} />
+                  </div>
+                  <h2 className="text-3xl font-black tracking-tight">Neural Scan</h2>
+                </div>
+                <button onClick={() => setIsScannerOpen(false)} className="p-4 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={28} /></button>
               </div>
               <QrScanner onScanSuccess={(text) => { setIsScannerOpen(false); setInput(`Analyze Neural ID: ${text}`); }} />
             </div>
