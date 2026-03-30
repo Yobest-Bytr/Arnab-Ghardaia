@@ -69,20 +69,24 @@ const NeuralLab = () => {
 
     try {
       let responseText = "";
-      const today = new Date().toISOString().split('T')[0];
+      const revenue = farmSnapshot.sales.reduce((a:any,b:any)=>a+(parseFloat(b.price)||0),0);
+      const expenses = farmSnapshot.expenses.reduce((a:any,b:any)=>a+(parseFloat(b.amount)||0),0);
+      const profit = revenue - expenses;
+
       const systemPrompt = `You are the Yobest AI Neural Architect.
       
       CAPABILITIES:
-      - Generate Project Plans: Use [PLAN: ...] tag.
-      - Visual Charts: Use [CHART: {"type": "area", "data": [...]}] tag.
-      - Custom Styling: You can use [STYLE: {"color": "#hex", "bg": "#hex"}] to suggest UI themes.
+      - Generate Project Plans: Use [PLAN: Step 1\\nStep 2] tag.
+      - Visual Charts: Use [CHART: {"type": "bar", "title": "Title", "data": [{"label": "A", "value": 10, "color": "#hex"}]}] tag.
+      - Custom Styling: Use [STYLE: {"color": "#hex", "bg": "#hex"}] to theme your message.
       
       FARM DATA:
       - Rabbits: ${farmSnapshot.rabbits.length}
-      - Revenue: ${farmSnapshot.sales.reduce((a:any,b:any)=>a+(parseFloat(b.price)||0),0)} DA
-      - Expenses: ${farmSnapshot.expenses.reduce((a:any,b:any)=>a+(parseFloat(b.amount)||0),0)} DA
+      - Revenue: ${revenue} DA
+      - Expenses: ${expenses} DA
+      - Net Profit: ${profit} DA
       
-      Respond in ${language === 'ar' ? 'Arabic' : 'English'}. Be strategic and data-driven.`;
+      Respond in ${language === 'ar' ? 'Arabic' : 'English'}. When asked for plans or charts, ALWAYS use the tags above. Be strategic and data-driven.`;
 
       await grokChat(input || "Analyze this image.", { 
         modelId: 'yobest-ai', 

@@ -2,15 +2,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  ChevronRight, ChevronDown, FileCode, CheckCircle2, RotateCcw, 
-  Undo2, Copy, Check, Edit2, CheckCircle, Zap, ShieldCheck, 
-  Activity, X, Info, CornerDownRight, Clock, FileEdit, FilePlus,
-  Check as CheckIcon, X as CloseIcon, Trash2, Sparkles, Database, Play, ShoppingBag, Heart
+  ChevronRight, ChevronDown, CheckCircle2, Info, Clock, 
+  Play, ShoppingBag, Heart, Database, ListChecks, Sparkles, Palette
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccess, showError } from '@/utils/toast';
 import { storage } from '@/lib/storage';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -29,48 +28,35 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   timestamp,
   image
 }) => {
-  const [isThoughtOpen, setIsThoughtOpen] = useState(true);
-  const [actionExecuted, setActionExecuted] = useState(false);
+  const [isThoughtOpen, setIsThoughtOpen] = useState(false);
 
-  const { mainContent, action } = useMemo(() => {
-    const actionMatch = content.match(/\[ACTION:\s*(\w+)\s*(\{[\s\S]*?\})\]/);
-    if (actionMatch) {
-      try {
-        return {
-          mainContent: content.replace(actionMatch[0], "").trim(),
-          action: { type: actionMatch[1], data: JSON.parse(actionMatch[2]) }
-        };
-      } catch (e) {
-        return { mainContent: content, action: null };
-      }
-    }
-    return { mainContent: content, action: null };
-  }, [content]);
+  // Parse special AI tags
+  const parsedData = useMemo(() => {
+    const chartMatch = content.match(/\[CHART:\s*([\s\S]*?)\]/);
+    const planMatch = content.match(/\[PLAN:\s*([\s\S]*?)\]/);
+    const styleMatch = content.match(/\[STYLE:\s*([\s\S]*?)\]/);
 
-  const handleExecuteAction = async () => {
-    if (!action) return;
+    let chart = null;
+    let plan = null;
+    let style = null;
+
     try {
-      const userId = JSON.parse(localStorage.getItem('yobest_demo_user') || '{}').id || 'demo-user';
-      
-      if (action.type === 'ADD_RABBIT') {
-        await storage.insert('rabbits', userId, action.data);
-        showSuccess(`Neural Action: Added ${action.data.name} to inventory.`);
-      } else if (action.type === 'UPDATE_RABBIT') {
-        await storage.update('rabbits', userId, action.data.id, action.data.updates);
-        showSuccess(`Neural Action: Updated ${action.data.id}.`);
-      } else if (action.type === 'RECORD_SALE') {
-        await storage.insert('sales', userId, action.data);
-        showSuccess(`Neural Action: Recorded sale for ${action.data.customer_name}.`);
-      } else if (action.type === 'RECORD_MATING') {
-        await storage.insert('litters', userId, { ...action.data, status: 'Pregnant' });
-        showSuccess(`Neural Action: Recorded mating cycle.`);
-      }
-      
-      setActionExecuted(true);
-    } catch (err) {
-      showError("Neural Action failed to execute.");
+      if (chartMatch) chart = JSON.parse(chartMatch[1]);
+      if (planMatch) plan = planMatch[1].split('\n').filter(line => line.trim());
+      if (styleMatch) style = JSON.parse(styleMatch[1]);
+    } catch (e) {
+      console.error("Failed to parse AI tag", e);
     }
-  };
+
+    // Clean content by removing tags
+    const cleanContent = content
+      .replace(/\[CHART:[\s\S]*?\]/g, "")
+      .replace(/\[PLAN:[\s\S]*?\]/g, "")
+      .replace(/\[STYLE:[\s\S]*?\]/g, "")
+      .trim();
+
+    return { cleanContent, chart, plan, style };
+  }, [content]);
 
   if (role === 'user') {
     return (
@@ -87,18 +73,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     );
   }
 
-  const getActionIcon = () => {
-    switch (action?.type) {
-      case 'RECORD_SALE': return ShoppingBag;
-      case 'RECORD_MATING': return Heart;
-      default: return Database;
-    }
-  };
-
-  const ActionIcon = getActionIcon();
-
   return (
-    <div className="flex flex-col gap-4 mb-12 group animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div 
+      className="flex flex-col gap-4 mb-12 group animate-in fade-in slide-in-from-bottom-4 duration-700"
+      style={{ 
+        color: parsedData.style?.color,
+        backgroundColor: parsedData.style?.bg ? `${parsedData.style.bg}10` : undefined,
+        padding: parsedData.style?.bg ? '2rem' : undefined,
+        borderRadius: parsedData.style?.bg ? '2.5rem' : undefined,
+        border: parsedData.style?.bg ? `1px solid ${parsedData.style.color}20` : undefined
+      }}
+    >
       {thought && (
         <div className="flex flex-col gap-2">
           <button 
@@ -126,43 +111,61 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       )}
 
       <div className="text-sm leading-relaxed whitespace-pre-wrap text-white/80 font-medium">
-        {mainContent}
+        {parsedData.cleanContent}
       </div>
 
-      {action && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className={cn(
-            "p-8 rounded-[2.5rem] border transition-all duration-500",
-            actionExecuted ? "bg-emerald-500/10 border-emerald-500/30" : "bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.1)]"
-          )}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", actionExecuted ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-400")}>
-                <ActionIcon size={24} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Proposed Neural Action</p>
-                <p className="text-lg font-black">{action.type.replace('_', ' ')}</p>
-              </div>
-            </div>
-            {actionExecuted ? (
-              <div className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
-                <CheckCircle size={16} /> Executed
-              </div>
-            ) : (
-              <button 
-                onClick={handleExecuteAction}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20"
-              >
-                <Play size={14} className="fill-current" /> Run Action
-              </button>
-            )}
+      {/* Render AI Chart */}
+      {parsedData.chart && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="my-6 p-8 rounded-[2.5rem] bg-white/5 border border-white/10">
+          <h4 className="text-xs font-black uppercase tracking-widest text-white/40 mb-6 flex items-center gap-2">
+            <Sparkles size={14} className="text-indigo-400" /> {parsedData.chart.title || "Neural Data Visualization"}
+          </h4>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              {parsedData.chart.type === 'bar' ? (
+                <BarChart data={parsedData.chart.data}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#ffffff40' }} />
+                  <YAxis hide />
+                  <Tooltip contentStyle={{ backgroundColor: '#020408', border: 'none', borderRadius: '1rem' }} />
+                  <Bar dataKey="value" radius={[10, 10, 0, 0]}>
+                    {parsedData.chart.data.map((entry: any, index: number) => (
+                      <rect key={`cell-${index}`} fill={entry.color || '#6366f1'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              ) : (
+                <AreaChart data={parsedData.chart.data}>
+                  <defs>
+                    <linearGradient id="colorAi" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Tooltip contentStyle={{ backgroundColor: '#020408', border: 'none', borderRadius: '1rem' }} />
+                  <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={4} fill="url(#colorAi)" />
+                </AreaChart>
+              )}
+            </ResponsiveContainer>
           </div>
-          <div className="bg-black/40 rounded-2xl p-6 font-mono text-[11px] text-indigo-300/60 overflow-x-auto border border-white/5">
-            <pre>{JSON.stringify(action.data, null, 2)}</pre>
+        </motion.div>
+      )}
+
+      {/* Render AI Project Plan */}
+      {parsedData.plan && (
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="my-6 p-8 rounded-[2.5rem] bg-indigo-600/10 border border-indigo-500/20">
+          <h4 className="text-xs font-black uppercase tracking-widest text-indigo-400 mb-6 flex items-center gap-2">
+            <ListChecks size={16} /> Strategic Project Plan
+          </h4>
+          <div className="space-y-4">
+            {parsedData.plan.map((step, i) => (
+              <div key={i} className="flex items-start gap-4 group/step">
+                <div className="w-6 h-6 rounded-full bg-indigo-600/20 flex items-center justify-center text-[10px] font-black text-indigo-400 shrink-0 mt-0.5 group-hover/step:bg-indigo-600 group-hover/step:text-white transition-all">
+                  {i + 1}
+                </div>
+                <p className="text-sm font-bold text-white/70 leading-relaxed">{step}</p>
+              </div>
+            ))}
           </div>
         </motion.div>
       )}

@@ -53,12 +53,18 @@ const translations: Translations = {
   cageNumber: { en: "Cage #", ar: "رقم القفص", fr: "N° Cage" },
   breed: { en: "Breed", ar: "السلالة", fr: "Race" },
   healthStatus: { en: "Health Status", ar: "الحالة الصحية", fr: "État de santé" },
+  age: { en: "Age", ar: "العمر", fr: "Âge" },
+  months: { en: "Months", ar: "أشهر", fr: "Mois" },
+  days: { en: "Days", ar: "أيام", fr: "Jours" },
+  searchPlaceholder: { en: "Search by name or ID...", ar: "ابحث بالاسم أو المعرف...", fr: "Rechercher par nom..." },
   
   // Actions
   save: { en: "Save Changes", ar: "حفظ التغييرات", fr: "Enregistrer" },
   delete: { en: "Delete", ar: "حذف", fr: "Supprimer" },
   edit: { en: "Edit", ar: "تعديل", fr: "Modifier" },
   cancel: { en: "Cancel", ar: "إلغاء", fr: "Annuler" },
+  recordSale: { en: "Record Sale", ar: "تسجيل بيع", fr: "Enregistrer Vente" },
+  recordMating: { en: "Record Mating", ar: "تسجيل تزاوج", fr: "Enregistrer Accouplement" },
 };
 
 interface LanguageContextType {
