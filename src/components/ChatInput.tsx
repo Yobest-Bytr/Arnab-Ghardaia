@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { 
   Send, Plus, ChevronDown, Sparkles, X, Cpu, Zap, 
-  Layers, FileUp, Box, Wand2, MessageSquare, ArrowRight, Camera, QrCode
+  Layers, FileUp, Box, Wand2, MessageSquare, ArrowRight, Camera, QrCode, Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
