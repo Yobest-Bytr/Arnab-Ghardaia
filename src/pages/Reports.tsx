@@ -305,7 +305,7 @@ const Reports = () => {
                       <span className={cn(
                         "px-2 py-1 rounded-full text-[9px] font-black uppercase",
                         r.status === 'Sold' ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600"
-                      )}>{t(r.status.toLowerCase())}</span>
+                      )}>{t((r.status || 'Available').toLowerCase())}</span>
                     </td>
                     <td className="px-6 py-4 text-sm font-black text-emerald-600">{r.price_dzd || 0} DA</td>
                     <td className="px-6 py-4 text-xs font-bold text-slate-400">{new Date(r.created_at).toLocaleDateString()}</td>
