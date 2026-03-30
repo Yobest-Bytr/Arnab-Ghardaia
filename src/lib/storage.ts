@@ -12,12 +12,19 @@ interface SyncItem {
   retryCount?: number;
 }
 
-const isUUID = (str: string) => {
+/**
+ * Strict UUID validation to prevent "invalid input syntax for type uuid" errors.
+ */
+const isUUID = (str: any): boolean => {
+  if (typeof str !== 'string') return false;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
 };
 
-const generateUUID = () => {
+/**
+ * Robust UUID generator for offline support.
+ */
+const generateUUID = (): string => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
@@ -57,9 +64,12 @@ export const storage = {
   },
 
   async insert(table: string, userId: string, item: any) {
+    // CRITICAL FIX: Ensure ID is NEVER an empty string or invalid UUID
+    const validId = (item.id && isUUID(item.id)) ? item.id : generateUUID();
+
     const newItem = { 
       ...item, 
-      id: item.id && isUUID(item.id) ? item.id : generateUUID(),
+      id: validId,
       [table === 'profiles' ? 'id' : 'user_id']: userId, 
       created_at: item.created_at || new Date().toISOString() 
     };
@@ -69,12 +79,19 @@ export const storage = {
     localStorage.setItem(localKey, JSON.stringify([newItem, ...localData]));
     
     if (isUUID(userId)) {
-      this.addToSyncQueue({ id: newItem.id, table, action: 'INSERT', data: newItem, timestamp: Date.now() });
+      // Sanitize data before adding to sync queue
+      const syncData = { ...newItem };
+      this.addToSyncQueue({ id: validId, table, action: 'INSERT', data: syncData, timestamp: Date.now() });
     }
     return newItem;
   },
 
   async update(table: string, userId: string, id: string, updates: any) {
+    if (!isUUID(id)) {
+      console.error("Cannot update record with invalid UUID:", id);
+      return updates;
+    }
+
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     const updatedData = localData.map((item: any) => 
@@ -82,8 +99,10 @@ export const storage = {
     );
     localStorage.setItem(localKey, JSON.stringify(updatedData));
     
-    if (isUUID(userId) && isUUID(id)) {
-      this.addToSyncQueue({ id, table, action: 'UPDATE', data: updates, timestamp: Date.now() });
+    if (isUUID(userId)) {
+      // Ensure we don't send an empty ID in the updates payload
+      const { id: _, ...sanitizedUpdates } = updates;
+      this.addToSyncQueue({ id, table, action: 'UPDATE', data: sanitizedUpdates, timestamp: Date.now() });
     }
     return updates;
   },
@@ -115,6 +134,16 @@ export const storage = {
 
     for (let i = 0; i < updatedQueue.length; i++) {
       const item = updatedQueue[i];
+      
+      // Final safety check: Ensure the ID is a valid UUID before sending to Supabase
+      if (!isUUID(item.id)) {
+        console.warn(`Neural Recovery: Skipping item with invalid UUID: ${item.id}`);
+        updatedQueue.splice(i, 1);
+        i--;
+        hasChanges = true;
+        continue;
+      }
+
       try {
         let error;
         if (item.action === 'INSERT') {
@@ -133,7 +162,6 @@ export const storage = {
           console.error(`Sync error for ${item.table}:`, error.message);
           
           // AUTO-RECOVERY: Detect missing column from error message and strip it
-          // Handles formats like: Could not find the 'column_name' or "column_name"
           const match = error.message.match(/column ['"](.+?)['"]/i);
           const columnName = match ? match[1] : null;
           
@@ -141,19 +169,16 @@ export const storage = {
             console.warn(`Neural Recovery: Stripping missing column '${columnName}' from ${item.table} payload.`);
             const { [columnName]: _, ...sanitizedData } = item.data;
             
-            // Update the item in the queue and retry immediately in the next loop iteration
             updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
             hasChanges = true;
             
-            // Prevent infinite loops if something is fundamentally wrong
             if ((item.retryCount || 0) > 15) {
-              console.error(`Neural Recovery: Max retries reached for ${item.table}. Skipping item.`);
               updatedQueue.splice(i, 1);
               i--;
             }
             continue; 
           }
-          break; // Stop processing for other errors (like network or auth)
+          break; 
         }
       } catch (e) {
         break; 
