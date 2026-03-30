@@ -102,14 +102,25 @@ const translations: Translations = {
   message: { en: "Message", ar: "الرسالة", fr: "Message" },
   sendMessage: { en: "Send Message", ar: "إرسال الرسالة", fr: "Envoyer" },
   profile: { en: "Profile", ar: "الملف الشخصي", fr: "Profil" },
-  
-  // New Keys
   medicalHistory: { en: "Medical History", ar: "السجل الطبي", fr: "Historique médical" },
   vaccinationStatus: { en: "Vaccination Status", ar: "حالة التطعيم", fr: "Statut vaccinal" },
   lineage: { en: "Lineage", ar: "النسب", fr: "Lignée" },
   cageMap: { en: "Cage Map", ar: "خريطة الأقفاص", fr: "Plan des cages" },
   vaccinated: { en: "Vaccinated", ar: "مُطعم", fr: "Vacciné" },
   notVaccinated: { en: "Not Vaccinated", ar: "غير مُطعم", fr: "Non vacciné" },
+
+  // Sales Keys
+  sales: { en: "Sales", ar: "المبيعات", fr: "Ventes" },
+  recordSale: { en: "Record Sale", ar: "تسجيل عملية بيع", fr: "Enregistrer une vente" },
+  saleDate: { en: "Sale Date", ar: "تاريخ البيع", fr: "Date de vente" },
+  customerName: { en: "Customer Name", ar: "اسم المشتري", fr: "Nom du client" },
+  rabbitType: { en: "Rabbit Type", ar: "نوع الأرنب", fr: "Type de lapin" },
+  kit: { en: "Kit (Young)", ar: "خرنق (صغير)", fr: "Lapereau" },
+  meatRabbit: { en: "Meat Rabbit", ar: "أرنب لحم", fr: "Lapin de chair" },
+  largeRabbit: { en: "Large Rabbit", ar: "أرنب كبير", fr: "Grand lapin" },
+  totalSales: { en: "Total Sales", ar: "إجمالي المبيعات", fr: "Ventes totales" },
+  bestSelling: { en: "Best Selling", ar: "الأكثر مبيعاً", fr: "Meilleures ventes" },
+  revenueByCategory: { en: "Revenue by Category", ar: "الإيرادات حسب الفئة", fr: "Revenu par catégorie" },
 };
 
 interface LanguageContextType {

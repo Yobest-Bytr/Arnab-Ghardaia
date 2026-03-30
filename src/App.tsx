@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Breeding from "./pages/Breeding";
 import Reports from "./pages/Reports";
+import Sales from "./pages/Sales";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PublicRabbits from "./pages/PublicRabbits";
@@ -72,6 +73,11 @@ const App = () => (
                 <Route path="/breeding" element={
                   <ProtectedRoute>
                     <Breeding />
+                  </ProtectedRoute>
+                } />
+                <Route path="/sales" element={
+                  <ProtectedRoute>
+                    <Sales />
                   </ProtectedRoute>
                 } />
                 <Route path="/reports" element={
