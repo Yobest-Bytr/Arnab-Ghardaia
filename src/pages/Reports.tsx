@@ -7,7 +7,7 @@ import {
   BarChart3, TrendingUp, Download, 
   PieChart as PieIcon, Calendar, ArrowUpRight,
   FileText, Loader2, Rabbit, ShieldCheck, Printer,
-  ChevronRight, Info, Wallet
+  ChevronRight, Info, Wallet, Filter
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -23,6 +23,8 @@ const Reports = () => {
   const { user } = useAuth();
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,19 +36,31 @@ const Reports = () => {
     setRabbits(data);
   };
 
+  const filteredRabbits = useMemo(() => {
+    return rabbits.filter(r => {
+      const date = new Date(r.created_at);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      
+      if (start && date < start) return false;
+      if (end && date > end) return false;
+      return true;
+    });
+  }, [rabbits, startDate, endDate]);
+
   const totalRevenue = useMemo(() => {
-    return rabbits
+    return filteredRabbits
       .filter(r => r.status === 'Sold')
       .reduce((acc, curr) => acc + (parseFloat(curr.price_dzd) || 0), 0);
-  }, [rabbits]);
+  }, [filteredRabbits]);
 
   const categoryData = useMemo(() => {
     const counts: Record<string, number> = { 'Young': 0, 'Adult': 0, 'Meat': 0 };
-    rabbits.forEach(r => {
+    filteredRabbits.forEach(r => {
       if (r.sale_category) counts[r.sale_category] = (counts[r.sale_category] || 0) + 1;
     });
     return Object.entries(counts).map(([name, value]) => ({ name: t(`category${name}`), value }));
-  }, [rabbits, t]);
+  }, [filteredRabbits, t]);
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
 
@@ -74,11 +88,41 @@ const Reports = () => {
             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('reports')}</h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Financial & Growth Telemetry.</p>
           </div>
-          <button onClick={handleExportPDF} disabled={loading} className="farm-button flex items-center gap-3 h-14 px-8">
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
-            {t('downloadPDF')}
-          </button>
+          <div className="flex gap-3">
+            <button onClick={handleExportPDF} disabled={loading} className="farm-button flex items-center gap-3 h-14 px-8">
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
+              {t('downloadPDF')}
+            </button>
+          </div>
         </header>
+
+        {/* Date Filters */}
+        <div className="farm-card mb-12 flex flex-wrap items-end gap-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t('startDate')}</label>
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)}
+              className="h-12 px-4 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" 
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t('endDate')}</label>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)}
+              className="h-12 px-4 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" 
+            />
+          </div>
+          <button 
+            onClick={() => { setStartDate(''); setEndDate(''); }}
+            className="h-12 px-6 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
+          >
+            Reset
+          </button>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-8 mb-12">
           <div className="farm-card bg-emerald-600 text-white border-none shadow-emerald-200">
@@ -94,7 +138,7 @@ const Reports = () => {
           <div className="farm-card">
             <Rabbit className="mb-4 text-pink-600" size={32} />
             <p className="text-xs font-black uppercase tracking-widest text-slate-400">Active Stock</p>
-            <h3 className="text-4xl font-black text-slate-900 dark:text-white">{rabbits.filter(r => r.status === 'Available').length}</h3>
+            <h3 className="text-4xl font-black text-slate-900 dark:text-white">{filteredRabbits.filter(r => r.status === 'Available').length}</h3>
           </div>
         </div>
 
@@ -127,7 +171,7 @@ const Reports = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                  {rabbits.filter(r => r.status === 'Sold').slice(0, 5).map((r, i) => (
+                  {filteredRabbits.filter(r => r.status === 'Sold').slice(0, 5).map((r, i) => (
                     <tr key={i}>
                       <td className="px-6 py-4 text-sm font-bold">{r.name}</td>
                       <td className="px-6 py-4 text-xs font-medium text-slate-500">{t(`category${r.sale_category}`)}</td>
@@ -146,6 +190,9 @@ const Reports = () => {
         <div ref={reportRef} className="p-10 text-slate-900">
           <h1 className="text-3xl font-black text-emerald-600 mb-2">{t('appName')}</h1>
           <p className="text-sm font-bold text-slate-400 mb-10 uppercase tracking-widest">Official Farm Audit • {new Date().toLocaleDateString()}</p>
+          {startDate && endDate && (
+            <p className="text-xs font-bold text-slate-500 mb-6">Range: {startDate} to {endDate}</p>
+          )}
           <div className="grid grid-cols-3 gap-6 mb-10">
             <div className="p-6 bg-slate-50 rounded-2xl">
               <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Total Revenue</p>
@@ -153,7 +200,7 @@ const Reports = () => {
             </div>
             <div className="p-6 bg-slate-50 rounded-2xl">
               <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Total Stock</p>
-              <p className="text-2xl font-black">{rabbits.length}</p>
+              <p className="text-2xl font-black">{filteredRabbits.length}</p>
             </div>
           </div>
         </div>

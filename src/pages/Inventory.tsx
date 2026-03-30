@@ -79,6 +79,17 @@ const Inventory = () => {
     return months > 0 ? `${months} ${t('months')}` : `${diffDays} ${t('days')}`;
   };
 
+  const handleDownloadQR = (rabbitId: string) => {
+    const canvas = document.querySelector('img[alt="QR"]') as HTMLImageElement;
+    if (canvas) {
+      const link = document.createElement('a');
+      link.href = canvas.src;
+      link.download = `QR_${rabbitId}.png`;
+      link.click();
+      showSuccess("QR Code downloaded.");
+    }
+  };
+
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -217,14 +228,22 @@ const Inventory = () => {
               <button onClick={() => setIsViewModalOpen(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 z-10"><X size={24} /></button>
               
               <div className="p-10">
-                <div className="flex items-center gap-6 mb-10">
-                  <div className="w-24 h-24 rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-600">
-                    <Rabbit size={48} />
+                <div className="flex items-center justify-between mb-10">
+                  <div className="flex items-center gap-6">
+                    <div className="w-24 h-24 rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-600">
+                      <Rabbit size={48} />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black tracking-tight">{viewingRabbit.name}</h2>
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{viewingRabbit.breed} • {calculateAge(viewingRabbit.birth_date)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-3xl font-black tracking-tight">{viewingRabbit.name}</h2>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{viewingRabbit.breed} • {calculateAge(viewingRabbit.birth_date)}</p>
-                  </div>
+                  <button 
+                    onClick={() => handleDownloadQR(viewingRabbit.rabbit_id)}
+                    className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all"
+                  >
+                    <Download size={16} /> {t('downloadQr')}
+                  </button>
                 </div>
 
                 <div className="grid lg:grid-cols-2 gap-10">
