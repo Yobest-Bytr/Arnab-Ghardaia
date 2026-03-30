@@ -8,7 +8,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, Database, ExternalLink
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, Database, ExternalLink, Trash2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { showSuccess } from '@/utils/toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -37,8 +38,8 @@ const Dashboard = () => {
   const checkCloudTables = async () => {
     if (storage.isOffline()) return;
     try {
-      const { status } = await supabase.from('rabbits').select('id', { count: 'exact', head: true }).limit(1);
-      if (status === 404) {
+      const { status, error } = await supabase.from('rabbits').select('id').limit(1);
+      if (status === 404 || (error && error.message.includes('is_public'))) {
         setCloudStatus('missing');
       } else {
         setCloudStatus('ready');
@@ -56,6 +57,12 @@ const Dashboard = () => {
     setRabbits(rabbitData);
     setLitters(litterData);
     setLoading(false);
+  };
+
+  const handleClearQueue = () => {
+    localStorage.removeItem('arnab_sync_queue');
+    showSuccess("Sync queue cleared. You can now try adding data again.");
+    window.location.reload();
   };
 
   const chartData = useMemo(() => {
@@ -274,11 +281,24 @@ const Dashboard = () => {
               Setup Supabase Tables
             </DialogTitle>
             <DialogDescription className="text-slate-500 font-medium">
-              Your Supabase tables are missing. Follow these steps to enable cloud storage.
+              Your Supabase tables are missing columns. Run this script to fix the schema.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6 py-4">
+            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Trash2 className="text-rose-600" size={20} />
+                <div>
+                  <p className="text-sm font-bold text-rose-900 dark:text-rose-400">Clear Sync Queue</p>
+                  <p className="text-xs text-rose-700 dark:text-rose-500">If sync is stuck, clear the local queue.</p>
+                </div>
+              </div>
+              <button onClick={handleClearQueue} className="px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all">
+                Clear Queue
+              </button>
+            </div>
+
             <ol className="list-decimal pl-6 space-y-6 text-sm font-medium text-slate-600 dark:text-slate-400">
               <li>
                 Go to your Supabase dashboard: 
@@ -286,11 +306,19 @@ const Dashboard = () => {
                   supabase.com/dashboard <ExternalLink size={12} />
                 </a>
               </li>
-              <li>Select your project.</li>
               <li>
-                Open the <span className="text-slate-900 dark:text-white font-bold">SQL Editor</span> and run the following script:
+                Open the <span className="text-slate-900 dark:text-white font-bold">SQL Editor</span> and run this script to ensure all columns exist:
                 <div className="mt-4 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 font-mono text-[11px] text-emerald-600 overflow-x-auto">
-                  <pre>{`CREATE TABLE rabbits (
+                  <pre>{`-- Ensure rabbits table has all columns
+ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT false;
+ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS weight_history jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS vaccination_status text;
+ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS medical_history text;
+ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS price_dzd text;
+ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS sale_category text;
+
+-- Re-create tables if they don't exist
+CREATE TABLE IF NOT EXISTS rabbits (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
   rabbit_id text NOT NULL,
@@ -314,7 +342,7 @@ const Dashboard = () => {
   created_at timestamp with time zone DEFAULT now()
 );
 
-CREATE TABLE litters (
+CREATE TABLE IF NOT EXISTS litters (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
   mother_name text,
@@ -327,7 +355,7 @@ CREATE TABLE litters (
   created_at timestamp with time zone DEFAULT now()
 );
 
-CREATE TABLE sales (
+CREATE TABLE IF NOT EXISTS sales (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
   rabbit_id uuid REFERENCES rabbits(id),
@@ -337,25 +365,14 @@ CREATE TABLE sales (
   category text,
   notes text,
   created_at timestamp with time zone DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE rabbits ENABLE ROW LEVEL SECURITY;
-ALTER TABLE litters ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
-
--- Create Policies
-CREATE POLICY "Users can manage their own rabbits" ON rabbits FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own litters" ON litters FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own sales" ON sales FOR ALL USING (auth.uid() = user_id);`}</pre>
+);`}</pre>
                 </div>
               </li>
-              <li>Reload this page after the tables are created.</li>
             </ol>
           </div>
           
           <div className="flex justify-end mt-6">
-            <button onClick={() => setIsSetupModalOpen(false)} className="farm-button h-12 px-8">I've Created the Tables</button>
+            <button onClick={() => setIsSetupModalOpen(false)} className="farm-button h-12 px-8">I've Updated the Schema</button>
           </div>
         </DialogContent>
       </Dialog>
