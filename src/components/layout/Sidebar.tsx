@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose?: () => void }) => {
   const links = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'My Workspace' },
-    { to: '/ai-insights', icon: BrainCircuit, label: 'AI Insights' },
-    { to: '/shared', icon: Users, label: 'Collaborators' },
-    { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-    { to: '/archive', icon: Archive, label: 'Archive' },
-    { to: '/settings', icon: Settings, label: 'Settings' },
+    { to: '/neural-lab', icon: BrainCircuit, label: 'Neural Lab' },
+    { to: '/inventory', icon: Archive, label: 'Inventory' },
+    { to: '/breeding', icon: Zap, label: 'Breeding' },
+    { to: '/sales', icon: BarChart3, label: 'Sales' },
+    { to: '/reports', icon: BarChart3, label: 'Reports' },
+    { to: '/profile', icon: Settings, label: 'Settings' },
   ];
 
   return (

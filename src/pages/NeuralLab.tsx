@@ -296,13 +296,13 @@ const NeuralLab = () => {
         title: 'index.html',
         project_id: newProject.id,
         path: 'index.html',
-        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${project.title}</title>\n    <script src="https://js.puter.com/v2/"></script>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
+        content: `<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>\${project.title}</title>\n    <script src="https://js.puter.com/v2/"></script>\n    <script src="https://cdn.tailwindcss.com/3.4.1"></script>\n    <script>\n      tailwind.config = {\n        theme: {\n          extend: {\n            colors: {\n              primary: '#99f6ff',\n              background: '#020408',\n            }\n          }\n        }\n      }\n    </script>\n  </head>\n  <body class="bg-[#020408] text-white">\n    <div id="root"></div>\n  </body>\n</html>`
       },
       {
         title: 'App.tsx',
         project_id: newProject.id,
         path: 'src/App.tsx',
-        content: `import React from 'react';\n\nexport default function App() {\n  return (\n    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">\n      <div className="w-24 h-24 bg-indigo-500/20 rounded-3xl flex items-center justify-center text-indigo-400 mb-8 border border-indigo-500/20 animate-pulse">\n        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>\n      </div>\n      <h1 className="text-6xl font-black mb-4 tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40">${project.title}</h1>\n      <p className="text-xl text-white/40 max-w-md font-medium">${project.description}</p>\n      <button className="mt-12 px-8 py-3 bg-[#99f6ff] text-[#020408] font-bold rounded-full hover:scale-105 transition-transform shadow-[0_0_30px_rgba(153,246,255,0.3)]">\n        Initialize Neural Link\n      </button>\n    </div>\n  );\n}`
+        content: `import React from 'react';\n\nexport default function App() {\n  return (\n    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">\n      <div className="w-24 h-24 bg-indigo-500/20 rounded-3xl flex items-center justify-center text-indigo-400 mb-8 border border-indigo-500/20 animate-pulse">\n        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>\n      </div>\n      <h1 className="text-6xl font-black mb-4 tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40">\${project.title}</h1>\n      <p className="text-xl text-white/40 max-w-md font-medium">\${project.description}</p>\n      <button className="mt-12 px-8 py-3 bg-[#99f6ff] text-[#020408] font-bold rounded-full hover:scale-105 transition-transform shadow-[0_0_30px_rgba(153,246,255,0.3)]">\n        Initialize Neural Link\n      </button>\n    </div>\n  );\n}`
       },
       {
         title: 'main.tsx',
@@ -361,7 +361,7 @@ const NeuralLab = () => {
     e.preventDefault();
     if (!input.trim() || isGenerating) return;
     if (!hasKey) {
-      showError(`Please configure your API key for ${selectedModel.name} in Settings.`);
+      showError(`Please configure your API key for \${selectedModel.name} in Settings.`);
       return;
     }
     const userMsg = { id: Date.now(), role: 'user', content: input, timestamp: new Date().toISOString() };
@@ -375,7 +375,7 @@ const NeuralLab = () => {
         modelId: selectedModel.id, 
         userId: user?.id, 
         stream: true,
-        systemPrompt: `You are the Yobest AI Neural Architect. You are building "${selectedProject?.title}".
+        systemPrompt: \`You are the Yobest AI Neural Architect. You are building "\${selectedProject?.title}".
         
         CRITICAL COGNITIVE RULES:
         1. TECH STACK: You are strictly using VITE + REACT + TAILWIND.
@@ -394,9 +394,9 @@ const NeuralLab = () => {
         [Detailed architectural plan]
         
         ### File: src/pages/MyPage.tsx
-        \`\`\`typescript
+        \\\`\\\`\\\`typescript
         [Production-ready code]
-        \`\`\``
+        \\\`\\\`\\\` \`
       }, (chunk) => {
         responseText += chunk;
         setMessages(prev => {
@@ -437,40 +437,40 @@ const NeuralLab = () => {
               
               // Transpile imports to neuralRequire calls
               let content = s.content
-                .replace(/import\s+(?:(\w+)|\{(.*?)\})\s+from\s+['"](.*?)['"];?/g, (match, defaultImport, namedImports, path) => {
-                  const varName = defaultImport || `__imports_${Math.random().toString(36).substr(2, 5)}`;
-                  let result = `const ${varName} = neuralRequire('${path}');`;
+                .replace(/import\\s+(?:(\\w+)|\\{(.*?)\\})\\s+from\\s+['"](.*?)['"];?/g, (match, defaultImport, namedImports, path) => {
+                  const varName = defaultImport || \`__imports_\${Math.random().toString(36).substr(2, 5)}\`;
+                  let result = \`const \${varName} = neuralRequire('\${path}');\`;
                   if (namedImports) {
                     const imports = namedImports.split(',').map(i => i.trim());
                     imports.forEach(imp => {
-                      const [orig, alias] = imp.split(/\s+as\s+/);
-                      result += `\nconst ${alias || orig} = ${varName}.${orig};`;
+                      const [orig, alias] = imp.split(/\\s+as\\s+/);
+                      result += \`\\nconst \${alias || orig} = \${varName}.\${orig};\`;
                     });
                   }
                   return result;
                 })
-                .replace(/export\s+default\s+/g, 'module.exports.default = ')
-                .replace(/export\s+const\s+(\w+)/g, 'module.exports.$1 = ')
-                .replace(/export\s+function\s+(\w+)/g, 'module.exports.$1 = function $1');
+                .replace(/export\\s+default\\s+/g, 'module.exports.default = ')
+                .replace(/export\\s+const\\s+(\\w+)/g, 'module.exports.$1 = ')
+                .replace(/export\\s+function\\s+(\\w+)/g, 'module.exports.$1 = function $1');
               
-              return `
-                window.NeuralModules['${s.path}'] = function(require, module, exports) {
+              return \`
+                window.NeuralModules['\${s.path}'] = function(require, module, exports) {
                   try {
-                    ${content}
+                    \${content}
                   } catch (e) {
-                    console.error("Module Runtime Error [${s.path}]: " + e.message);
+                    console.error("Module Runtime Error [\${s.path}]: " + e.message);
                   }
                 };
-                if ('${isMainApp}' === 'true') window.AppPath = '${s.path}';
-              `;
-            }).join('\n');
+                if ('\${isMainApp}' === 'true') window.AppPath = '\${s.path}';
+              \`;
+            }).join('\\n');
 
           const cssToInject = projectScripts
             .filter(s => s.path?.endsWith('.css'))
-            .map(s => `<style data-path="${s.path}">${s.content}</style>`)
-            .join('\n');
+            .map(s => \`<style data-path="\${s.path}">\${s.content}</style>\`)
+            .join('\\n');
 
-          const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || `
+          const indexHtml = projectScripts.find(s => s.path === 'index.html')?.content || \`
             <!DOCTYPE html>
             <html>
               <head>
@@ -484,9 +484,9 @@ const NeuralLab = () => {
               </head>
               <body><div id="root"></div></body>
             </html>
-          `;
+          \`;
           
-          const finalHtml = indexHtml.replace('<head>', `
+          const finalHtml = indexHtml.replace('<head>', \`
             <head>
             <script>
               window.NeuralModules = {};
@@ -528,8 +528,8 @@ const NeuralLab = () => {
                 };
               }
             </script>
-            ${cssToInject}
-          `).replace('</body>', `
+            \${cssToInject}
+          \`).replace('</body>', \`
             <script type="text/babel">
               const sendToParent = (level, args) => {
                 window.parent.postMessage({
@@ -547,7 +547,7 @@ const NeuralLab = () => {
               console.error = (...args) => sendToParent('error', args);
 
               try {
-                ${moduleRegistry}
+                \${moduleRegistry}
                 if (window.AppPath) {
                   const AppExport = window.neuralRequire(window.AppPath);
                   const AppComponent = AppExport.default || AppExport;
@@ -561,7 +561,7 @@ const NeuralLab = () => {
               }
             </script>
             </body>
-          `);
+          \`);
           
           freshDoc.write(finalHtml);
           freshDoc.close();
@@ -814,7 +814,7 @@ const NeuralLab = () => {
                                               { label: 'Debug', icon: AlertTriangle },
                                               { label: 'Document', icon: FileCode }
                                             ].map(preset => (
-                                              <button key={preset.label} onClick={() => setInput(`Please \${preset.label.toLowerCase()} the current script.`)} className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-all text-left flex items-center gap-2">
+                                              <button key={preset.label} onClick={() => setInput(\`Please \${preset.label.toLowerCase()} the current script.\`)} className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold hover:bg-white/10 transition-all text-left flex items-center gap-2">
                                                 <preset.icon size={12} className="text-indigo-400" /> {preset.label}
                                               </button>
                                             ))}
@@ -962,7 +962,7 @@ const NeuralLab = () => {
               <li>
                 Open the <span className="text-white font-bold">SQL Editor</span> and run the following script:
                 <div className="mt-4 bg-black/40 p-6 rounded-2xl border border-white/5 font-mono text-[11px] text-indigo-300 overflow-x-auto">
-                  <pre>{`CREATE TABLE projects (
+                  <pre>{\`CREATE TABLE projects (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
   title text NOT NULL,
@@ -990,7 +990,7 @@ CREATE POLICY "Users can manage their own projects" ON projects
   FOR ALL USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can manage their own scripts" ON scripts
-  FOR ALL USING (auth.uid() = user_id);`}</pre>
+  FOR ALL USING (auth.uid() = user_id);\`}</pre>
                 </div>
               </li>
               <li>Reload this page after the tables are created.</li>
