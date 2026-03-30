@@ -25,7 +25,7 @@ const Inventory = () => {
   const [editingRabbit, setEditingRabbit] = useState<any>(null);
   const [viewingRabbit, setViewingRabbit] = useState<any>(null);
   
-  const [formData, setFormData] = useState({
+  const initialForm = {
     rabbit_id: '',
     name: '',
     breed: 'New Zealand White',
@@ -34,13 +34,14 @@ const Inventory = () => {
     status: 'Available',
     sale_category: 'Adult',
     cage_number: '',
-    price_usd: '',
     price_dzd: '',
     weight: '',
-    birth_date: '',
+    birth_date: new Date().toISOString().split('T')[0],
     notes: '',
     weight_history: [] as any[]
-  });
+  };
+
+  const [formData, setFormData] = useState(initialForm);
 
   useEffect(() => {
     if (user) fetchRabbits();
@@ -71,6 +72,9 @@ const Inventory = () => {
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - birth.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (isNaN(diffDays)) return 'N/A';
+    
     const months = Math.floor(diffDays / 30);
     return months > 0 ? `${months} ${t('months')}` : `${diffDays} ${t('days')}`;
   };
@@ -79,7 +83,9 @@ const Inventory = () => {
     e.preventDefault();
     if (!user) return;
     
-    const weightEntry = { date: new Date().toISOString().split('T')[0], weight: parseFloat(formData.weight) };
+    const currentWeight = parseFloat(formData.weight) || 0;
+    const weightEntry = { date: new Date().toISOString().split('T')[0], weight: currentWeight };
+    
     const updatedHistory = editingRabbit 
       ? [...(editingRabbit.weight_history || []), weightEntry].slice(-10)
       : [weightEntry];
@@ -92,11 +98,13 @@ const Inventory = () => {
         setRabbits(prev => prev.map(r => r.id === editingRabbit.id ? { ...r, ...finalData } : r));
         showSuccess(t('save'));
       } else {
-        const newRabbit = await storage.insert('rabbits', user.id, finalData);
+        const newRabbit = await storage.insert('rabbits', user.id, { ...finalData, rabbit_id: `RAB-${Math.floor(1000 + Math.random() * 9000)}` });
         setRabbits([newRabbit, ...rabbits]);
         showSuccess(t('addRabbit'));
       }
       setIsModalOpen(false);
+      setEditingRabbit(null);
+      setFormData(initialForm);
     } catch (err) {
       showError("Operation failed.");
     }
@@ -121,7 +129,7 @@ const Inventory = () => {
             <button onClick={() => setIsScannerOpen(true)} className="px-6 h-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center gap-2 font-bold shadow-sm hover:bg-slate-50 transition-all">
               <Camera size={20} className="text-emerald-600" /> {t('scanQr')}
             </button>
-            <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2 h-14 px-8">
+            <button onClick={() => { setEditingRabbit(null); setFormData(initialForm); setIsModalOpen(true); }} className="farm-button flex items-center gap-2 h-14 px-8">
               <Plus size={20} /> {t('addRabbit')}
             </button>
           </div>
@@ -162,6 +170,7 @@ const Inventory = () => {
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => { setViewingRabbit(rabbit); setIsViewModalOpen(true); }} className="p-2 rounded-lg bg-slate-50 text-blue-600"><Eye size={16} /></button>
                   <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="p-2 rounded-lg bg-slate-50 text-slate-600"><Edit2 size={16} /></button>
+                  <button onClick={() => { if(confirm('Delete?')) storage.delete('rabbits', user?.id || '', rabbit.id).then(fetchRabbits); }} className="p-2 rounded-lg bg-slate-50 text-rose-600"><Trash2 size={16} /></button>
                 </div>
               </div>
 
@@ -188,7 +197,7 @@ const Inventory = () => {
         </div>
       </main>
 
-      {/* View Modal with Weight Graph */}
+      {/* View Modal */}
       <AnimatePresence>
         {isViewModalOpen && viewingRabbit && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
@@ -256,8 +265,31 @@ const Inventory = () => {
               <form onSubmit={handleAction} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('home')}</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Name</label>
                     <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Breed</label>
+                    <input type="text" required value={formData.breed} onChange={(e) => setFormData({...formData, breed: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Gender</label>
+                    <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
+                      <option value="Female">Female</option>
+                      <option value="Male">Male</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Birth Date</label>
+                    <input type="date" required value={formData.birth_date} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Weight (kg)</label>
+                    <input type="number" step="0.1" required value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('cageNumber')}</label>
