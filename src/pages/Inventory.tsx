@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const BREEDS = ['New Zealand White', 'Flemish Giant', 'Netherland Dwarf', 'Rex', 'California', 'Angora', 'Dutch', 'Lionhead'];
+const CAGE_TYPES = ['Young', 'Males Only', 'Females Only', 'Mating Pairs'];
 
 const Inventory = () => {
   const { user } = useAuth();
@@ -217,6 +218,18 @@ const Inventory = () => {
     showSuccess("Rabbit removed.");
   };
 
+  const handleQrScan = (decodedText: string) => {
+    setIsScannerOpen(false);
+    const rabbit = rabbits.find(r => r.rabbit_id === decodedText);
+    if (rabbit) {
+      setViewingRabbit(rabbit);
+      setIsViewModalOpen(true);
+      showSuccess(`Neural ID Found: ${rabbit.name}`);
+    } else {
+      showError("Neural ID not recognized in local database.");
+    }
+  };
+
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return 'N/A';
     const diff = Math.abs(new Date().getTime() - new Date(birthDate).getTime());
@@ -259,7 +272,7 @@ const Inventory = () => {
               />
             </div>
             <button onClick={() => setIsScannerOpen(true)} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-xl">
-              <QrCode size={24} />
+              <Camera size={24} />
             </button>
             <button onClick={() => { setLitterFormData(initialLitterForm); setIsLitterModalOpen(true); }} className="auron-button h-14 px-8 flex items-center gap-3 text-sm bg-pink-600 hover:bg-pink-500">
               <Heart size={20} /> {t('recordMating')}
@@ -370,6 +383,24 @@ const Inventory = () => {
         </Tabs>
       </main>
 
+      {/* Scanner Modal */}
+      <AnimatePresence>
+        {isScannerOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-6">
+            <div className="max-w-lg w-full">
+              <div className="flex justify-between items-center mb-10">
+                <div>
+                  <h2 className="text-4xl font-black tracking-tighter">Neural <span className="text-indigo-400">Scan.</span></h2>
+                  <p className="text-white/40 font-bold text-sm mt-1 uppercase tracking-widest">Align Neural ID Tag to Initialize</p>
+                </div>
+                <button onClick={() => setIsScannerOpen(false)} className="p-4 rounded-[1.5rem] bg-white/5 text-white/40 hover:text-white transition-all"><X size={28} /></button>
+              </div>
+              <QrScanner onScanSuccess={handleQrScan} />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* QR Modal */}
       <AnimatePresence>
         {isQrModalOpen && activeRabbit && (
@@ -411,49 +442,90 @@ const Inventory = () => {
               </div>
               
               <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-12">
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
-                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Breed</p>
-                    <p className="text-lg font-bold">{viewingRabbit.breed}</p>
-                  </div>
-                  <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
-                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Gender</p>
-                    <p className="text-lg font-bold">{viewingRabbit.gender}</p>
-                  </div>
-                  <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
-                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Health</p>
-                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase">{viewingRabbit.health_status}</span>
-                  </div>
-                </div>
+                <Tabs defaultValue="info" className="space-y-8">
+                  <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl h-14">
+                    <TabsTrigger value="info" className="rounded-xl px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest">{t('basicInfo')}</TabsTrigger>
+                    <TabsTrigger value="medical" className="rounded-xl px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest">{t('medical')}</TabsTrigger>
+                    <TabsTrigger value="lineage" className="rounded-xl px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest">{t('lineage')}</TabsTrigger>
+                    <TabsTrigger value="history" className="rounded-xl px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest">{t('history')}</TabsTrigger>
+                  </TabsList>
 
-                <div>
-                  <h3 className="text-xl font-black mb-6 flex items-center gap-3"><TrendingUp className="text-indigo-400" /> Weight Velocity</h3>
-                  <div className="h-64 w-full bg-white/5 rounded-3xl p-6 border border-white/10">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={viewingRabbit.weight_history || []}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
-                        <XAxis dataKey="date" hide />
-                        <YAxis hide />
-                        <Tooltip contentStyle={{ backgroundColor: '#020408', border: '1px solid #ffffff10', borderRadius: '1rem' }} />
-                        <Line type="monotone" dataKey="weight" stroke="#6366f1" strokeWidth={4} dot={{ fill: '#6366f1', r: 4 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+                  <TabsContent value="info" className="space-y-8">
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
+                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Breed</p>
+                        <p className="text-lg font-bold">{viewingRabbit.breed}</p>
+                      </div>
+                      <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
+                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Gender</p>
+                        <p className="text-lg font-bold">{viewingRabbit.gender}</p>
+                      </div>
+                      <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
+                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Cage</p>
+                        <p className="text-lg font-bold">#{viewingRabbit.cage_number} ({viewingRabbit.cage_type})</p>
+                      </div>
+                    </div>
+                    <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
+                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">Notes</p>
+                      <p className="text-white/60 leading-relaxed">{viewingRabbit.notes || 'No additional notes.'}</p>
+                    </div>
+                  </TabsContent>
 
-                <div>
-                  <h3 className="text-xl font-black mb-6 flex items-center gap-3"><Layers className="text-indigo-400" /> Pedigree Tree</h3>
-                  <div className="grid grid-cols-2 gap-8">
-                    <div className="p-6 rounded-3xl bg-pink-500/5 border border-pink-500/10">
-                      <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-2">Mother (Dam)</p>
-                      <p className="text-lg font-bold">{viewingRabbit.mother_id || 'Unknown'}</p>
+                  <TabsContent value="medical" className="space-y-8">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="p-8 rounded-3xl bg-emerald-500/5 border border-emerald-500/10">
+                        <div className="flex items-center gap-3 mb-4">
+                          <ShieldCheck className="text-emerald-400" />
+                          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Vaccination Status</p>
+                        </div>
+                        <p className="text-2xl font-black">{viewingRabbit.vaccination_status}</p>
+                      </div>
+                      <div className="p-8 rounded-3xl bg-indigo-500/5 border border-indigo-500/10">
+                        <div className="flex items-center gap-3 mb-4">
+                          <Stethoscope className="text-indigo-400" />
+                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Health Status</p>
+                        </div>
+                        <p className="text-2xl font-black">{viewingRabbit.health_status}</p>
+                      </div>
                     </div>
-                    <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/10">
-                      <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Father (Sire)</p>
-                      <p className="text-lg font-bold">{viewingRabbit.father_id || 'Unknown'}</p>
+                    <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
+                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">Medical History</p>
+                      <p className="text-white/60 leading-relaxed">{viewingRabbit.medical_history || 'No medical records found.'}</p>
                     </div>
-                  </div>
-                </div>
+                  </TabsContent>
+
+                  <TabsContent value="lineage" className="space-y-8">
+                    <div className="grid grid-cols-2 gap-8">
+                      <div className="p-8 rounded-3xl bg-pink-500/5 border border-pink-500/10">
+                        <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-4">Mother (Dam)</p>
+                        <p className="text-2xl font-black">{viewingRabbit.mother_id || 'Unknown'}</p>
+                      </div>
+                      <div className="p-8 rounded-3xl bg-blue-500/5 border border-blue-500/10">
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4">Father (Sire)</p>
+                        <p className="text-2xl font-black">{viewingRabbit.father_id || 'Unknown'}</p>
+                      </div>
+                    </div>
+                    <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
+                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">Mating Partner</p>
+                      <p className="text-2xl font-black">{viewingRabbit.mating_partner || 'None Assigned'}</p>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="history" className="space-y-8">
+                    <h3 className="text-xl font-black flex items-center gap-3"><TrendingUp className="text-indigo-400" /> Weight Velocity</h3>
+                    <div className="h-64 w-full bg-white/5 rounded-3xl p-6 border border-white/10">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={viewingRabbit.weight_history || []}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
+                          <XAxis dataKey="date" hide />
+                          <YAxis hide />
+                          <Tooltip contentStyle={{ backgroundColor: '#020408', border: '1px solid #ffffff10', borderRadius: '1rem' }} />
+                          <Line type="monotone" dataKey="weight" stroke="#6366f1" strokeWidth={4} dot={{ fill: '#6366f1', r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             </motion.div>
           </div>
@@ -517,13 +589,17 @@ const Inventory = () => {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center px-6 bg-black/80 backdrop-blur-xl">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-5xl w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-5xl w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-3xl font-black tracking-tight">{editingRabbit ? t('edit') : t('addRabbit')}</h2>
                 <button onClick={() => setIsModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40"><X size={24} /></button>
               </div>
-              <form onSubmit={handleAction} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-8">
+              <form onSubmit={handleAction} className="space-y-8">
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Neural ID</label>
+                    <input type="text" required value={formData.rabbit_id} onChange={(e) => setFormData({...formData, rabbit_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('rabbitName')}</label>
                     <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
@@ -535,7 +611,8 @@ const Inventory = () => {
                     </select>
                   </div>
                 </div>
-                <div className="grid md:grid-cols-3 gap-8">
+
+                <div className="grid md:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('genderSelection')}</label>
                     <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
@@ -551,7 +628,85 @@ const Inventory = () => {
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('birthDate')}</label>
                     <input type="date" required value={formData.birth_date} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
+                    <input type="number" value={formData.price_dzd} onChange={(e) => setFormData({...formData, price_dzd: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
                 </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageNumber')}</label>
+                    <input type="text" value={formData.cage_number} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageType')}</label>
+                    <select value={formData.cage_type} onChange={(e) => setFormData({...formData, cage_type: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      {CAGE_TYPES.map(c => <option key={c} value={c} className="bg-[#020408]">{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('status')}</label>
+                    <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="Available" className="bg-[#020408]">Available</option>
+                      <option value="Sold" className="bg-[#020408]">Sold</option>
+                      <option value="Died" className="bg-[#020408]">Died</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('motherId')}</label>
+                    <input type="text" value={formData.mother_id} onChange={(e) => setFormData({...formData, mother_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('fatherId')}</label>
+                    <input type="text" value={formData.father_id} onChange={(e) => setFormData({...formData, father_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('matingPartner')}</label>
+                    <input type="text" value={formData.mating_partner} onChange={(e) => setFormData({...formData, mating_partner: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('vaccination')}</label>
+                    <select value={formData.vaccination_status} onChange={(e) => setFormData({...formData, vaccination_status: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="Not Vaccinated" className="bg-[#020408]">Not Vaccinated</option>
+                      <option value="Vaccinated" className="bg-[#020408]">Vaccinated</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('healthStatus')}</label>
+                    <select value={formData.health_status} onChange={(e) => setFormData({...formData, health_status: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="Healthy" className="bg-[#020408]">Healthy</option>
+                      <option value="Sick" className="bg-[#020408]">Sick</option>
+                      <option value="Recovering" className="bg-[#020408]">Recovering</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('medicalNotes')}</label>
+                  <textarea value={formData.medical_history} onChange={(e) => setFormData({...formData, medical_history: e.target.value})} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl font-medium min-h-[100px] outline-none" />
+                </div>
+
+                <div className="flex items-center gap-4 p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/10">
+                  <input 
+                    type="checkbox" 
+                    id="is_public"
+                    checked={formData.is_public} 
+                    onChange={(e) => setFormData({...formData, is_public: e.target.checked})}
+                    className="w-6 h-6 rounded-lg bg-white/5 border-white/10 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div>
+                    <label htmlFor="is_public" className="text-sm font-black block">{t('publishToShop')}</label>
+                    <p className="text-[10px] text-white/40 font-medium">{t('publishDesc')}</p>
+                  </div>
+                </div>
+
                 <button type="submit" className="auron-button w-full h-16 text-lg mt-8">{t('save')}</button>
               </form>
             </motion.div>

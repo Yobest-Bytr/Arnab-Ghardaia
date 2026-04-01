@@ -153,7 +153,7 @@ const translations: Translations = {
   cageTypeMales: { en: "Males Only", ar: "ذكور فقط", fr: "Mâles uniquement" },
   cageTypeFemales: { en: "Females Only", ar: "إناث فقط", fr: "Femelles uniquement" },
   cageTypeMating: { en: "Mating Pairs", ar: "أزواج تزاوج", fr: "Couples" },
-  splitLitter: { en: "Split Litter", ar: "فصل البطن", fr: "Séparer la portée" },
+  splitLitter: { en: "Split Litter", ar: "فصل البطن", fr: "Séبارر لا بورتيه" },
   kitsBorn: { en: "Kits Born", ar: "المواليد", fr: "Lapereaux nés" },
   deathReason: { en: "Death Reason", ar: "سبب النفوق", fr: "Raison du décès" },
   weaningDate: { en: "Weaning Date", ar: "تاريخ الفطام", fr: "Date de sevrage" },
