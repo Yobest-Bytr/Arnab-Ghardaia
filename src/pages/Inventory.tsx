@@ -28,6 +28,7 @@ const Inventory = () => {
   const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLitterModalOpen, setIsLitterModalOpen] = useState(false);
   const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
@@ -36,6 +37,7 @@ const Inventory = () => {
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
+  // Active Data States
   const [editingRabbit, setEditingRabbit] = useState<any>(null);
   const [viewingRabbit, setViewingRabbit] = useState<any>(null);
   const [splittingLitter, setSplittingLitter] = useState<any>(null);
@@ -66,7 +68,7 @@ const Inventory = () => {
   const initialLitterForm = {
     mother_name: '',
     father_name: '',
-    mating_date: '',
+    mating_date: new Date().toISOString().split('T')[0],
     expected_birth_date: '',
     actual_birth_date: '',
     kit_count: 0,
@@ -114,17 +116,17 @@ const Inventory = () => {
     try {
       const weightVal = parseFloat(formData.weight);
       let updatedWeightHistory = [...(formData.weight_history || [])];
-      if (editingRabbit && editingRabbit.weight !== formData.weight) {
-        updatedWeightHistory.push({ weight: weightVal, date: new Date().toISOString(), notes: 'Manual update' });
-      } else if (!editingRabbit && formData.weight) {
-        updatedWeightHistory = [{ weight: weightVal, date: new Date().toISOString(), notes: 'Initial weight' }];
-      }
-      const finalData = { ...formData, weight_history: updatedWeightHistory };
+      
       if (editingRabbit) {
-        await storage.update('rabbits', user.id, editingRabbit.id, finalData);
+        if (editingRabbit.weight !== formData.weight) {
+          updatedWeightHistory.push({ weight: weightVal, date: new Date().toISOString(), notes: 'Manual update' });
+        }
+        await storage.update('rabbits', user.id, editingRabbit.id, { ...formData, weight_history: updatedWeightHistory });
       } else {
-        await storage.insert('rabbits', user.id, finalData);
+        updatedWeightHistory = [{ weight: weightVal, date: new Date().toISOString(), notes: 'Initial weight' }];
+        await storage.insert('rabbits', user.id, { ...formData, weight_history: updatedWeightHistory });
       }
+      
       setIsModalOpen(false);
       setEditingRabbit(null);
       setFormData(initialForm);
@@ -143,6 +145,7 @@ const Inventory = () => {
       await storage.update('rabbits', user.id, activeRabbit.id, { weight: quickWeight, weight_history: updatedHistory });
       setIsWeightModalOpen(false);
       setQuickWeight('');
+      setActiveRabbit(null);
       fetchData();
       showSuccess("Weight updated.");
     } catch (err) {
@@ -200,6 +203,7 @@ const Inventory = () => {
       await storage.update('litters', user.id, splittingLitter.id, { status: 'Weaned' });
       setIsSplitModalOpen(false);
       setSplittingLitter(null);
+      setSplitData({ males: 0, females: 0 });
       fetchData();
       showSuccess(t('splitLitter'));
     } catch (err) {
@@ -248,7 +252,7 @@ const Inventory = () => {
             <button onClick={() => setIsScannerOpen(true)} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-xl">
               <QrCode size={24} />
             </button>
-            <button onClick={() => setIsLitterModalOpen(true)} className="auron-button h-14 px-8 flex items-center gap-3 text-sm bg-pink-600 hover:bg-pink-500">
+            <button onClick={() => { setLitterFormData(initialLitterForm); setIsLitterModalOpen(true); }} className="auron-button h-14 px-8 flex items-center gap-3 text-sm bg-pink-600 hover:bg-pink-500">
               <Heart size={20} /> {t('recordMating')}
             </button>
             <button onClick={() => { setEditingRabbit(null); setFormData(initialForm); setIsModalOpen(true); }} className="auron-button h-14 px-8 flex items-center gap-3 text-sm">
@@ -295,6 +299,9 @@ const Inventory = () => {
                   <div className="flex flex-wrap gap-2 mb-8">
                     <button onClick={() => { setActiveRabbit(rabbit); setQuickWeight(rabbit.weight); setIsWeightModalOpen(true); }} className="flex-1 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-2">
                       <Scale size={14} /> Update Weight
+                    </button>
+                    <button onClick={() => { setLitterFormData({...initialLitterForm, mother_name: rabbit.name, father_name: rabbit.mating_partner}); setIsLitterModalOpen(true); }} className="flex-1 h-10 rounded-xl bg-pink-500/10 text-pink-400 border border-pink-500/20 text-[10px] font-black uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all flex items-center justify-center gap-2">
+                      <Heart size={14} /> Mating
                     </button>
                   </div>
 
@@ -354,7 +361,60 @@ const Inventory = () => {
         </Tabs>
       </main>
 
-      {/* Modals (Modal logic remains same as previous version but with fixed data flow) */}
+      {/* Weight Update Modal */}
+      <AnimatePresence>
+        {isWeightModalOpen && activeRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-sm w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
+              <h2 className="text-2xl font-black mb-8 tracking-tight">Update Weight</h2>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">New Weight (kg)</label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    autoFocus
+                    value={quickWeight} 
+                    onChange={(e) => setQuickWeight(e.target.value)} 
+                    className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" 
+                  />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button onClick={() => { setIsWeightModalOpen(false); setActiveRabbit(null); }} className="flex-1 h-14 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">Cancel</button>
+                  <button onClick={handleQuickWeightUpdate} className="flex-1 h-14 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest">Update</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Split Litter Modal */}
+      <AnimatePresence>
+        {isSplitModalOpen && splittingLitter && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
+              <h2 className="text-3xl font-black mb-8 tracking-tight">{t('splitLitter')}</h2>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Males to Create</label>
+                  <input type="number" value={splitData.males} onChange={(e) => setSplitData({...splitData, males: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Females to Create</label>
+                  <input type="number" value={splitData.females} onChange={(e) => setSplitData({...splitData, females: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button onClick={() => { setIsSplitModalOpen(false); setSplittingLitter(null); }} className="flex-1 h-14 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">Cancel</button>
+                  <button onClick={handleSplitLitter} className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest">Confirm Split</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add/Edit Rabbit Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center px-6 bg-black/80 backdrop-blur-xl">
@@ -376,7 +436,75 @@ const Inventory = () => {
                     </select>
                   </div>
                 </div>
+                <div className="grid md:grid-cols-3 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('genderSelection')}</label>
+                    <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="Female" className="bg-[#020408]">Female</option>
+                      <option value="Male" className="bg-[#020408]">Male</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('weightKg')}</label>
+                    <input type="number" step="0.1" required value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('birthDate')}</label>
+                    <input type="date" required value={formData.birth_date} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                </div>
                 <button type="submit" className="auron-button w-full h-16 text-lg mt-8">{t('save')}</button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Record Litter Modal */}
+      <AnimatePresence>
+        {isLitterModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center px-6 bg-black/80 backdrop-blur-xl">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-3xl w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
+              <h2 className="text-3xl font-black mb-8 tracking-tight">{t('recordMating')}</h2>
+              <form onSubmit={handleLitterAction} className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('mother')}</label>
+                    <input type="text" required value={litterFormData.mother_name} onChange={(e) => setLitterFormData({...litterFormData, mother_name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('father')}</label>
+                    <input type="text" required value={litterFormData.father_name} onChange={(e) => setLitterFormData({...litterFormData, father_name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('matingDate')}</label>
+                    <input type="date" required value={litterFormData.mating_date} onChange={(e) => setLitterFormData({...litterFormData, mating_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('actualBirthDate')}</label>
+                    <input type="date" value={litterFormData.actual_birth_date} onChange={(e) => setLitterFormData({...litterFormData, actual_birth_date: e.target.value, status: 'Born'})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('totalKits')}</label>
+                    <input type="number" value={litterFormData.kit_count} onChange={(e) => setLitterFormData({...litterFormData, kit_count: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('kitsAlive')}</label>
+                    <input type="number" value={litterFormData.alive_kits} onChange={(e) => setLitterFormData({...litterFormData, alive_kits: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('kitsDead')}</label>
+                    <input type="number" value={litterFormData.dead_kits} onChange={(e) => setLitterFormData({...litterFormData, dead_kits: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button type="button" onClick={() => setIsLitterModalOpen(false)} className="flex-1 h-16 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">Cancel</button>
+                  <button type="submit" className="flex-1 auron-button h-16 text-lg">{t('recordMating')}</button>
+                </div>
               </form>
             </motion.div>
           </div>
