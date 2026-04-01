@@ -160,7 +160,10 @@ const Expenses = () => {
         {isModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center px-6 bg-black/80 backdrop-blur-xl">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-lg w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
-              <h2 className="text-3xl font-black mb-8 tracking-tight">{t('addRecord')}</h2>
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-3xl font-black tracking-tight">{t('addRecord')}</h2>
+                <button onClick={() => setIsModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={24} /></button>
+              </div>
               <form onSubmit={handleRecordExpense} className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('expenseCategory')}</label>

@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   Rabbit, ShoppingBag, Search, Filter, Tag, 
   MessageCircle, Sparkles, ArrowRight, Info, 
-  ShieldCheck, Zap, Star, Heart, Loader2, Calendar
+  ShieldCheck, Zap, Star, Heart, Loader2, Calendar, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -26,8 +26,6 @@ const PublicRabbits = () => {
 
   const fetchRabbits = async () => {
     setLoading(true);
-    // In a real app, this would be a global query. 
-    // For this demo, we fetch the current user's public rabbits + some featured ones.
     const userData = user ? await storage.get('rabbits', user.id) : [];
     const publicRabbits = userData.filter(r => r.is_public);
     
