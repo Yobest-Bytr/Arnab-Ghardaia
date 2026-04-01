@@ -38,9 +38,6 @@ const Inventory = () => {
   const [viewingRabbit, setViewingRabbit] = useState<any>(null);
   const [splittingLitter, setSplittingLitter] = useState<any>(null);
   
-  const [filterGender, setFilterGender] = useState('All');
-  const [filterBreed, setFilterBreed] = useState('All');
-
   const initialForm = {
     rabbit_id: '',
     name: '',
@@ -367,6 +364,75 @@ const Inventory = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* View Rabbit Modal (FIXED) */}
+      <AnimatePresence>
+        {isViewModalOpen && viewingRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-4xl w-full bg-[#020408] border border-white/10 rounded-[3rem] overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center text-white shadow-xl">
+                    <Rabbit size={32} />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black tracking-tight">{viewingRabbit.name}</h2>
+                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">{viewingRabbit.rabbit_id}</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsViewModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white"><X size={24} /></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                <div className="grid md:grid-cols-3 gap-8 mb-12">
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5">
+                    <p className="text-[10px] font-black text-white/20 uppercase mb-2">{t('healthStatus')}</p>
+                    <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase", viewingRabbit.health_status === 'Healthy' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400")}>
+                      {viewingRabbit.health_status}
+                    </span>
+                  </div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5">
+                    <p className="text-[10px] font-black text-white/20 uppercase mb-2">{t('weightKg')}</p>
+                    <p className="text-2xl font-black">{viewingRabbit.weight} kg</p>
+                  </div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5">
+                    <p className="text-[10px] font-black text-white/20 uppercase mb-2">{t('cageNumber')}</p>
+                    <p className="text-2xl font-black">#{viewingRabbit.cage_number}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <div>
+                    <h3 className="text-lg font-black mb-4 flex items-center gap-2"><Info size={18} className="text-indigo-400" /> {t('basicInfo')}</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex justify-between">
+                        <span className="text-white/40">{t('breedSelection')}</span>
+                        <span className="font-bold">{viewingRabbit.breed}</span>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex justify-between">
+                        <span className="text-white/40">{t('genderSelection')}</span>
+                        <span className="font-bold">{viewingRabbit.gender}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-black mb-4 flex items-center gap-2"><History size={18} className="text-indigo-400" /> {t('weightHistory')}</h3>
+                    <div className="space-y-2">
+                      {viewingRabbit.weight_history?.map((h: any, i: number) => (
+                        <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/5 flex justify-between items-center">
+                          <span className="text-xs font-bold">{new Date(h.date).toLocaleDateString()}</span>
+                          <span className="text-sm font-black text-indigo-400">{h.weight} kg</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* QR Scanner Modal */}
       <AnimatePresence>

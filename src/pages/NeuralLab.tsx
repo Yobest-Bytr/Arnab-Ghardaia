@@ -88,7 +88,6 @@ const NeuralLab = () => {
       - Keep responses concise and professional.
       
       DATE DEFAULT: If a date is not specified for an action, use today's date: ${today}.
-      CONCISENESS: Only include the properties requested or essential for the action. Do not list all properties if not needed.
       
       NEURAL SNAPSHOT:
       - Rabbits: ${farmSnapshot.rabbits.length} total
