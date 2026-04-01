@@ -13,23 +13,25 @@ interface SyncItem {
 }
 
 /**
- * Strict UUID validation to prevent "invalid input syntax for type uuid" errors.
+ * Strictest UUID validation.
+ * Returns true only if the input is a non-empty string in valid UUID format.
  */
 const isUUID = (str: any): boolean => {
-  if (typeof str !== 'string') return false;
+  if (typeof str !== 'string' || !str) return false;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
 };
 
 /**
- * Robust UUID generator for offline support.
+ * Reliable UUID generator.
  */
 const generateUUID = (): string => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 };
@@ -64,9 +66,13 @@ export const storage = {
   },
 
   async insert(table: string, userId: string, item: any) {
-    // CRITICAL FIX: Ensure ID is NEVER an empty string or invalid UUID
-    const validId = (item.id && isUUID(item.id)) ? item.id : generateUUID();
+    // 1. DEFENSIVE ID CHECK: Ensure we have a valid UUID, never an empty string
+    let validId = item.id;
+    if (!isUUID(validId)) {
+      validId = generateUUID();
+    }
 
+    // 2. Construct the new item with guaranteed valid UUID
     const newItem = { 
       ...item, 
       id: validId,
@@ -74,21 +80,28 @@ export const storage = {
       created_at: item.created_at || new Date().toISOString() 
     };
     
+    // 3. Save to local storage
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify([newItem, ...localData]));
     
+    // 4. Add to sync queue with guaranteed valid UUID
     if (isUUID(userId)) {
-      // Sanitize data before adding to sync queue
-      const syncData = { ...newItem };
-      this.addToSyncQueue({ id: validId, table, action: 'INSERT', data: syncData, timestamp: Date.now() });
+      this.addToSyncQueue({ 
+        id: validId, 
+        table, 
+        action: 'INSERT', 
+        data: newItem, 
+        timestamp: Date.now() 
+      });
     }
     return newItem;
   },
 
   async update(table: string, userId: string, id: string, updates: any) {
+    // 1. DEFENSIVE ID CHECK: Cannot update without a valid UUID
     if (!isUUID(id)) {
-      console.error("Cannot update record with invalid UUID:", id);
+      console.error("Storage Error: Attempted update with invalid UUID:", id);
       return updates;
     }
 
@@ -100,19 +113,31 @@ export const storage = {
     localStorage.setItem(localKey, JSON.stringify(updatedData));
     
     if (isUUID(userId)) {
-      // Ensure we don't send an empty ID in the updates payload
-      const { id: _, ...sanitizedUpdates } = updates;
-      this.addToSyncQueue({ id, table, action: 'UPDATE', data: sanitizedUpdates, timestamp: Date.now() });
+      // 2. SANITIZE UPDATES: Ensure the payload doesn't contain an invalid ID field
+      const sanitizedUpdates = { ...updates };
+      if (sanitizedUpdates.id !== undefined && !isUUID(sanitizedUpdates.id)) {
+        delete sanitizedUpdates.id;
+      }
+      
+      this.addToSyncQueue({ 
+        id, 
+        table, 
+        action: 'UPDATE', 
+        data: sanitizedUpdates, 
+        timestamp: Date.now() 
+      });
     }
     return updates;
   },
 
   async delete(table: string, userId: string, id: string) {
+    if (!isUUID(id)) return;
+
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify(localData.filter((i: any) => i.id !== id)));
     
-    if (isUUID(userId) && isUUID(id)) {
+    if (isUUID(userId)) {
       this.addToSyncQueue({ id, table, action: 'DELETE', data: null, timestamp: Date.now() });
     }
   },
@@ -135,13 +160,22 @@ export const storage = {
     for (let i = 0; i < updatedQueue.length; i++) {
       const item = updatedQueue[i];
       
-      // Final safety check: Ensure the ID is a valid UUID before sending to Supabase
+      // 1. FINAL SAFETY CHECK: Ensure the item ID is a valid UUID
       if (!isUUID(item.id)) {
-        console.warn(`Neural Recovery: Skipping item with invalid UUID: ${item.id}`);
+        console.warn(`Neural Recovery: Removing sync item with invalid UUID: ${item.id}`);
         updatedQueue.splice(i, 1);
         i--;
         hasChanges = true;
         continue;
+      }
+
+      // 2. PAYLOAD SANITIZATION: Ensure the data payload doesn't have an empty string ID
+      if (item.data && item.data.id !== undefined && !isUUID(item.data.id)) {
+        if (item.action === 'INSERT') {
+          item.data.id = item.id; // Force it to match the validated item ID
+        } else {
+          delete item.data.id; // Remove invalid ID from update payload
+        }
       }
 
       try {
