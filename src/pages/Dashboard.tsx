@@ -86,27 +86,28 @@ const Dashboard = () => {
   }, [rabbits]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
+      <div className="absolute inset-0 auron-radial pointer-events-none opacity-50" />
       <Navbar />
       
-      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+      <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto relative z-10">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-4">
               <BrainCircuit size={14} />
               Neural Command Active
             </div>
-            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('dashboard')}</h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Welcome back to your farm management portal.</p>
+            <h1 className="text-5xl font-black tracking-tighter">The <span className="dopamine-text">Nexus.</span></h1>
+            <p className="text-white/40 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
           <div className="flex gap-3">
             <Link to="/insights">
-              <button className="h-14 px-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 transition-all flex items-center gap-2">
+              <button className="h-14 px-6 rounded-2xl bg-white/5 border border-white/10 text-white/40 font-bold text-sm hover:bg-indigo-500 hover:text-white transition-all flex items-center gap-2">
                 <TrendingUp size={18} /> Telemetry
               </button>
             </Link>
             <Link to="/inventory">
-              <button className="farm-button flex items-center gap-2 h-14 px-8">
+              <button className="auron-button flex items-center gap-2 h-14 px-8">
                 <Plus size={20} />
                 {t('addRabbit')}
               </button>
@@ -115,7 +116,7 @@ const Dashboard = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-12">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="lg:col-span-1 farm-card bg-indigo-600 text-white border-none shadow-xl shadow-indigo-500/20 relative overflow-hidden">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="lg:col-span-1 pill-nav p-10 bg-indigo-600 text-white border-none shadow-xl shadow-indigo-500/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16" />
             <div className="relative z-10">
               <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Neural Health Score</p>
@@ -129,12 +130,12 @@ const Dashboard = () => {
 
           <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((stat, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="farm-card">
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="pill-nav p-8 bg-white/5 border-white/10">
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg mb-4", stat.color)}>
                   <stat.icon size={20} />
                 </div>
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</h3>
-                <p className="text-2xl font-black text-slate-900 dark:text-white truncate">{stat.val}</p>
+                <h3 className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">{stat.label}</h3>
+                <p className="text-2xl font-black text-white truncate">{stat.val}</p>
               </motion.div>
             ))}
           </div>
@@ -142,13 +143,13 @@ const Dashboard = () => {
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <div className="farm-card">
+            <div className="pill-nav p-10 bg-white/5 border-white/10">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <h3 className="text-xl font-black flex items-center gap-2">
                   <TrendingUp className="text-emerald-600" size={20} />
                   {t('populationGrowth')}
                 </h3>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last 6 Months</span>
+                <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Last 6 Months</span>
               </div>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -159,11 +160,11 @@ const Dashboard = () => {
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#00000005" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#ffffff40' }} />
                     <YAxis hide />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      contentStyle={{ backgroundColor: '#020408', border: '1px solid #ffffff10', borderRadius: '1rem' }}
                       itemStyle={{ fontWeight: 'bold', fontSize: '12px' }}
                     />
                     <Area type="monotone" dataKey="count" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorCount)" />
@@ -172,23 +173,23 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="farm-card">
+            <div className="pill-nav p-10 bg-white/5 border-white/10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <h3 className="text-xl font-black flex items-center gap-2">
                     <LayoutGrid className="text-blue-600" size={20} />
                     {t('cageMap')}
                   </h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('cageMapDesc')}</p>
+                  <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-1">{t('cageMapDesc')}</p>
                 </div>
                 <div className="flex gap-4">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase">Occupied</span>
+                    <span className="text-[10px] font-black text-white/20 uppercase">Occupied</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-800" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase">Empty</span>
+                    <div className="w-3 h-3 rounded-full bg-white/5" />
+                    <span className="text-[10px] font-black text-white/20 uppercase">Empty</span>
                   </div>
                 </div>
               </div>
@@ -200,13 +201,13 @@ const Dashboard = () => {
                     className={cn(
                       "aspect-square rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all group relative",
                       cage.rabbit 
-                        ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50 shadow-sm" 
-                        : "bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 border-dashed"
+                        ? "bg-emerald-500/10 border-emerald-500/20 shadow-sm" 
+                        : "bg-white/5 border-white/10 border-dashed"
                     )}
                   >
                     <span className={cn(
                       "text-[10px] font-black uppercase",
-                      cage.rabbit ? "text-emerald-600" : "text-slate-300"
+                      cage.rabbit ? "text-emerald-600" : "text-white/10"
                     )}>{cage.id}</span>
                     {cage.rabbit ? (
                       <>
@@ -216,7 +217,7 @@ const Dashboard = () => {
                         </div>
                       </>
                     ) : (
-                      <div className="w-4 h-4 rounded-full border-2 border-slate-200 dark:border-slate-800" />
+                      <div className="w-4 h-4 rounded-full border-2 border-white/5" />
                     )}
                   </div>
                 ))}
@@ -225,20 +226,20 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-8">
-            <div className="farm-card">
-              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
+            <div className="pill-nav p-10 bg-white/5 border-white/10">
+              <h3 className="text-xl font-black mb-8 flex items-center gap-2">
                 <Globe className="text-indigo-600" size={20} />
                 Network Status
               </h3>
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-xs font-bold">Cloud Sync</span>
                   </div>
                   <span className="text-[10px] font-black text-emerald-600 uppercase">Optimal</span>
                 </div>
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-xs font-bold">Neural Engine</span>
@@ -246,14 +247,14 @@ const Dashboard = () => {
                   <span className="text-[10px] font-black text-emerald-600 uppercase">Active</span>
                 </div>
                 <Link to="/collaborators" className="block w-full pt-4">
-                  <button className="w-full py-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:bg-indigo-100 transition-all flex items-center justify-center gap-2">
+                  <button className="w-full py-3 rounded-xl bg-indigo-500/10 text-indigo-400 font-bold text-sm hover:bg-indigo-500 hover:text-white transition-all flex items-center justify-center gap-2">
                     <Users size={16} /> View Collaborators
                   </button>
                 </Link>
               </div>
             </div>
 
-            <div className="farm-card bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-none shadow-xl shadow-emerald-500/20">
+            <div className="pill-nav p-10 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-none shadow-xl shadow-emerald-500/20">
               <Zap className="mb-4" size={32} />
               <h3 className="text-xl font-black mb-2">Pro Tip</h3>
               <p className="text-sm text-emerald-50 font-medium leading-relaxed">

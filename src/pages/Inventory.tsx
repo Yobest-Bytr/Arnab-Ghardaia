@@ -7,7 +7,7 @@ import {
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
   QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
   Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight, ArrowLeft, ShoppingBag,
-  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale, RefreshCw, CheckCircle2, AlertCircle, Users
+  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale, RefreshCw, CheckCircle2, AlertCircle, Users, Share2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -15,9 +15,9 @@ import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
 import QrScanner from '@/components/QrScanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const BREEDS = ['New Zealand White', 'Flemish Giant', 'Netherland Dwarf', 'Rex', 'California', 'Angora', 'Dutch', 'Lionhead'];
-const CAGE_TYPES = ['Young', 'Males Only', 'Females Only', 'Mating Pairs'];
 
 const Inventory = () => {
   const { user } = useAuth();
@@ -26,7 +26,6 @@ const Inventory = () => {
   const [litters, setLitters] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
   
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -249,6 +248,16 @@ const Inventory = () => {
           </motion.div>
           
           <div className="flex flex-wrap gap-4">
+            <div className="relative group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-indigo-400 transition-colors" size={20} />
+              <input 
+                type="text" 
+                placeholder="Search Neural ID..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-14 pl-14 pr-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50 transition-all w-64"
+              />
+            </div>
             <button onClick={() => setIsScannerOpen(true)} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-xl">
               <QrCode size={24} />
             </button>
@@ -360,6 +369,96 @@ const Inventory = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* QR Modal */}
+      <AnimatePresence>
+        {isQrModalOpen && activeRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-sm w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10 text-center">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-black tracking-tight">Neural ID Tag</h2>
+                <button onClick={() => setIsQrModalOpen(false)} className="p-2 rounded-xl bg-white/5 text-white/40"><X size={20} /></button>
+              </div>
+              <div className="bg-white p-8 rounded-[2rem] mb-8 inline-block">
+                <QRCodeSVG value={activeRabbit.rabbit_id} size={200} level="H" />
+              </div>
+              <h3 className="text-2xl font-black mb-1">{activeRabbit.name}</h3>
+              <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-8">{activeRabbit.rabbit_id}</p>
+              <button onClick={() => window.print()} className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2">
+                <Download size={18} /> Print Neural Tag
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* View Modal */}
+      <AnimatePresence>
+        {isViewModalOpen && viewingRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl w-full bg-[#020408] border border-white/10 rounded-[3rem] overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="p-10 border-b border-white/5 flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                    <Rabbit size={32} />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black tracking-tight">{viewingRabbit.name}</h2>
+                    <p className="text-xs font-black text-white/20 uppercase tracking-widest">{viewingRabbit.rabbit_id}</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsViewModalOpen(false)} className="p-4 rounded-2xl bg-white/5 text-white/40"><X size={24} /></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-12">
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
+                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Breed</p>
+                    <p className="text-lg font-bold">{viewingRabbit.breed}</p>
+                  </div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
+                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Gender</p>
+                    <p className="text-lg font-bold">{viewingRabbit.gender}</p>
+                  </div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
+                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Health</p>
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase">{viewingRabbit.health_status}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-black mb-6 flex items-center gap-3"><TrendingUp className="text-indigo-400" /> Weight Velocity</h3>
+                  <div className="h-64 w-full bg-white/5 rounded-3xl p-6 border border-white/10">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={viewingRabbit.weight_history || []}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
+                        <XAxis dataKey="date" hide />
+                        <YAxis hide />
+                        <Tooltip contentStyle={{ backgroundColor: '#020408', border: '1px solid #ffffff10', borderRadius: '1rem' }} />
+                        <Line type="monotone" dataKey="weight" stroke="#6366f1" strokeWidth={4} dot={{ fill: '#6366f1', r: 4 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-black mb-6 flex items-center gap-3"><Layers className="text-indigo-400" /> Pedigree Tree</h3>
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="p-6 rounded-3xl bg-pink-500/5 border border-pink-500/10">
+                      <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-2">Mother (Dam)</p>
+                      <p className="text-lg font-bold">{viewingRabbit.mother_id || 'Unknown'}</p>
+                    </div>
+                    <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/10">
+                      <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Father (Sire)</p>
+                      <p className="text-lg font-bold">{viewingRabbit.father_id || 'Unknown'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Weight Update Modal */}
       <AnimatePresence>
