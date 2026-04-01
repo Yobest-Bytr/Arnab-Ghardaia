@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, BrainCircuit, Globe
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, BrainCircuit, Globe, Wallet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -20,7 +20,8 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { t, isRTL } = useLanguage();
   const [rabbits, setRabbits] = useState<any[]>([]);
-  const [litters, setLitters] = useState<any[]>([]);
+  const [sales, setSales] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,14 +29,22 @@ const Dashboard = () => {
   }, [user]);
 
   const fetchData = async () => {
-    const [rabbitData, litterData] = await Promise.all([
+    const [rabbitData, salesData, expenseData] = await Promise.all([
       storage.get('rabbits', user?.id || ''),
-      storage.get('litters', user?.id || '')
+      storage.get('sales', user?.id || ''),
+      storage.get('expenses', user?.id || '')
     ]);
     setRabbits(rabbitData);
-    setLitters(litterData);
+    setSales(salesData);
+    setExpenses(expenseData);
     setLoading(false);
   };
+
+  const financials = useMemo(() => {
+    const totalRevenue = sales.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0);
+    const totalExpenses = expenses.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+    return { revenue: totalRevenue, expenses: totalExpenses, profit: totalRevenue - totalExpenses };
+  }, [sales, expenses]);
 
   const healthScore = useMemo(() => {
     if (rabbits.length === 0) return 100;
@@ -63,8 +72,8 @@ const Dashboard = () => {
 
   const stats = [
     { label: t('totalRabbits'), val: rabbits.length, icon: Rabbit, color: "bg-emerald-500" },
-    { label: t('males'), val: rabbits.filter(r => r.gender === 'Male').length, icon: Users, color: "bg-blue-500" },
-    { label: t('females'), val: rabbits.filter(r => r.gender === 'Female').length, icon: Users, color: "bg-pink-500" },
+    { label: "Net Profit", val: `${financials.profit.toLocaleString()} DA`, icon: Wallet, color: "bg-indigo-500" },
+    { label: "Revenue", val: `${financials.revenue.toLocaleString()} DA`, icon: TrendingUp, color: "bg-blue-500" },
     { label: t('healthy'), val: rabbits.filter(r => r.health_status === 'Healthy').length, icon: ShieldCheck, color: "bg-emerald-400" },
   ];
 
@@ -125,7 +134,7 @@ const Dashboard = () => {
                   <stat.icon size={20} />
                 </div>
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</h3>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">{stat.val}</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white truncate">{stat.val}</p>
               </motion.div>
             ))}
           </div>
