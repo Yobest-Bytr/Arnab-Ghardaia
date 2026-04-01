@@ -25,6 +25,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Changelog from "./pages/Changelog";
 import NeuralLab from "./pages/NeuralLab";
+import AIInsights from "./pages/AIInsights";
+import Collaborators from "./pages/Collaborators";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +72,16 @@ const App = () => (
                 <Route path="/neural-lab" element={
                   <ProtectedRoute>
                     <NeuralLab />
+                  </ProtectedRoute>
+                } />
+                <Route path="/insights" element={
+                  <ProtectedRoute>
+                    <AIInsights />
+                  </ProtectedRoute>
+                } />
+                <Route path="/collaborators" element={
+                  <ProtectedRoute>
+                    <Collaborators />
                   </ProtectedRoute>
                 } />
                 <Route path="/inventory" element={

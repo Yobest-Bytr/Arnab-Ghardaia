@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, BrainCircuit, Globe
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -37,6 +37,12 @@ const Dashboard = () => {
     setLoading(false);
   };
 
+  const healthScore = useMemo(() => {
+    if (rabbits.length === 0) return 100;
+    const healthy = rabbits.filter(r => r.health_status === 'Healthy').length;
+    return Math.round((healthy / rabbits.length) * 100);
+  }, [rabbits]);
+
   const chartData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentMonth = new Date().getMonth();
@@ -54,21 +60,6 @@ const Dashboard = () => {
     }
     return last6Months;
   }, [rabbits]);
-
-  const recentActivity = useMemo(() => {
-    const activities = [];
-    rabbits.slice(0, 3).forEach(r => {
-      activities.push({
-        title: isRTL ? `تمت إضافة ${r.name}` : `Added ${r.name}`,
-        desc: `${r.breed}`,
-        time: new Date(r.created_at).toLocaleDateString(),
-        icon: Rabbit,
-        color: 'text-emerald-500',
-        timestamp: new Date(r.created_at).getTime()
-      });
-    });
-    return activities.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
-  }, [rabbits, isRTL]);
 
   const stats = [
     { label: t('totalRabbits'), val: rabbits.length, icon: Rabbit, color: "bg-emerald-500" },
@@ -92,27 +83,52 @@ const Dashboard = () => {
       <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-4">
+              <BrainCircuit size={14} />
+              Neural Command Active
+            </div>
             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('dashboard')}</h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
-          <Link to="/inventory">
-            <button className="farm-button flex items-center gap-2">
-              <Plus size={20} />
-              {t('addRabbit')}
-            </button>
-          </Link>
+          <div className="flex gap-3">
+            <Link to="/insights">
+              <button className="h-14 px-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 transition-all flex items-center gap-2">
+                <TrendingUp size={18} /> Telemetry
+              </button>
+            </Link>
+            <Link to="/inventory">
+              <button className="farm-button flex items-center gap-2 h-14 px-8">
+                <Plus size={20} />
+                {t('addRabbit')}
+              </button>
+            </Link>
+          </div>
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {stats.map((stat, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="farm-card">
-              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg mb-4", stat.color)}>
-                <stat.icon size={24} />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-12">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="lg:col-span-1 farm-card bg-indigo-600 text-white border-none shadow-xl shadow-indigo-500/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Neural Health Score</p>
+              <h3 className="text-5xl font-black mb-4">{healthScore}%</h3>
+              <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden mb-6">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${healthScore}%` }} className="h-full bg-white" />
               </div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</h3>
-              <p className="text-4xl font-black text-slate-900 dark:text-white">{stat.val}</p>
-            </motion.div>
-          ))}
+              <p className="text-xs font-medium opacity-80 leading-relaxed">Your farm is operating at optimal cognitive capacity.</p>
+            </div>
+          </motion.div>
+
+          <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-6">
+            {stats.map((stat, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="farm-card">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg mb-4", stat.color)}>
+                  <stat.icon size={20} />
+                </div>
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</h3>
+                <p className="text-3xl font-black text-slate-900 dark:text-white">{stat.val}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -147,7 +163,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Visual Cage Map */}
             <div className="farm-card">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
@@ -203,28 +218,30 @@ const Dashboard = () => {
           <div className="space-y-8">
             <div className="farm-card">
               <h3 className="text-xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-2">
-                <Clock className="text-emerald-600" size={20} />
-                {t('recentActivity')}
+                <Globe className="text-indigo-600" size={20} />
+                Network Status
               </h3>
-              <div className="space-y-6">
-                {recentActivity.map((activity, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className={cn("w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0", activity.color)}>
-                      <activity.icon size={20} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-slate-900 dark:text-white">{activity.title}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{activity.desc}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{activity.time}</p>
-                    </div>
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-bold">Cloud Sync</span>
                   </div>
-                ))}
+                  <span className="text-[10px] font-black text-emerald-600 uppercase">Optimal</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-bold">Neural Engine</span>
+                  </div>
+                  <span className="text-[10px] font-black text-emerald-600 uppercase">Active</span>
+                </div>
+                <Link to="/collaborators" className="block w-full pt-4">
+                  <button className="w-full py-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:bg-indigo-100 transition-all flex items-center justify-center gap-2">
+                    <Users size={16} /> View Collaborators
+                  </button>
+                </Link>
               </div>
-              <Link to="/inventory" className="block w-full mt-8">
-                <button className="w-full py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-all">
-                  {t('viewAll')}
-                </button>
-              </Link>
             </div>
 
             <div className="farm-card bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-none shadow-xl shadow-emerald-500/20">
