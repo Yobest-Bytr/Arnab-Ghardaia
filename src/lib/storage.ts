@@ -13,8 +13,7 @@ interface SyncItem {
 }
 
 /**
- * Strictest UUID validation.
- * Returns true only if the input is a non-empty string in valid UUID format.
+ * Strict UUID validation.
  */
 const isUUID = (str: any): boolean => {
   if (typeof str !== 'string' || !str) return false;
@@ -34,6 +33,30 @@ const generateUUID = (): string => {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+};
+
+/**
+ * Deeply sanitizes an object to convert all empty strings ("") to null.
+ * This prevents "invalid input syntax for type uuid" errors in PostgreSQL.
+ */
+const sanitizePayload = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') {
+    return obj === "" ? null : obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizePayload);
+  }
+
+  const sanitized: any = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key];
+      // Convert empty strings to null, otherwise recurse
+      sanitized[key] = value === "" ? null : sanitizePayload(value);
+    }
+  }
+  return sanitized;
 };
 
 export const storage = {
@@ -66,13 +89,13 @@ export const storage = {
   },
 
   async insert(table: string, userId: string, item: any) {
-    // 1. DEFENSIVE ID CHECK: Ensure we have a valid UUID, never an empty string
+    // 1. Ensure we have a valid UUID for the primary key
     let validId = item.id;
     if (!isUUID(validId)) {
       validId = generateUUID();
     }
 
-    // 2. Construct the new item with guaranteed valid UUID
+    // 2. Construct the new item
     const newItem = { 
       ...item, 
       id: validId,
@@ -80,18 +103,18 @@ export const storage = {
       created_at: item.created_at || new Date().toISOString() 
     };
     
-    // 3. Save to local storage
+    // 3. Save to local storage (keep empty strings locally if needed, but sanitize for cloud)
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify([newItem, ...localData]));
     
-    // 4. Add to sync queue with guaranteed valid UUID
+    // 4. Add to sync queue with sanitized data
     if (isUUID(userId)) {
       this.addToSyncQueue({ 
         id: validId, 
         table, 
         action: 'INSERT', 
-        data: newItem, 
+        data: sanitizePayload(newItem), 
         timestamp: Date.now() 
       });
     }
@@ -99,11 +122,7 @@ export const storage = {
   },
 
   async update(table: string, userId: string, id: string, updates: any) {
-    // 1. DEFENSIVE ID CHECK: Cannot update without a valid UUID
-    if (!isUUID(id)) {
-      console.error("Storage Error: Attempted update with invalid UUID:", id);
-      return updates;
-    }
+    if (!isUUID(id)) return updates;
 
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
@@ -113,17 +132,11 @@ export const storage = {
     localStorage.setItem(localKey, JSON.stringify(updatedData));
     
     if (isUUID(userId)) {
-      // 2. SANITIZE UPDATES: Ensure the payload doesn't contain an invalid ID field
-      const sanitizedUpdates = { ...updates };
-      if (sanitizedUpdates.id !== undefined && !isUUID(sanitizedUpdates.id)) {
-        delete sanitizedUpdates.id;
-      }
-      
       this.addToSyncQueue({ 
         id, 
         table, 
         action: 'UPDATE', 
-        data: sanitizedUpdates, 
+        data: sanitizePayload(updates), 
         timestamp: Date.now() 
       });
     }
@@ -160,30 +173,22 @@ export const storage = {
     for (let i = 0; i < updatedQueue.length; i++) {
       const item = updatedQueue[i];
       
-      // 1. FINAL SAFETY CHECK: Ensure the item ID is a valid UUID
       if (!isUUID(item.id)) {
-        console.warn(`Neural Recovery: Removing sync item with invalid UUID: ${item.id}`);
         updatedQueue.splice(i, 1);
         i--;
         hasChanges = true;
         continue;
       }
 
-      // 2. PAYLOAD SANITIZATION: Ensure the data payload doesn't have an empty string ID
-      if (item.data && item.data.id !== undefined && !isUUID(item.data.id)) {
-        if (item.action === 'INSERT') {
-          item.data.id = item.id; // Force it to match the validated item ID
-        } else {
-          delete item.data.id; // Remove invalid ID from update payload
-        }
-      }
+      // Final sanitization check before sending to Supabase
+      const finalData = sanitizePayload(item.data);
 
       try {
         let error;
         if (item.action === 'INSERT') {
-          ({ error } = await supabase.from(item.table).upsert([item.data]));
+          ({ error } = await supabase.from(item.table).upsert([finalData]));
         } else if (item.action === 'UPDATE') {
-          ({ error } = await supabase.from(item.table).update(item.data).eq('id', item.id));
+          ({ error } = await supabase.from(item.table).update(finalData).eq('id', item.id));
         } else if (item.action === 'DELETE') {
           ({ error } = await supabase.from(item.table).delete().eq('id', item.id));
         }
@@ -195,17 +200,14 @@ export const storage = {
         } else {
           console.error(`Sync error for ${item.table}:`, error.message);
           
-          // AUTO-RECOVERY: Detect missing column from error message and strip it
+          // Handle missing columns
           const match = error.message.match(/column ['"](.+?)['"]/i);
           const columnName = match ? match[1] : null;
           
           if (columnName && item.data[columnName] !== undefined) {
-            console.warn(`Neural Recovery: Stripping missing column '${columnName}' from ${item.table} payload.`);
             const { [columnName]: _, ...sanitizedData } = item.data;
-            
             updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
             hasChanges = true;
-            
             if ((item.retryCount || 0) > 15) {
               updatedQueue.splice(i, 1);
               i--;
