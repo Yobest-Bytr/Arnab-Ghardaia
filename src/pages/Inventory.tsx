@@ -402,7 +402,7 @@ const Inventory = () => {
         {isViewModalOpen && viewingRabbit && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-4xl w-full bg-[#020408] border border-white/10 rounded-[3rem] overflow-hidden flex flex-col max-h-[90vh]">
-              <div className="p-8 border-b border-white/5 flex items-center justify-between">
+              <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center text-white shadow-xl">
                     <Rabbit size={32} />
