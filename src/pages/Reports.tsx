@@ -8,7 +8,7 @@ import {
   PieChart as PieIcon, Calendar, ArrowUpRight,
   FileText, Loader2, Rabbit, ShieldCheck, Printer,
   ChevronRight, Info, Wallet, Filter, Activity,
-  ArrowDownRight, Target, Layers, Heart, TrendingDown, RefreshCw
+  ArrowDownRight, Target, Layers, Heart, TrendingDown, RefreshCw, ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
