@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
-  Loader2, Activity, Database, ArrowRight, Info, Clock, X
+  Loader2, Activity, Database, ArrowRight, Info, Clock, X, Terminal, Shield, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { grokChat } from '@/lib/puter';
@@ -137,37 +137,60 @@ const NeuralLab = () => {
 
   return (
     <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
+      <div className="absolute inset-0 auron-radial pointer-events-none opacity-30" />
       <Navbar />
       
       <main className="flex-1 mt-20 w-full relative z-10 overflow-hidden flex flex-col max-w-6xl mx-auto px-6">
-        <div className="py-8 border-b border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-[1.5rem] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20">
-              <BrainCircuit size={28} />
+        <div className="py-8 border-b border-white/5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-[2rem] bg-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-indigo-500/30">
+              <BrainCircuit size={32} />
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tight">Neural Lab</h1>
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Cognitive Engine Active</p>
+              <h1 className="text-3xl font-black tracking-tighter">Neural <span className="dopamine-text">Lab.</span></h1>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="flex items-center gap-1.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Engine Online
+                </span>
+                <span className="text-white/10">•</span>
+                <span className="text-[9px] font-black text-white/20 uppercase tracking-widest flex items-center gap-1.5">
+                  <Database size={10} /> {farmSnapshot.rabbits.length} Nodes Linked
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
-            <Database size={14} /> Farm Data Linked
+          
+          <div className="hidden md:flex items-center gap-4">
+            <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+              <Shield size={14} className="text-indigo-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Secure Uplink</span>
+            </div>
+            <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+              <Globe size={14} className="text-indigo-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Ghardaia Node</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-10 pr-4 custom-scrollbar space-y-10" ref={scrollRef}>
+        <div className="flex-1 overflow-y-auto py-10 pr-4 custom-scrollbar space-y-12" ref={scrollRef}>
           {messages.map((msg) => (
             <ChatMessage key={msg.id} {...msg} />
           ))}
           {isGenerating && (
-            <div className="flex gap-4 animate-pulse">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20" />
-              <div className="h-4 w-48 bg-white/5 rounded-full mt-3" />
+            <div className="flex gap-5 animate-in fade-in duration-500">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+              <div className="space-y-2 mt-2">
+                <div className="h-2 w-48 bg-white/5 rounded-full animate-pulse" />
+                <div className="h-2 w-32 bg-white/5 rounded-full animate-pulse" />
+              </div>
             </div>
           )}
         </div>
 
-        <div className="pb-10 pt-6">
+        <div className="pb-10 pt-6 shrink-0">
           <ChatInput 
             value={input} 
             onChange={setInput} 
@@ -182,11 +205,14 @@ const NeuralLab = () => {
 
       <AnimatePresence>
         {isScannerOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-6">
             <div className="max-w-lg w-full">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-black tracking-tight">Neural Scan</h2>
-                <button onClick={() => setIsScannerOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40"><X size={24} /></button>
+              <div className="flex justify-between items-center mb-10">
+                <div>
+                  <h2 className="text-4xl font-black tracking-tighter">Neural <span className="text-indigo-400">Scan.</span></h2>
+                  <p className="text-white/40 font-bold text-sm mt-1 uppercase tracking-widest">Align Neural ID Tag to Initialize</p>
+                </div>
+                <button onClick={() => setIsScannerOpen(false)} className="p-4 rounded-[1.5rem] bg-white/5 text-white/40 hover:text-white transition-all"><X size={28} /></button>
               </div>
               <QrScanner onScanSuccess={handleQrScan} />
             </div>

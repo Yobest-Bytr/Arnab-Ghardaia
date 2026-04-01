@@ -62,22 +62,48 @@
 }
 
 .farm-card {
-  @apply bg-card border border-border shadow-sm rounded-2xl p-6 hover:shadow-md transition-all dark:bg-slate-900/50 dark:backdrop-blur-xl;
+  @apply bg-card border border-border shadow-sm rounded-[2rem] p-8 hover:shadow-xl transition-all dark:bg-slate-900/50 dark:backdrop-blur-xl;
 }
 
 .farm-button {
-  @apply bg-primary text-primary-foreground font-bold rounded-xl px-6 py-3 transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20;
+  @apply bg-primary text-primary-foreground font-black rounded-2xl px-8 py-4 transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-emerald-500/20 uppercase text-xs tracking-widest;
 }
 
-.glass-nav {
-  @apply bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50;
+.pill-nav {
+  @apply rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl;
 }
 
-.animate-bounce-slow {
-  animation: bounce 3s infinite;
+.dopamine-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-emerald-400 to-blue-400 animate-gradient-x;
 }
 
-@keyframes bounce {
-  0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
-  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+.auron-radial {
+  background: radial-gradient(circle at 50% 0%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+}
+
+.auron-button {
+  @apply bg-indigo-600 text-white font-black rounded-2xl px-8 py-4 transition-all hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-indigo-500/20 uppercase text-xs tracking-widest;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+}
+
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 5s ease infinite;
 }
