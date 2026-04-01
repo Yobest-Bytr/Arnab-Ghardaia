@@ -29,14 +29,20 @@ const Inventory = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLitterModalOpen, setIsLitterModalOpen] = useState(false);
   const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
   const [editingRabbit, setEditingRabbit] = useState<any>(null);
   const [viewingRabbit, setViewingRabbit] = useState<any>(null);
   const [splittingLitter, setSplittingLitter] = useState<any>(null);
+  const [activeRabbit, setActiveRabbit] = useState<any>(null);
   
   const initialForm = {
     rabbit_id: '',
@@ -77,6 +83,7 @@ const Inventory = () => {
 
   const [formData, setFormData] = useState(initialForm);
   const [litterFormData, setLitterFormData] = useState(initialLitterForm);
+  const [quickWeight, setQuickWeight] = useState('');
   const [splitData, setSplitData] = useState({ males: 0, females: 0 });
 
   useEffect(() => {
@@ -141,6 +148,21 @@ const Inventory = () => {
     }
   };
 
+  const handleQuickWeightUpdate = async () => {
+    if (!user || !activeRabbit || !quickWeight) return;
+    try {
+      const weightVal = parseFloat(quickWeight);
+      const updatedHistory = [...(activeRabbit.weight_history || []), { weight: weightVal, date: new Date().toISOString(), notes: 'Quick update' }];
+      await storage.update('rabbits', user.id, activeRabbit.id, { weight: quickWeight, weight_history: updatedHistory });
+      setIsWeightModalOpen(false);
+      setQuickWeight('');
+      fetchData();
+      showSuccess("Weight updated.");
+    } catch (err) {
+      showError("Update failed.");
+    }
+  };
+
   const handleLitterAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -164,7 +186,6 @@ const Inventory = () => {
         return;
       }
 
-      // Create Males
       for (let i = 0; i < splitData.males; i++) {
         const gender = 'Male';
         await storage.insert('rabbits', user.id, {
@@ -178,7 +199,6 @@ const Inventory = () => {
         });
       }
 
-      // Create Females
       for (let i = 0; i < splitData.females; i++) {
         const gender = 'Female';
         await storage.insert('rabbits', user.id, {
@@ -297,22 +317,34 @@ const Inventory = () => {
                       <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">{rabbit.rabbit_id}</p>
                     </div>
                   </div>
+                  
                   <div className="grid grid-cols-2 gap-4 mb-8">
                     <div className="p-4 rounded-2xl bg-black/40 border border-white/5">
                       <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-1">{t('age')}</p>
                       <p className="text-sm font-bold">{calculateAge(rabbit.birth_date)}</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-black/40 border border-white/5">
-                      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-1">{t('cageNumber')}</p>
-                      <p className="text-sm font-bold">#{rabbit.cage_number}</p>
+                      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-1">{t('weightKg')}</p>
+                      <p className="text-sm font-bold">{rabbit.weight} kg</p>
                     </div>
                   </div>
+
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    <button onClick={() => { setActiveRabbit(rabbit); setQuickWeight(rabbit.weight); setIsWeightModalOpen(true); }} className="flex-1 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-2">
+                      <Scale size={14} /> Update Weight
+                    </button>
+                    <button onClick={() => { setLitterFormData({...initialLitterForm, mother_name: rabbit.name, father_name: rabbit.mating_partner}); setIsLitterModalOpen(true); }} className="flex-1 h-10 rounded-xl bg-pink-500/10 text-pink-400 border border-pink-500/20 text-[10px] font-black uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all flex items-center justify-center gap-2">
+                      <Heart size={14} /> Mating
+                    </button>
+                  </div>
+
                   <div className="flex items-center justify-between pt-6 border-t border-white/5">
                     <span className="text-xl font-black text-indigo-400">{rabbit.price_dzd || '0'} DA</span>
                     <div className="flex gap-2">
-                      <button onClick={() => { setViewingRabbit(rabbit); setIsViewModalOpen(true); }} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white"><Eye size={18} /></button>
-                      <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white"><Edit2 size={18} /></button>
-                      <button onClick={() => handleDeleteRabbit(rabbit.id)} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-rose-400"><Trash2 size={18} /></button>
+                      <button onClick={() => { setActiveRabbit(rabbit); setIsQrModalOpen(true); }} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-indigo-400" title="QR Code"><QrCode size={18} /></button>
+                      <button onClick={() => { setViewingRabbit(rabbit); setIsViewModalOpen(true); }} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white" title="View Details"><Eye size={18} /></button>
+                      <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white" title="Edit"><Edit2 size={18} /></button>
+                      <button onClick={() => handleDeleteRabbit(rabbit.id)} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-rose-400" title="Delete"><Trash2 size={18} /></button>
                     </div>
                   </div>
                 </motion.div>
@@ -427,6 +459,50 @@ const Inventory = () => {
                       ))}
                     </div>
                   </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {isQrModalOpen && activeRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-sm w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10 text-center">
+              <h2 className="text-2xl font-black mb-8 tracking-tight">Neural ID Tag</h2>
+              <div className="bg-white p-6 rounded-3xl inline-block mb-8">
+                <QRCodeSVG value={activeRabbit.id} size={200} />
+              </div>
+              <p className="text-sm font-bold text-white/40 mb-8 uppercase tracking-widest">{activeRabbit.name} ({activeRabbit.rabbit_id})</p>
+              <button onClick={() => setIsQrModalOpen(false)} className="auron-button w-full h-14 text-sm">Close</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Quick Weight Modal */}
+      <AnimatePresence>
+        {isWeightModalOpen && activeRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-sm w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
+              <h2 className="text-2xl font-black mb-8 tracking-tight">Update Weight</h2>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">New Weight (kg)</label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    autoFocus
+                    value={quickWeight} 
+                    onChange={(e) => setQuickWeight(e.target.value)} 
+                    className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" 
+                  />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button onClick={() => setIsWeightModalOpen(false)} className="flex-1 h-14 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">Cancel</button>
+                  <button onClick={handleQuickWeightUpdate} className="flex-1 h-14 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest">Update</button>
                 </div>
               </div>
             </motion.div>

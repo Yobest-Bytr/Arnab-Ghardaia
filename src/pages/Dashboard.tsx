@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
-import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, Database, ExternalLink, Trash2, RefreshCw
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -16,8 +15,6 @@ import {
   Tooltip, ResponsiveContainer
 } from 'recharts';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { showSuccess } from '@/utils/toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -25,29 +22,10 @@ const Dashboard = () => {
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [litters, setLitters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cloudStatus, setCloudStatus] = useState<'checking' | 'ready' | 'missing'>('checking');
-  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      fetchData();
-      checkCloudTables();
-    }
+    if (user) fetchData();
   }, [user]);
-
-  const checkCloudTables = async () => {
-    if (storage.isOffline()) return;
-    try {
-      const { status, error } = await supabase.from('rabbits').select('id').limit(1);
-      if (status === 404 || (error && error.message.includes('is_public'))) {
-        setCloudStatus('missing');
-      } else {
-        setCloudStatus('ready');
-      }
-    } catch {
-      setCloudStatus('missing');
-    }
-  };
 
   const fetchData = async () => {
     const [rabbitData, litterData] = await Promise.all([
@@ -57,20 +35,6 @@ const Dashboard = () => {
     setRabbits(rabbitData);
     setLitters(litterData);
     setLoading(false);
-  };
-
-  const handleClearQueue = () => {
-    localStorage.removeItem('arnab_sync_queue');
-    showSuccess("Sync queue cleared.");
-    window.location.reload();
-  };
-
-  const handleResetLocal = () => {
-    if (confirm("This will clear all local data and re-fetch from the cloud. Continue?")) {
-      localStorage.clear();
-      showSuccess("Local cache cleared.");
-      window.location.reload();
-    }
   };
 
   const chartData = useMemo(() => {
@@ -131,19 +95,12 @@ const Dashboard = () => {
             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('dashboard')}</h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
-          <div className="flex gap-3">
-            {cloudStatus === 'missing' && (
-              <button onClick={() => setIsSetupModalOpen(true)} className="flex items-center gap-2 px-6 py-3 rounded-full bg-rose-500/20 text-rose-400 text-sm font-bold border border-rose-500/20 hover:bg-rose-500/30 transition-all">
-                <AlertCircle size={16} /> Setup Cloud Storage
-              </button>
-            )}
-            <Link to="/inventory">
-              <button className="farm-button flex items-center gap-2">
-                <Plus size={20} />
-                {t('addRabbit')}
-              </button>
-            </Link>
-          </div>
+          <Link to="/inventory">
+            <button className="farm-button flex items-center gap-2">
+              <Plus size={20} />
+              {t('addRabbit')}
+            </button>
+          </Link>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -280,118 +237,6 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
-
-      <Dialog open={isSetupModalOpen} onOpenChange={setIsSetupModalOpen}>
-        <DialogContent className="bg-white dark:bg-slate-900 border-none text-slate-900 dark:text-white max-w-2xl max-h-[80vh] overflow-y-auto custom-scrollbar">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black flex items-center gap-3">
-              <Database className="text-emerald-600" />
-              Setup Supabase Tables
-            </DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium">
-              Your Supabase tables are missing columns. Run this script to fix the schema.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <Trash2 className="text-rose-600" size={20} />
-                  <p className="text-sm font-bold text-rose-900 dark:text-rose-400">Clear Sync Queue</p>
-                </div>
-                <button onClick={handleClearQueue} className="w-full py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all">
-                  Clear Queue
-                </button>
-              </div>
-              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <RefreshCw className="text-amber-600" size={20} />
-                  <p className="text-sm font-bold text-amber-900 dark:text-amber-400">Reset Local Cache</p>
-                </div>
-                <button onClick={handleResetLocal} className="w-full py-2 bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all">
-                  Reset Cache
-                </button>
-              </div>
-            </div>
-
-            <ol className="list-decimal pl-6 space-y-6 text-sm font-medium text-slate-600 dark:text-slate-400">
-              <li>
-                Go to your Supabase dashboard: 
-                <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline ml-2 inline-flex items-center gap-1">
-                  supabase.com/dashboard <ExternalLink size={12} />
-                </a>
-              </li>
-              <li>
-                Open the <span className="text-slate-900 dark:text-white font-bold">SQL Editor</span> and run this script to ensure all columns exist:
-                <div className="mt-4 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 font-mono text-[11px] text-emerald-600 overflow-x-auto">
-                  <pre>{`-- Ensure rabbits table has all columns
-ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT false;
-ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS weight_history jsonb DEFAULT '[]'::jsonb;
-ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS vaccination_status text;
-ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS medical_history text;
-ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS price_dzd text;
-ALTER TABLE rabbits ADD COLUMN IF NOT EXISTS sale_category text;
-
--- Re-create tables if they don't exist
-CREATE TABLE IF NOT EXISTS rabbits (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  rabbit_id text NOT NULL,
-  name text,
-  breed text,
-  gender text,
-  health_status text,
-  status text,
-  sale_category text,
-  cage_number text,
-  price_dzd text,
-  weight text,
-  birth_date timestamp with time zone,
-  notes text,
-  mother_id text,
-  father_id text,
-  vaccination_status text,
-  medical_history text,
-  weight_history jsonb DEFAULT '[]'::jsonb,
-  is_public boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS litters (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  mother_name text,
-  father_name text,
-  mating_date timestamp with time zone,
-  expected_birth_date timestamp with time zone,
-  kit_count integer DEFAULT 0,
-  status text,
-  notes text,
-  created_at timestamp with time zone DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS sales (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  rabbit_id uuid REFERENCES rabbits(id),
-  customer_name text,
-  price numeric,
-  sale_date timestamp with time zone,
-  category text,
-  notes text,
-  created_at timestamp with time zone DEFAULT now()
-);`}</pre>
-                </div>
-              </li>
-            </ol>
-          </div>
-          
-          <div className="flex justify-end mt-6">
-            <button onClick={() => setIsSetupModalOpen(false)} className="farm-button h-12 px-8">I've Updated the Schema</button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
