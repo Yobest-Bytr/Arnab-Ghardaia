@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Wallet, Plus, Calendar, Tag, DollarSign, TrendingUp, 
   PieChart as PieIcon, X, Loader2, Trash2, ShoppingBag,
-  CheckCircle2, Wand2, Sparkles, ChevronRight, MessageSquare, BrainCircuit
+  CheckCircle2, Wand2, Sparkles, ChevronRight, MessageSquare, BrainCircuit, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -21,6 +21,7 @@ const Expenses = () => {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [formData, setFormData] = useState({
     category: 'Food',
@@ -38,6 +39,14 @@ const Expenses = () => {
     const data = await storage.get('expenses', user?.id || '');
     setExpenses(data);
     setLoading(false);
+  };
+
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    await storage.processSyncQueue();
+    await fetchExpenses();
+    setIsSyncing(false);
+    showSuccess(t('forceSync'));
   };
 
   const handleRecordExpense = async (e: React.FormEvent) => {
@@ -84,9 +93,14 @@ const Expenses = () => {
             <h1 className="text-4xl font-black tracking-tight">{t('expenses')}</h1>
             <p className="text-white/40 font-medium mt-1">Track your farm's operational costs.</p>
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="auron-button flex items-center gap-2 h-14 px-8">
-            <Plus size={20} /> {t('addRecord')}
-          </button>
+          <div className="flex gap-4">
+            <button onClick={handleForceSync} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-xl">
+              <RefreshCw size={24} className={cn(isSyncing && "animate-spin")} />
+            </button>
+            <button onClick={() => setIsModalOpen(true)} className="auron-button flex items-center gap-2 h-14 px-8">
+              <Plus size={20} /> {t('addRecord')}
+            </button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">

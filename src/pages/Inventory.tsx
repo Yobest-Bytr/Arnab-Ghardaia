@@ -205,6 +205,32 @@ const Inventory = () => {
     }
   };
 
+  const handleDeleteRabbit = async (id: string) => {
+    if (!user || !confirm("Delete this rabbit?")) return;
+    await storage.delete('rabbits', user.id, id);
+    setRabbits(prev => prev.filter(r => r.id !== id));
+    showSuccess("Rabbit removed.");
+  };
+
+  const handleDeleteLitter = async (id: string) => {
+    if (!user || !confirm("Delete this litter record?")) return;
+    await storage.delete('litters', user.id, id);
+    setLitters(prev => prev.filter(l => l.id !== id));
+    showSuccess("Litter removed.");
+  };
+
+  const handleScanSuccess = (decodedText: string) => {
+    setIsScannerOpen(false);
+    const rabbit = rabbits.find(r => r.id === decodedText || r.rabbit_id === decodedText);
+    if (rabbit) {
+      setViewingRabbit(rabbit);
+      setIsViewModalOpen(true);
+      showSuccess("Rabbit identified.");
+    } else {
+      showError("Rabbit not found.");
+    }
+  };
+
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return 'N/A';
     const diff = Math.abs(new Date().getTime() - new Date(birthDate).getTime());
@@ -238,6 +264,9 @@ const Inventory = () => {
           <div className="flex flex-wrap gap-4">
             <button onClick={handleForceSync} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-xl">
               <RefreshCw size={24} className={cn(isSyncing && "animate-spin")} />
+            </button>
+            <button onClick={() => setIsScannerOpen(true)} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-xl">
+              <QrCode size={24} />
             </button>
             <button onClick={() => setIsLitterModalOpen(true)} className="auron-button h-14 px-8 flex items-center gap-3 text-sm bg-pink-600 hover:bg-pink-500">
               <Heart size={20} /> {t('recordMating')}
@@ -286,6 +315,7 @@ const Inventory = () => {
                     <div className="flex gap-2">
                       <button onClick={() => { setViewingRabbit(rabbit); setIsViewModalOpen(true); }} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white"><Eye size={18} /></button>
                       <button onClick={() => { setEditingRabbit(rabbit); setFormData(rabbit); setIsModalOpen(true); }} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white"><Edit2 size={18} /></button>
+                      <button onClick={() => handleDeleteRabbit(rabbit.id)} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-rose-400"><Trash2 size={18} /></button>
                     </div>
                   </div>
                 </motion.div>
@@ -296,7 +326,10 @@ const Inventory = () => {
           <TabsContent value="litters" className="space-y-12">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {litters.map((litter, i) => (
-                <motion.div key={litter.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pill-nav p-8 bg-white/5 border-white/10">
+                <motion.div key={litter.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pill-nav p-8 bg-white/5 border-white/10 group relative">
+                  <button onClick={() => handleDeleteLitter(litter.id)} className="absolute top-4 right-4 p-2 rounded-lg bg-rose-500/10 text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 size={14} />
+                  </button>
                   <div className="flex justify-between items-start mb-8">
                     <div className="w-14 h-14 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/20">
                       <Heart size={28} />
@@ -334,6 +367,21 @@ const Inventory = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* QR Scanner Modal */}
+      <AnimatePresence>
+        {isScannerOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <div className="max-w-lg w-full">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-3xl font-black tracking-tight">Neural Scan</h2>
+                <button onClick={() => setIsScannerOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40"><X size={24} /></button>
+              </div>
+              <QrScanner onScanSuccess={handleScanSuccess} />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Split Litter Modal */}
       <AnimatePresence>

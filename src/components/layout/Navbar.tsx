@@ -123,6 +123,12 @@ const Navbar = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
+                  <Link to="/neural-lab" className="flex items-center gap-3">
+                    <BrainCircuit size={18} className="text-indigo-600" />
+                    <span className="font-bold">Neural Lab</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
                   <Link to="/inventory" className="flex items-center gap-3">
                     <ShoppingBag size={18} className="text-emerald-600" />
                     <span className="font-bold">{t('inventory')}</span>

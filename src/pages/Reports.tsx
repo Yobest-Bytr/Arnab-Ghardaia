@@ -8,7 +8,7 @@ import {
   PieChart as PieIcon, Calendar, ArrowUpRight,
   FileText, Loader2, Rabbit, ShieldCheck, Printer,
   ChevronRight, Info, Wallet, Filter, Activity,
-  ArrowDownRight, Target, Layers, Heart, TrendingDown
+  ArrowDownRight, Target, Layers, Heart, TrendingDown, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -29,6 +29,7 @@ const Reports = () => {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [litters, setLitters] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,6 +47,14 @@ const Reports = () => {
     setSales(salesData);
     setExpenses(expenseData);
     setLitters(litterData);
+  };
+
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    await storage.processSyncQueue();
+    await fetchData();
+    setIsSyncing(false);
+    showSuccess(t('forceSync'));
   };
 
   const financialData = useMemo(() => {
@@ -105,10 +114,15 @@ const Reports = () => {
             </h1>
           </motion.div>
           
-          <button onClick={handleExportPDF} disabled={loading} className="auron-button h-14 px-8 flex items-center gap-3 text-sm">
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
-            {t('downloadPDF')}
-          </button>
+          <div className="flex gap-4">
+            <button onClick={handleForceSync} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-xl">
+              <RefreshCw size={24} className={cn(isSyncing && "animate-spin")} />
+            </button>
+            <button onClick={handleExportPDF} disabled={loading} className="auron-button h-14 px-8 flex items-center gap-3 text-sm">
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
+              {t('downloadPDF')}
+            </button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
