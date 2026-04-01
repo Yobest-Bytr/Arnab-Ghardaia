@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Rabbit, Globe, ChevronDown, LayoutDashboard, ShoppingBag, Info, Phone, User, LogOut, Search, DollarSign, BarChart3, Heart, BrainCircuit } from 'lucide-react';
+import { Rabbit, Globe, ChevronDown, LayoutDashboard, ShoppingBag, Info, Phone, User, LogOut, Search, DollarSign, BarChart3, Heart, BrainCircuit, Wallet } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -123,40 +123,21 @@ const Navbar = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
-                  <Link to="/neural-lab" className="flex items-center gap-3">
-                    <BrainCircuit size={18} className="text-indigo-600" />
-                    <span className="font-bold">Neural Lab (AI)</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
                   <Link to="/inventory" className="flex items-center gap-3">
                     <ShoppingBag size={18} className="text-emerald-600" />
                     <span className="font-bold">{t('inventory')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
-                  <Link to="/breeding" className="flex items-center gap-3">
-                    <Heart size={18} className="text-emerald-600" />
-                    <span className="font-bold">{t('breeding')}</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
-                  <Link to="/sales" className="flex items-center gap-3">
-                    <DollarSign size={18} className="text-emerald-600" />
-                    <span className="font-bold">{t('sales')}</span>
+                  <Link to="/expenses" className="flex items-center gap-3">
+                    <Wallet size={18} className="text-emerald-600" />
+                    <span className="font-bold">{t('expenses')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
                   <Link to="/reports" className="flex items-center gap-3">
                     <BarChart3 size={18} className="text-emerald-600" />
                     <span className="font-bold">{t('reports')}</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border" />
-                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
-                  <Link to="/profile" className="flex items-center gap-3">
-                    <User size={18} className="text-emerald-600" />
-                    <span className="font-bold">{t('profile')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-border" />

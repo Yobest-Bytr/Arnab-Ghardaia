@@ -12,18 +12,12 @@ interface SyncItem {
   retryCount?: number;
 }
 
-/**
- * Strict UUID validation.
- */
 const isUUID = (str: any): boolean => {
   if (typeof str !== 'string' || !str) return false;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
 };
 
-/**
- * Reliable UUID generator.
- */
 const generateUUID = (): string => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -35,24 +29,17 @@ const generateUUID = (): string => {
   });
 };
 
-/**
- * Deeply sanitizes an object to convert all empty strings ("") to null.
- * This prevents "invalid input syntax for type uuid" errors in PostgreSQL.
- */
 const sanitizePayload = (obj: any): any => {
   if (obj === null || typeof obj !== 'object') {
     return obj === "" ? null : obj;
   }
-
   if (Array.isArray(obj)) {
     return obj.map(sanitizePayload);
   }
-
   const sanitized: any = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const value = obj[key];
-      // Convert empty strings to null, otherwise recurse
       sanitized[key] = value === "" ? null : sanitizePayload(value);
     }
   }
@@ -89,13 +76,11 @@ export const storage = {
   },
 
   async insert(table: string, userId: string, item: any) {
-    // 1. Ensure we have a valid UUID for the primary key
     let validId = item.id;
     if (!isUUID(validId)) {
       validId = generateUUID();
     }
 
-    // 2. Construct the new item
     const newItem = { 
       ...item, 
       id: validId,
@@ -103,12 +88,10 @@ export const storage = {
       created_at: item.created_at || new Date().toISOString() 
     };
     
-    // 3. Save to local storage (keep empty strings locally if needed, but sanitize for cloud)
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify([newItem, ...localData]));
     
-    // 4. Add to sync queue with sanitized data
     if (isUUID(userId)) {
       this.addToSyncQueue({ 
         id: validId, 
@@ -172,7 +155,6 @@ export const storage = {
 
     for (let i = 0; i < updatedQueue.length; i++) {
       const item = updatedQueue[i];
-      
       if (!isUUID(item.id)) {
         updatedQueue.splice(i, 1);
         i--;
@@ -180,7 +162,6 @@ export const storage = {
         continue;
       }
 
-      // Final sanitization check before sending to Supabase
       const finalData = sanitizePayload(item.data);
 
       try {
@@ -198,12 +179,8 @@ export const storage = {
           i--;
           hasChanges = true;
         } else {
-          console.error(`Sync error for ${item.table}:`, error.message);
-          
-          // Handle missing columns
           const match = error.message.match(/column ['"](.+?)['"]/i);
           const columnName = match ? match[1] : null;
-          
           if (columnName && item.data[columnName] !== undefined) {
             const { [columnName]: _, ...sanitizedData } = item.data;
             updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
