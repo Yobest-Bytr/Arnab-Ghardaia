@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   User, Shield, Settings, Sparkles, Loader2, LogOut, 
-  Check, Palette, Bell, ShieldCheck, Mail, Key, Cpu, Zap, Eye, EyeOff 
+  Check, Palette, Bell, ShieldCheck, Mail, Key, Cpu, Zap, Eye, EyeOff, Globe, ExternalLink 
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
@@ -83,6 +83,13 @@ const Profile = () => {
 
   const toggleKeyVisibility = (key: string) => {
     setShowKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const providerLinks: Record<string, string> = {
+    openai: 'https://platform.openai.com/api-keys',
+    anthropic: 'https://console.anthropic.com/settings/keys',
+    deepseek: 'https://platform.deepseek.com/api_keys',
+    google: 'https://aistudio.google.com/app/apikey'
   };
 
   return (
@@ -182,7 +189,17 @@ const Profile = () => {
                         { id: 'google', name: 'Google Gemini API Key', icon: Globe },
                       ].map((k) => (
                         <div key={k.id} className="space-y-3">
-                          <Label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{k.name}</Label>
+                          <div className="flex items-center justify-between px-2">
+                            <Label className="text-[10px] font-black text-white/30 uppercase tracking-widest">{k.name}</Label>
+                            <a 
+                              href={providerLinks[k.id]} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-[9px] font-black text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest"
+                            >
+                              Get Key <ExternalLink size={10} />
+                            </a>
+                          </div>
                           <div className="relative">
                             <div className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20">
                               <k.icon size={20} />

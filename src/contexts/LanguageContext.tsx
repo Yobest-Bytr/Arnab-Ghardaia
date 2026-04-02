@@ -29,7 +29,24 @@ const translations: Translations = {
   expenses: { en: "Expenses", ar: "المصاريف", fr: "Dépenses" },
   about: { en: "About", ar: "حول", fr: "À propos" },
   contact: { en: "Contact", ar: "اتصل بنا", fr: "Contact" },
+  profile: { en: "Profile Settings", ar: "إعدادات الملف الشخصي", fr: "Paramètres du profil" },
   
+  // Features Section
+  featuresTitle: { en: "Powerful Management Tools", ar: "أدوات إدارة قوية", fr: "Outils de Gestion Puissants" },
+  featuresSubtitle: { en: "Everything you need to scale your rabbit production.", ar: "كل ما تحتاجه لتوسيع إنتاج الأرانب الخاص بك.", fr: "Tout ce dont vous avez besoin pour développer votre production." },
+  feature1Title: { en: "Real-time Analytics", ar: "تحليلات فورية", fr: "Analyses en Temps Réel" },
+  feature1Desc: { en: "Monitor growth rates and health metrics with live data visualization.", ar: "راقب معدلات النمو ومقاييس الصحة مع تصور البيانات الحية.", fr: "Surveillez les taux de croissance et la santé avec des graphiques en direct." },
+  feature2Title: { en: "Cage Management", ar: "إدارة الأقفاص", fr: "Gestion des Cages" },
+  feature2Desc: { en: "Organize your farm layout and track occupancy with a visual map.", ar: "نظم تخطيط مزرعتك وتتبع الإشغال بخريطة مرئية.", fr: "Organisez votre ferme et suivez l'occupation avec une carte visuelle." },
+  feature3Title: { en: "Breeding Cycles", ar: "دورات التزاوج", fr: "Cycles d'Élevage" },
+  feature3Desc: { en: "Automated reminders for pregnancy checks and weaning dates.", ar: "تذكيرات تلقائية لفحوصات الحمل وتواريخ الفطام.", fr: "Rappels automatiques pour les contrôles de grossesse et le sevrage." },
+  
+  // CTA Section
+  ctaTitle: { en: "Ready to modernize your farm?", ar: "هل أنت مستعد لتحديث مزرعتك؟", fr: "Prêt à moderniser votre ferme ?" },
+  ctaSubtitle: { en: "Join hundreds of breeders in Ghardaia using Arnab Ghardaia to optimize their production.", ar: "انضم إلى مئات المربين في غرداية الذين يستخدمون أرنب غرداية لتحسين إنتاجهم.", fr: "Rejoignez des centaines d'éleveurs à Ghardaia utilisant Arnab Ghardaia." },
+  getStartedFree: { en: "Get Started Free", ar: "ابدأ مجاناً", fr: "Commencer Gratuitement" },
+  contactSales: { en: "Contact Support", ar: "اتصل بالدعم", fr: "Contacter le Support" },
+
   // Inventory Page
   addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un Lapin" },
   rabbitName: { en: "Rabbit Name", ar: "اسم الأرنب", fr: "Nom du lapin" },
