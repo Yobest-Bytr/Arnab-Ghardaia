@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 const NeuralLab = () => {
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -31,8 +31,8 @@ const NeuralLab = () => {
         id: 'welcome',
         role: 'assistant',
         content: language === 'ar' 
-          ? "تم إنشاء الرابط العصبي. لدي حق الوصول إلى بيانات مزرعتك. يمكنني تحليل الصور ومسح رموز QR وتنفيذ إجراءات مثل إضافة أو تعديل الأرانب. كيف يمكنني مساعدتك؟"
-          : "Neural Link Established. I have access to your farm data. I can analyze images, scan QR codes, and perform actions like adding or editing rabbits. How can I assist you?",
+          ? "تم إنشاء الرابط العصبي. لدي حق الوصول الكامل إلى بيانات مزرعتك. يمكنني تحليل الصور ومسح رموز QR وتنفيذ إجراءات مثل إضافة أو تعديل الأرانب. كيف يمكنني مساعدتك اليوم؟"
+          : "Neural Link Established. I have full access to your farm data. I can analyze images, scan QR codes, and perform actions like adding or editing rabbits. How can I assist you today?",
         timestamp: new Date().toISOString(),
         model: 'Yobest AI 4.1'
       }]);
@@ -77,22 +77,10 @@ const NeuralLab = () => {
       
       LANGUAGE: Respond strictly in ${language === 'ar' ? 'Arabic' : language === 'fr' ? 'French' : 'English'}.
       
-      RESPONSE STYLE:
-      - Use symbols to organize information:
-        🧬 Lineage/Genetics
-        🏥 Health/Medical
-        💰 Sales/Revenue
-        🏠 Housing/Cages
-        📈 Growth/Analytics
-        ⚠️ Alerts/Warnings
-      - Keep responses concise and professional.
-      
-      DATE DEFAULT: If a date is not specified for an action, use today's date: ${today}.
-      
-      NEURAL SNAPSHOT:
-      - Rabbits: ${farmSnapshot.rabbits.length} total
-      - Sales: ${farmSnapshot.sales.length} total
-      - Litters: ${farmSnapshot.litters.length} total
+      NEURAL SNAPSHOT (FULL ACCESS):
+      - Rabbits: ${JSON.stringify(farmSnapshot.rabbits)}
+      - Sales: ${JSON.stringify(farmSnapshot.sales)}
+      - Litters: ${JSON.stringify(farmSnapshot.litters)}
       
       ACTION CAPABILITIES:
       If you want to perform an action, include the tag:
@@ -147,15 +135,15 @@ const NeuralLab = () => {
               <BrainCircuit size={32} />
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tighter">Neural <span className="dopamine-text">Lab.</span></h1>
+              <h1 className="text-3xl font-black tracking-tighter">{t('neuralLab')}.</h1>
               <div className="flex items-center gap-3 mt-1">
                 <span className="flex items-center gap-1.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Engine Online
+                  {t('engineOnline')}
                 </span>
                 <span className="text-white/10">•</span>
                 <span className="text-[9px] font-black text-white/20 uppercase tracking-widest flex items-center gap-1.5">
-                  <Database size={10} /> {farmSnapshot.rabbits.length} Nodes Linked
+                  <Database size={10} /> {farmSnapshot.rabbits.length} {t('nodesLinked')}
                 </span>
               </div>
             </div>
@@ -164,11 +152,11 @@ const NeuralLab = () => {
           <div className="hidden md:flex items-center gap-4">
             <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
               <Shield size={14} className="text-indigo-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Secure Uplink</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('secureUplink')}</span>
             </div>
             <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
               <Globe size={14} className="text-indigo-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Ghardaia Node</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('ghardaiaNode')}</span>
             </div>
           </div>
         </div>

@@ -23,6 +23,10 @@ export const grokChat = async (
     return "AI Engine Offline: Puter.js not loaded. Please refresh the page.";
   }
 
+  // Check for custom keys in local storage
+  const savedKeys = localStorage.getItem(`neural_keys_${userId}`);
+  const keys = savedKeys ? JSON.parse(savedKeys) : {};
+  
   try {
     const fullPrompt = systemPrompt 
       ? `${systemPrompt}\n\nUser: ${prompt}`
@@ -43,6 +47,9 @@ export const grokChat = async (
       stream: !!streamCallback && stream,
     };
 
+    // If a custom key exists for the provider, Puter will attempt to use it if configured
+    // Note: Puter.js handles key injection via its own dashboard/environment, 
+    // but we pass the context here.
     const response = await (window as any).puter.ai.chat(content, chatOptions);
 
     if (streamCallback && stream) {

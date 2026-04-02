@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/storage';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { motion } from 'framer-motion';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
@@ -60,7 +62,7 @@ const Profile = () => {
         } else {
           await storage.insert('profiles', user.id, { display_name: displayName, email: user.email });
         }
-        showSuccess('Profile updated in cloud.');
+        showSuccess(t('save'));
       } catch (err) {
         showError('Failed to update profile.');
       } finally {
@@ -71,7 +73,7 @@ const Profile = () => {
 
   const handleSaveKeys = () => {
     localStorage.setItem(`neural_keys_${user?.id}`, JSON.stringify(aiKeys));
-    showSuccess("Neural keys encrypted and saved locally.");
+    showSuccess(t('initializeUplink'));
   };
 
   const toggleKeyVisibility = (key: string) => {
@@ -86,7 +88,7 @@ const Profile = () => {
       <main className="pt-40 pb-20 px-6 max-w-6xl mx-auto relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <header className="mb-12">
-            <h1 className="text-5xl font-black tracking-tighter">Neural <span className="dopamine-text">Settings.</span></h1>
+            <h1 className="text-5xl font-black tracking-tighter">{t('neuralSettings')}</h1>
             <p className="text-white/40 font-medium mt-1 text-lg">Configure your identity and cognitive uplink.</p>
           </header>
 
@@ -99,7 +101,7 @@ const Profile = () => {
                 <h3 className="text-xl font-black mb-1">{displayName}</h3>
                 <p className="text-xs text-white/20 font-bold uppercase tracking-widest mb-8">{user?.email}</p>
                 <button onClick={signOut} className="w-full py-4 rounded-2xl bg-rose-500/10 text-rose-400 font-black text-xs uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                  <LogOut size={16} /> Terminate Session
+                  <LogOut size={16} /> {t('terminateSession')}
                 </button>
               </div>
             </aside>
@@ -108,13 +110,13 @@ const Profile = () => {
               <Tabs defaultValue="general" className="space-y-8">
                 <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl h-16">
                   <TabsTrigger value="general" className="rounded-xl px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest">
-                    Identity
+                    {t('identity')}
                   </TabsTrigger>
                   <TabsTrigger value="keys" className="rounded-xl px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest">
-                    Neural Keys
+                    {t('neuralKeys')}
                   </TabsTrigger>
                   <TabsTrigger value="security" className="rounded-xl px-8 data-[state=active]:bg-indigo-600 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest">
-                    Security
+                    {t('security')}
                   </TabsTrigger>
                 </TabsList>
 
@@ -127,7 +129,7 @@ const Profile = () => {
                     <div className="space-y-8">
                       <div className="grid md:grid-cols-2 gap-8">
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Display Name</Label>
+                          <Label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('displayName')}</Label>
                           <Input 
                             value={displayName} 
                             onChange={(e) => setDisplayName(e.target.value)}
@@ -135,7 +137,7 @@ const Profile = () => {
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Email Address</Label>
+                          <Label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('emailAddress')}</Label>
                           <Input 
                             value={user?.email || ''} 
                             disabled
@@ -145,7 +147,7 @@ const Profile = () => {
                       </div>
                       <Button onClick={handleUpdateProfile} disabled={loading} className="auron-button h-14 px-10">
                         {loading ? <Loader2 className="animate-spin mr-2" size={20} /> : <Check className="mr-2" size={20} />}
-                        Save Identity
+                        {t('saveIdentity')}
                       </Button>
                     </div>
                   </div>
@@ -156,7 +158,7 @@ const Profile = () => {
                     <div className="flex items-center justify-between mb-8">
                       <h3 className="text-xl font-black flex items-center gap-3">
                         <Key className="text-indigo-400" size={24} />
-                        Neural Uplink Keys
+                        {t('neuralKeys')}
                       </h3>
                       <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
                         Local Encryption Active
@@ -198,7 +200,7 @@ const Profile = () => {
                       
                       <Button onClick={handleSaveKeys} className="auron-button h-14 px-10 w-full md:w-auto">
                         <ShieldCheck className="mr-2" size={20} />
-                        Initialize Neural Uplink
+                        {t('initializeUplink')}
                       </Button>
                     </div>
                   </div>
@@ -208,7 +210,7 @@ const Profile = () => {
                   <div className="pill-nav p-10 bg-white/5 border-white/10">
                     <h3 className="text-xl font-black mb-8 flex items-center gap-3">
                       <ShieldCheck className="text-indigo-400" size={24} />
-                      Security Protocol
+                      {t('security')}
                     </h3>
                     <div className="space-y-6">
                       <div className="p-6 rounded-[2rem] bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-between">
@@ -223,9 +225,6 @@ const Profile = () => {
                         </div>
                         <span className="px-4 py-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest">Verified</span>
                       </div>
-                      <Button variant="outline" className="h-14 rounded-2xl border-white/10 bg-white/5 font-black text-xs uppercase tracking-widest hover:bg-white/10">
-                        Rotate Password
-                      </Button>
                     </div>
                   </div>
                 </TabsContent>
