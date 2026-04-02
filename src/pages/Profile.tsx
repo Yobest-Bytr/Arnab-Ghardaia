@@ -19,7 +19,12 @@ const Profile = () => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [displayName, setDisplayName] = useState('');
-  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({
+    openai: false,
+    anthropic: false,
+    deepseek: false,
+    google: false
+  });
   
   const [aiKeys, setAiKeys] = useState({
     openai: '',
@@ -174,6 +179,7 @@ const Profile = () => {
                         { id: 'openai', name: 'OpenAI API Key', icon: Cpu },
                         { id: 'anthropic', name: 'Anthropic API Key', icon: Zap },
                         { id: 'deepseek', name: 'DeepSeek API Key', icon: Sparkles },
+                        { id: 'google', name: 'Google Gemini API Key', icon: Globe },
                       ].map((k) => (
                         <div key={k.id} className="space-y-3">
                           <Label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{k.name}</Label>
@@ -189,6 +195,7 @@ const Profile = () => {
                               className="h-14 pl-14 pr-14 bg-white/5 border-white/10 rounded-2xl font-mono text-indigo-300 focus:border-indigo-500/50" 
                             />
                             <button 
+                              type="button"
                               onClick={() => toggleKeyVisibility(k.id)}
                               className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
                             >
