@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, BrainCircuit, Globe, Wallet
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, BrainCircuit, Globe, Wallet, ListTodo
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,14 +30,16 @@ const Dashboard = () => {
   }, [user]);
 
   const fetchData = async () => {
-    const [rabbitData, salesData, expenseData] = await Promise.all([
+    const [rabbitData, salesData, expenseData, taskData] = await Promise.all([
       storage.get('rabbits', user?.id || ''),
       storage.get('sales', user?.id || ''),
-      storage.get('expenses', user?.id || '')
+      storage.get('expenses', user?.id || ''),
+      storage.get('tasks', user?.id || '')
     ]);
     setRabbits(rabbitData);
     setSales(salesData);
     setExpenses(expenseData);
+    setTasks(taskData);
     setLoading(false);
   };
 
@@ -101,9 +104,9 @@ const Dashboard = () => {
             <p className="text-white/40 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
           <div className="flex gap-3">
-            <Link to="/insights">
+            <Link to="/tasks">
               <button className="h-14 px-6 rounded-2xl bg-white/5 border border-white/10 text-white/40 font-bold text-sm hover:bg-indigo-500 hover:text-white transition-all flex items-center gap-2">
-                <TrendingUp size={18} /> Telemetry
+                <ListTodo size={18} /> Schedule
               </button>
             </Link>
             <Link to="/inventory">
@@ -228,27 +231,25 @@ const Dashboard = () => {
           <div className="space-y-8">
             <div className="pill-nav p-10 bg-white/5 border-white/10">
               <h3 className="text-xl font-black mb-8 flex items-center gap-2">
-                <Globe className="text-indigo-600" size={20} />
-                Network Status
+                <ListTodo className="text-indigo-600" size={20} />
+                Neural Schedule
               </h3>
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold">Cloud Sync</span>
+                {tasks.filter(t => !t.completed).slice(0, 3).map((task, i) => (
+                  <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-2 h-2 rounded-full", task.priority === 'Critical' ? "bg-rose-500 animate-pulse" : "bg-indigo-500")} />
+                      <span className="text-xs font-bold truncate max-w-[120px]">{task.title}</span>
+                    </div>
+                    <span className="text-[9px] font-black text-white/20 uppercase">{task.due_date}</span>
                   </div>
-                  <span className="text-[10px] font-black text-emerald-600 uppercase">Optimal</span>
-                </div>
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold">Neural Engine</span>
-                  </div>
-                  <span className="text-[10px] font-black text-emerald-600 uppercase">Active</span>
-                </div>
-                <Link to="/collaborators" className="block w-full pt-4">
+                ))}
+                {tasks.filter(t => !t.completed).length === 0 && (
+                  <p className="text-xs text-white/20 italic text-center py-4">No pending tasks.</p>
+                )}
+                <Link to="/tasks" className="block w-full pt-4">
                   <button className="w-full py-3 rounded-xl bg-indigo-500/10 text-indigo-400 font-bold text-sm hover:bg-indigo-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                    <Users size={16} /> View Collaborators
+                    View All Tasks
                   </button>
                 </Link>
               </div>

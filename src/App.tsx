@@ -27,6 +27,7 @@ import Changelog from "./pages/Changelog";
 import NeuralLab from "./pages/NeuralLab";
 import AIInsights from "./pages/AIInsights";
 import Collaborators from "./pages/Collaborators";
+import Tasks from "./pages/Tasks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -82,6 +83,11 @@ const App = () => (
                 <Route path="/collaborators" element={
                   <ProtectedRoute>
                     <Collaborators />
+                  </ProtectedRoute>
+                } />
+                <Route path="/tasks" element={
+                  <ProtectedRoute>
+                    <Tasks />
                   </ProtectedRoute>
                 } />
                 <Route path="/inventory" element={

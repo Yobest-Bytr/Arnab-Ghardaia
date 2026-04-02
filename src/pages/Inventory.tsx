@@ -7,7 +7,7 @@ import {
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
   QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
   Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight, ArrowLeft, ShoppingBag,
-  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale, RefreshCw, CheckCircle2, AlertCircle, Users, Share2
+  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale, RefreshCw, CheckCircle2, AlertCircle, Users, Share2, Palette, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -48,6 +48,8 @@ const Inventory = () => {
     name: '',
     breed: 'New Zealand White',
     gender: 'Female',
+    color: '',
+    origin: 'Farm Born',
     health_status: 'Healthy',
     status: 'Available',
     cage_number: '',
@@ -62,7 +64,8 @@ const Inventory = () => {
     vaccination_status: 'Not Vaccinated',
     medical_history: '',
     weight_history: [] as any[],
-    is_public: false
+    is_public: false,
+    image_url: ''
   };
 
   const initialLitterForm = {
@@ -461,8 +464,8 @@ const Inventory = () => {
                         <p className="text-lg font-bold">{viewingRabbit.gender}</p>
                       </div>
                       <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Cage</p>
-                        <p className="text-lg font-bold">#{viewingRabbit.cage_number} ({viewingRabbit.cage_type})</p>
+                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Color</p>
+                        <p className="text-lg font-bold">{viewingRabbit.color || 'N/A'}</p>
                       </div>
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
@@ -636,14 +639,18 @@ const Inventory = () => {
 
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageNumber')}</label>
-                    <input type="text" value={formData.cage_number} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Color / Markings</label>
+                    <div className="relative">
+                      <Palette className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+                      <input type="text" value={formData.color} onChange={(e) => setFormData({...formData, color: e.target.value})} className="w-full h-14 pl-12 pr-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" placeholder="e.g., Broken Black" />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageType')}</label>
-                    <select value={formData.cage_type} onChange={(e) => setFormData({...formData, cage_type: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
-                      {CAGE_TYPES.map(c => <option key={c} value={c} className="bg-[#020408]">{c}</option>)}
-                    </select>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Source / Origin</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+                      <input type="text" value={formData.origin} onChange={(e) => setFormData({...formData, origin: e.target.value})} className="w-full h-14 pl-12 pr-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" placeholder="e.g., Purchased from Ghardaia" />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('status')}</label>
@@ -657,16 +664,29 @@ const Inventory = () => {
 
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageNumber')}</label>
+                    <input type="text" value={formData.cage_number} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageType')}</label>
+                    <select value={formData.cage_type} onChange={(e) => setFormData({...formData, cage_type: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      {CAGE_TYPES.map(c => <option key={c} value={c} className="bg-[#020408]">{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('matingPartner')}</label>
+                    <input type="text" value={formData.mating_partner} onChange={(e) => setFormData({...formData, mating_partner: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('motherId')}</label>
                     <input type="text" value={formData.mother_id} onChange={(e) => setFormData({...formData, mother_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('fatherId')}</label>
                     <input type="text" value={formData.father_id} onChange={(e) => setFormData({...formData, father_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('matingPartner')}</label>
-                    <input type="text" value={formData.mating_partner} onChange={(e) => setFormData({...formData, mating_partner: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                 </div>
 
