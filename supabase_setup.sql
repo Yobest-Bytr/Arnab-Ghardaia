@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS weight_logs (
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
   rabbit_id UUID REFERENCES rabbits(id) ON DELETE CASCADE,
   weight NUMERIC,
-  log_date DATE DEFAULT CURRENT_DATE,
+  log_date TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -124,14 +124,33 @@ ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS Policies
-CREATE POLICY "Users can manage their own profile" ON profiles FOR ALL USING (auth.uid() = id);
-CREATE POLICY "Users can manage their own rabbits" ON rabbits FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own litters" ON litters FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own mating history" ON mating_history FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own weight logs" ON weight_logs FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own sales" ON sales FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own expenses" ON expenses FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own tasks" ON tasks FOR ALL USING (auth.uid() = user_id);
-
--- Public access for Boutique
-CREATE POLICY "Public can view public rabbits" ON rabbits FOR SELECT USING (is_public = TRUE);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own profile') THEN
+        CREATE POLICY "Users can manage their own profile" ON profiles FOR ALL USING (auth.uid() = id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own rabbits') THEN
+        CREATE POLICY "Users can manage their own rabbits" ON rabbits FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own litters') THEN
+        CREATE POLICY "Users can manage their own litters" ON litters FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own mating history') THEN
+        CREATE POLICY "Users can manage their own mating history" ON mating_history FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own weight logs') THEN
+        CREATE POLICY "Users can manage their own weight logs" ON weight_logs FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own sales') THEN
+        CREATE POLICY "Users can manage their own sales" ON sales FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own expenses') THEN
+        CREATE POLICY "Users can manage their own expenses" ON expenses FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own tasks') THEN
+        CREATE POLICY "Users can manage their own tasks" ON tasks FOR ALL USING (auth.uid() = user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public can view public rabbits') THEN
+        CREATE POLICY "Public can view public rabbits" ON rabbits FOR SELECT USING (is_public = TRUE);
+    END IF;
+END $$;

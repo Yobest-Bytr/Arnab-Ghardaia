@@ -125,6 +125,7 @@ const Inventory = () => {
     try {
       const weightVal = parseFloat(formData.weight) || 0;
       const priceVal = parseFloat(formData.price_dzd) || 0;
+      const now = new Date().toISOString();
       let updatedWeightHistory = [...(formData.weight_history || [])];
       
       const payload = {
@@ -135,14 +136,14 @@ const Inventory = () => {
 
       if (editingRabbit) {
         if (editingRabbit.weight !== weightVal) {
-          updatedWeightHistory.push({ weight: weightVal, date: new Date().toISOString(), notes: 'Manual update' });
-          await storage.insert('weight_logs', user.id, { rabbit_id: editingRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+          updatedWeightHistory.push({ weight: weightVal, date: now, notes: 'Manual update' });
+          await storage.insert('weight_logs', user.id, { rabbit_id: editingRabbit.id, weight: weightVal, log_date: now });
         }
         await storage.update('rabbits', user.id, editingRabbit.id, { ...payload, weight_history: updatedWeightHistory });
       } else {
-        updatedWeightHistory = [{ weight: weightVal, date: new Date().toISOString(), notes: 'Initial weight' }];
+        updatedWeightHistory = [{ weight: weightVal, date: now, notes: 'Initial weight' }];
         const newRabbit = await storage.insert('rabbits', user.id, { ...payload, weight_history: updatedWeightHistory });
-        await storage.insert('weight_logs', user.id, { rabbit_id: newRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+        await storage.insert('weight_logs', user.id, { rabbit_id: newRabbit.id, weight: weightVal, log_date: now });
       }
       
       setIsModalOpen(false);
@@ -159,9 +160,10 @@ const Inventory = () => {
     if (!user || !activeRabbit || !quickWeight) return;
     try {
       const weightVal = parseFloat(quickWeight) || 0;
-      const updatedHistory = [...(activeRabbit.weight_history || []), { weight: weightVal, date: new Date().toISOString(), notes: 'Quick update' }];
+      const now = new Date().toISOString();
+      const updatedHistory = [...(activeRabbit.weight_history || []), { weight: weightVal, date: now, notes: 'Quick update' }];
       await storage.update('rabbits', user.id, activeRabbit.id, { weight: weightVal, weight_history: updatedHistory });
-      await storage.insert('weight_logs', user.id, { rabbit_id: activeRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+      await storage.insert('weight_logs', user.id, { rabbit_id: activeRabbit.id, weight: weightVal, log_date: now });
       setIsWeightModalOpen(false);
       setQuickWeight('');
       setActiveRabbit(null);
@@ -279,7 +281,10 @@ const Inventory = () => {
     return weightLogs
       .filter(log => log.rabbit_id === rabbitId)
       .sort((a, b) => new Date(a.log_date).getTime() - new Date(b.log_date).getTime())
-      .map(log => ({ date: log.log_date, weight: log.weight }));
+      .map(log => ({ 
+        date: new Date(log.log_date).toLocaleDateString(), 
+        weight: log.weight 
+      }));
   };
 
   const getMatingPartners = (rabbitId: string) => {
