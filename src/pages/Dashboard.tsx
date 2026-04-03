@@ -7,7 +7,7 @@ import Navbar from '@/components/layout/Navbar';
 import { 
   Rabbit, Users, Activity, TrendingUp, Plus, 
   Calendar, CheckCircle2, AlertCircle, ArrowUpRight, 
-  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, BrainCircuit, Globe, Wallet, ListTodo
+  Clock, ShieldCheck, Heart, FileText, Zap, Box, LayoutGrid, Info, BrainCircuit, Globe, Wallet, ListTodo, RefreshCw, Trash2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -15,6 +15,7 @@ import {
   Tooltip, ResponsiveContainer
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { showSuccess } from '@/utils/toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -24,9 +25,13 @@ const Dashboard = () => {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncQueueSize, setSyncQueueSize] = useState(0);
 
   useEffect(() => {
-    if (user) fetchData();
+    if (user) {
+      fetchData();
+      checkSyncQueue();
+    }
   }, [user]);
 
   const fetchData = async () => {
@@ -41,6 +46,26 @@ const Dashboard = () => {
     setExpenses(expenseData);
     setTasks(taskData);
     setLoading(false);
+  };
+
+  const checkSyncQueue = () => {
+    const queue = JSON.parse(localStorage.getItem('arnab_sync_queue') || '[]');
+    setSyncQueueSize(queue.length);
+  };
+
+  const handleForceSync = async () => {
+    await storage.processSyncQueue();
+    checkSyncQueue();
+    fetchData();
+    showSuccess("Neural sync forced.");
+  };
+
+  const handleClearQueue = () => {
+    if (confirm("Clear pending sync requests? This cannot be undone.")) {
+      storage.clearSyncQueue();
+      setSyncQueueSize(0);
+      showSuccess("Sync queue purged.");
+    }
   };
 
   const financials = useMemo(() => {
@@ -103,7 +128,16 @@ const Dashboard = () => {
             <h1 className="text-5xl font-black tracking-tighter">The <span className="dopamine-text">Nexus.</span></h1>
             <p className="text-white/40 font-medium mt-1">Welcome back to your farm management portal.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            {syncQueueSize > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <RefreshCw size={14} className="text-amber-400 animate-spin" />
+                <span className="text-[10px] font-black text-amber-400 uppercase">{syncQueueSize} Pending</span>
+                <button onClick={handleClearQueue} className="ml-2 text-amber-400/40 hover:text-rose-400 transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
             <Link to="/tasks">
               <button className="h-14 px-6 rounded-2xl bg-white/5 border border-white/10 text-white/40 font-bold text-sm hover:bg-indigo-500 hover:text-white transition-all flex items-center gap-2">
                 <ListTodo size={18} /> Schedule
