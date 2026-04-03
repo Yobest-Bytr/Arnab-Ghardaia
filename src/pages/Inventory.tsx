@@ -99,6 +99,16 @@ const Inventory = () => {
     if (user) fetchData();
   }, [user]);
 
+  // Auto-calculate expected birth date (31 days after mating)
+  useEffect(() => {
+    if (litterFormData.mating_date) {
+      const matingDate = new Date(litterFormData.mating_date);
+      const expectedDate = new Date(matingDate);
+      expectedDate.setDate(matingDate.getDate() + 31);
+      setLitterFormData(prev => ({ ...prev, expected_birth_date: expectedDate.toISOString().split('T')[0] }));
+    }
+  }, [litterFormData.mating_date]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -318,7 +328,7 @@ const Inventory = () => {
 
   const handleQrScan = (decodedText: string) => {
     setIsScannerOpen(false);
-    const rabbit = rabbits.find(r => r.rabbit_id === decodedText);
+    const rabbit = rabbits.find(r => r.rabbit_id === decodedText.trim());
     if (rabbit) {
       setViewingRabbit(rabbit);
       setIsViewModalOpen(true);
@@ -471,12 +481,10 @@ const Inventory = () => {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {matingHistory.map((m, i) => {
-                    const female = rabbits.find(r => r.id === m.female_id);
-                    const male = rabbits.find(r => r.id === m.male_id);
                     return (
                       <tr key={i} className="hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4 font-bold">{female?.name || t('unknown')}</td>
-                        <td className="px-6 py-4 font-bold">{male?.name || t('unknown')}</td>
+                        <td className="px-6 py-4 font-bold">{m.female_id || t('unknown')}</td>
+                        <td className="px-6 py-4 font-bold">{m.male_id || t('unknown')}</td>
                         <td className="px-6 py-4 text-white/40">{m.mating_date}</td>
                         <td className="px-6 py-4">
                           <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">{m.status}</span>
@@ -504,18 +512,18 @@ const Inventory = () => {
                 <div className="grid md:grid-cols-3 gap-8">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('rabbitName')}</label>
-                    <input type="text" required value={formData.name ?? ''} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50" />
+                    <input type="text" required value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('genderSelection')}</label>
-                    <select value={formData.gender ?? 'Female'} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                    <select value={formData.gender || 'Female'} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
                       <option value="Female" className="bg-[#020408]">Female</option>
                       <option value="Male" className="bg-[#020408]">Male</option>
                     </select>
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('breedSelection')}</label>
-                    <select value={formData.breed ?? 'New Zealand White'} onChange={(e) => setFormData({...formData, breed: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                    <select value={formData.breed || 'New Zealand White'} onChange={(e) => setFormData({...formData, breed: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
                       {BREEDS.map(b => <option key={b} value={b} className="bg-[#020408]">{b}</option>)}
                     </select>
                   </div>
@@ -523,32 +531,32 @@ const Inventory = () => {
                 <div className="grid md:grid-cols-3 gap-8">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('weightKg')}</label>
-                    <input type="number" step="0.01" required value={formData.weight ?? ''} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <input type="number" step="0.01" required value={formData.weight || ''} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('birthDate')}</label>
-                    <input type="date" value={formData.birth_date ?? ''} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <input type="date" value={formData.birth_date || ''} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
-                    <input type="number" value={formData.price_dzd ?? ''} onChange={(e) => setFormData({...formData, price_dzd: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <input type="number" value={formData.price_dzd || ''} onChange={(e) => setFormData({...formData, price_dzd: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageNumber')}</label>
-                    <input type="text" value={formData.cage_number ?? ''} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <input type="text" value={formData.cage_number || ''} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageType')}</label>
-                    <select value={formData.cage_type ?? 'Females Only'} onChange={(e) => setFormData({...formData, cage_type: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                    <select value={formData.cage_type || 'Females Only'} onChange={(e) => setFormData({...formData, cage_type: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
                       {CAGE_TYPES.map(c => <option key={c} value={c} className="bg-[#020408]">{c}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('notes')}</label>
-                  <textarea value={formData.notes ?? ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none min-h-[120px]" />
+                  <textarea value={formData.notes || ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none min-h-[120px]" />
                 </div>
                 <button type="submit" className="auron-button w-full h-16 text-lg">{t('save')}</button>
               </form>
@@ -618,11 +626,11 @@ const Inventory = () => {
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('newWeight')}</label>
-                  <input type="number" step="0.01" autoFocus value={quickWeight ?? ''} onChange={(e) => setQuickWeight(e.target.value)} className="w-full h-16 px-8 bg-white/5 border border-white/10 rounded-2xl font-black text-2xl outline-none focus:border-emerald-500/50 text-emerald-400" />
+                  <input type="number" step="0.01" autoFocus value={quickWeight || ''} onChange={(e) => setQuickWeight(e.target.value)} className="w-full h-16 px-8 bg-white/5 border border-white/10 rounded-2xl font-black text-2xl outline-none focus:border-emerald-500/50 text-emerald-400" />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Log Date</label>
-                  <input type="date" value={weightLogDate ?? ''} onChange={(e) => setWeightLogDate(e.target.value)} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  <input type="date" value={weightLogDate || ''} onChange={(e) => setWeightLogDate(e.target.value)} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                 </div>
                 <button onClick={handleQuickWeightUpdate} className="auron-button w-full h-16 text-lg bg-emerald-600 hover:bg-emerald-500">{t('save')}</button>
               </div>
@@ -647,7 +655,7 @@ const Inventory = () => {
                     <input 
                       type="text" 
                       required 
-                      value={litterFormData.mother_name ?? ''} 
+                      value={litterFormData.mother_name || ''} 
                       onFocus={() => showInstantSuggestions('mother', litterFormData.mother_name)}
                       onChange={(e) => { setLitterFormData({...litterFormData, mother_name: e.target.value}); showInstantSuggestions('mother', e.target.value); }} 
                       className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" 
@@ -668,7 +676,7 @@ const Inventory = () => {
                     <input 
                       type="text" 
                       required 
-                      value={litterFormData.father_name ?? ''} 
+                      value={litterFormData.father_name || ''} 
                       onFocus={() => showInstantSuggestions('father', litterFormData.father_name)}
                       onChange={(e) => { setLitterFormData({...litterFormData, father_name: e.target.value}); showInstantSuggestions('father', e.target.value); }} 
                       className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" 
@@ -688,11 +696,11 @@ const Inventory = () => {
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('matingDate')}</label>
-                    <input type="date" required value={litterFormData.mating_date ?? ''} onChange={(e) => setLitterFormData({...litterFormData, mating_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <input type="date" required value={litterFormData.mating_date || ''} onChange={(e) => setLitterFormData({...litterFormData, mating_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('status')}</label>
-                    <select value={litterFormData.status ?? 'Pregnant'} onChange={(e) => setLitterFormData({...litterFormData, status: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                    <select value={litterFormData.status || 'Pregnant'} onChange={(e) => setLitterFormData({...litterFormData, status: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
                       <option value="Pregnant" className="bg-[#020408]">Pregnant</option>
                       <option value="Born" className="bg-[#020408]">Born</option>
                       <option value="Weaned" className="bg-[#020408]">Weaned</option>
@@ -704,15 +712,15 @@ const Inventory = () => {
                   <div className="grid md:grid-cols-3 gap-8 p-8 rounded-[2rem] bg-white/5 border border-white/5">
                     <div className="space-y-3">
                       <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('kitsBorn')}</label>
-                      <input type="number" value={litterFormData.kit_count ?? 0} onChange={(e) => setLitterFormData({...litterFormData, kit_count: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                      <input type="number" value={litterFormData.kit_count || 0} onChange={(e) => setLitterFormData({...litterFormData, kit_count: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                     </div>
                     <div className="space-y-3">
                       <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('kitsAlive')}</label>
-                      <input type="number" value={litterFormData.alive_kits ?? 0} onChange={(e) => setLitterFormData({...litterFormData, alive_kits: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-emerald-400" />
+                      <input type="number" value={litterFormData.alive_kits || 0} onChange={(e) => setLitterFormData({...litterFormData, alive_kits: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-emerald-400" />
                     </div>
                     <div className="space-y-3">
                       <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('kitsDead')}</label>
-                      <input type="number" value={litterFormData.dead_kits ?? 0} onChange={(e) => setLitterFormData({...litterFormData, dead_kits: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-rose-400" />
+                      <input type="number" value={litterFormData.dead_kits || 0} onChange={(e) => setLitterFormData({...litterFormData, dead_kits: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-rose-400" />
                     </div>
                   </div>
                 )}
@@ -740,11 +748,11 @@ const Inventory = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('malesToCreate')}</label>
-                    <input type="number" value={splitData.males ?? 0} onChange={(e) => setSplitData({...splitData, males: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-blue-400" />
+                    <input type="number" value={splitData.males || 0} onChange={(e) => setSplitData({...splitData, males: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-blue-400" />
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('femalesToCreate')}</label>
-                    <input type="number" value={splitData.females ?? 0} onChange={(e) => setSplitData({...splitData, females: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-pink-400" />
+                    <input type="number" value={splitData.females || 0} onChange={(e) => setSplitData({...splitData, females: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-pink-400" />
                   </div>
                 </div>
                 <button onClick={handleSplitLitter} className="auron-button w-full h-16 text-lg bg-indigo-600 hover:bg-indigo-500">{t('confirmSplit')}</button>
