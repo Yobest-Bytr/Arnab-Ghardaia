@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Rabbits Table (Core Inventory)
+-- 2. Rabbits Table
 CREATE TABLE IF NOT EXISTS rabbits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS rabbits (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Litters Table (Breeding Records)
+-- 3. Litters Table
 CREATE TABLE IF NOT EXISTS litters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS litters (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Mating History Table (Detailed Tracking)
+-- 4. Mating History Table
 CREATE TABLE IF NOT EXISTS mating_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS mating_history (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Weight Logs Table (Growth Tracking)
+-- 5. Weight Logs Table
 CREATE TABLE IF NOT EXISTS weight_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -123,7 +123,7 @@ ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
--- Create RLS Policies (User can only see their own data)
+-- Create RLS Policies
 CREATE POLICY "Users can manage their own profile" ON profiles FOR ALL USING (auth.uid() = id);
 CREATE POLICY "Users can manage their own rabbits" ON rabbits FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage their own litters" ON litters FOR ALL USING (auth.uid() = user_id);

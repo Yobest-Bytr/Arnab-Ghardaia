@@ -123,19 +123,26 @@ const Inventory = () => {
     e.preventDefault();
     if (!user) return;
     try {
-      const weightVal = parseFloat(formData.weight);
+      const weightVal = parseFloat(formData.weight) || 0;
+      const priceVal = parseFloat(formData.price_dzd) || 0;
       let updatedWeightHistory = [...(formData.weight_history || [])];
       
+      const payload = {
+        ...formData,
+        weight: weightVal,
+        price_dzd: priceVal
+      };
+
       if (editingRabbit) {
-        if (editingRabbit.weight !== formData.weight) {
+        if (editingRabbit.weight !== weightVal) {
           updatedWeightHistory.push({ weight: weightVal, date: new Date().toISOString(), notes: 'Manual update' });
-          await storage.insert('weight_logs', user.id, { rabbit_id: editingRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+          storage.insert('weight_logs', user.id, { rabbit_id: editingRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
         }
-        await storage.update('rabbits', user.id, editingRabbit.id, { ...formData, weight_history: updatedWeightHistory });
+        await storage.update('rabbits', user.id, editingRabbit.id, { ...payload, weight_history: updatedWeightHistory });
       } else {
         updatedWeightHistory = [{ weight: weightVal, date: new Date().toISOString(), notes: 'Initial weight' }];
-        const newRabbit = await storage.insert('rabbits', user.id, { ...formData, weight_history: updatedWeightHistory });
-        await storage.insert('weight_logs', user.id, { rabbit_id: newRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+        const newRabbit = await storage.insert('rabbits', user.id, { ...payload, weight_history: updatedWeightHistory });
+        storage.insert('weight_logs', user.id, { rabbit_id: newRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
       }
       
       setIsModalOpen(false);
@@ -144,6 +151,7 @@ const Inventory = () => {
       fetchData();
       showSuccess(t('save'));
     } catch (err) {
+      console.error("Rabbit action error:", err);
       showError(t('operationFailed'));
     }
   };
@@ -151,10 +159,10 @@ const Inventory = () => {
   const handleQuickWeightUpdate = async () => {
     if (!user || !activeRabbit || !quickWeight) return;
     try {
-      const weightVal = parseFloat(quickWeight);
+      const weightVal = parseFloat(quickWeight) || 0;
       const updatedHistory = [...(activeRabbit.weight_history || []), { weight: weightVal, date: new Date().toISOString(), notes: 'Quick update' }];
-      await storage.update('rabbits', user.id, activeRabbit.id, { weight: quickWeight, weight_history: updatedHistory });
-      await storage.insert('weight_logs', user.id, { rabbit_id: activeRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+      await storage.update('rabbits', user.id, activeRabbit.id, { weight: weightVal, weight_history: updatedHistory });
+      storage.insert('weight_logs', user.id, { rabbit_id: activeRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
       setIsWeightModalOpen(false);
       setQuickWeight('');
       setActiveRabbit(null);
@@ -174,7 +182,7 @@ const Inventory = () => {
       const mother = rabbits.find(r => r.name === litterFormData.mother_name);
       const father = rabbits.find(r => r.name === litterFormData.father_name);
       if (mother && father) {
-        await storage.insert('mating_history', user.id, {
+        storage.insert('mating_history', user.id, {
           female_id: mother.id,
           male_id: father.id,
           mating_date: litterFormData.mating_date,

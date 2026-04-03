@@ -30,7 +30,7 @@ const generateUUID = (): string => {
 
 const sanitizePayload = (obj: any): any => {
   if (obj === null || typeof obj !== 'object') {
-    return obj === "" ? null : obj;
+    return (obj === "" || (typeof obj === 'number' && isNaN(obj))) ? null : obj;
   }
   if (Array.isArray(obj)) {
     return obj.map(sanitizePayload);
@@ -39,7 +39,7 @@ const sanitizePayload = (obj: any): any => {
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const value = obj[key];
-      sanitized[key] = value === "" ? null : sanitizePayload(value);
+      sanitized[key] = (value === "" || (typeof value === 'number' && isNaN(value))) ? null : sanitizePayload(value);
     }
   }
   return sanitized;
@@ -62,6 +62,8 @@ export const storage = {
         if (!error && cloudData) {
           localStorage.setItem(localKey, JSON.stringify(cloudData));
           data = cloudData;
+        } else if (error) {
+          console.warn(`Supabase fetch error [${table}]:`, error.message);
         }
       } catch (e) {
         console.warn(`Cloud fetch failed for ${table}, using local cache.`);
@@ -116,7 +118,8 @@ export const storage = {
   addToSyncQueue(item: SyncItem) {
     const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify([...queue, item]));
-    this.processSyncQueue();
+    // Trigger sync but don't await it to keep UI responsive
+    this.processSyncQueue().catch(err => console.warn("Sync background error:", err));
   },
 
   async processSyncQueue() {
@@ -133,11 +136,17 @@ export const storage = {
         else if (item.action === 'UPDATE') ({ error } = await supabase.from(item.table).update(item.data).eq('id', item.id));
         else if (item.action === 'DELETE') ({ error } = await supabase.from(item.table).delete().eq('id', item.id));
 
-        if (!error) {
+        if (!error || error.code === 'PGRST116') { // Success or record not found (for delete/update)
           updatedQueue.splice(i, 1);
           i--;
+        } else {
+          console.error(`Sync error for ${item.table}:`, error.message);
+          // If it's a 404 (table missing), we stop processing this table for now
+          if (error.code === '42P01' || error.message.includes('not found')) break;
         }
-      } catch (e) { break; }
+      } catch (e) { 
+        break; 
+      }
     }
     localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueue));
   }
