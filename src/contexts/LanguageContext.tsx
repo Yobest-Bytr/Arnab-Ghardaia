@@ -44,6 +44,11 @@ const translations: Translations = {
   addWeight: { en: "Log Weight", ar: "تسجيل الوزن", fr: "Enregistrer le poids" },
   matingDate: { en: "Mating Date", ar: "تاريخ التزاوج", fr: "Date de saillie" },
   expectedBirth: { en: "Expected Birth", ar: "الولادة المتوقعة", fr: "Naissance prévue" },
+  litters: { en: "Litters", ar: "البطون", fr: "Portées" },
+  kitsBorn: { en: "Kits Born", ar: "المواليد", fr: "Lapereaux nés" },
+  kitsAlive: { en: "Kits Alive", ar: "الأحياء", fr: "Lapereaux vivants" },
+  kitsDead: { en: "Kits Dead", ar: "الموتى", fr: "Lapereaux morts" },
+  splitLitter: { en: "Split Litter", ar: "فصل البطن", fr: "Séparer la portée" },
   
   // Statuses
   healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },

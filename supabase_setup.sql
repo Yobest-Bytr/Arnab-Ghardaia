@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS rabbits (
   notes TEXT,
   is_public BOOLEAN DEFAULT FALSE,
   image_url TEXT,
+  weight_history JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
