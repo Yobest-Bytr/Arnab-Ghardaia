@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { 
   Send, Plus, ChevronDown, Sparkles, X, Cpu, Zap, 
-  Layers, FileUp, Box, Wand2, MessageSquare, ArrowRight, Camera, QrCode, Loader2, Mic, MicOff
+  Layers, FileUp, Box, Wand2, MessageSquare, ArrowRight, Camera, QrCode, Loader2, Mic, MicOff, Globe
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -18,6 +18,8 @@ const MODELS = [
   { id: 'yobest-ai', name: 'Yobest AI 4.1', icon: Sparkles, desc: 'Native Cognitive Engine' },
   { id: 'claude-3-5-sonnet', name: 'Claude 3.5', icon: Zap, desc: 'Anthropic Sonnet' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: Cpu, desc: 'OpenAI Multimodal' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0', icon: Globe, desc: 'Google Flash' },
+  { id: 'deepseek-chat', name: 'DeepSeek V3', icon: Layers, desc: 'DeepSeek Chat' },
 ];
 
 interface ChatInputProps {
