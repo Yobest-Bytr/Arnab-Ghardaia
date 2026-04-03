@@ -136,13 +136,13 @@ const Inventory = () => {
       if (editingRabbit) {
         if (editingRabbit.weight !== weightVal) {
           updatedWeightHistory.push({ weight: weightVal, date: new Date().toISOString(), notes: 'Manual update' });
-          storage.insert('weight_logs', user.id, { rabbit_id: editingRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+          await storage.insert('weight_logs', user.id, { rabbit_id: editingRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
         }
         await storage.update('rabbits', user.id, editingRabbit.id, { ...payload, weight_history: updatedWeightHistory });
       } else {
         updatedWeightHistory = [{ weight: weightVal, date: new Date().toISOString(), notes: 'Initial weight' }];
         const newRabbit = await storage.insert('rabbits', user.id, { ...payload, weight_history: updatedWeightHistory });
-        storage.insert('weight_logs', user.id, { rabbit_id: newRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+        await storage.insert('weight_logs', user.id, { rabbit_id: newRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
       }
       
       setIsModalOpen(false);
@@ -151,7 +151,6 @@ const Inventory = () => {
       fetchData();
       showSuccess(t('save'));
     } catch (err) {
-      console.error("Rabbit action error:", err);
       showError(t('operationFailed'));
     }
   };
@@ -162,7 +161,7 @@ const Inventory = () => {
       const weightVal = parseFloat(quickWeight) || 0;
       const updatedHistory = [...(activeRabbit.weight_history || []), { weight: weightVal, date: new Date().toISOString(), notes: 'Quick update' }];
       await storage.update('rabbits', user.id, activeRabbit.id, { weight: weightVal, weight_history: updatedHistory });
-      storage.insert('weight_logs', user.id, { rabbit_id: activeRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
+      await storage.insert('weight_logs', user.id, { rabbit_id: activeRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
       setIsWeightModalOpen(false);
       setQuickWeight('');
       setActiveRabbit(null);
@@ -182,7 +181,7 @@ const Inventory = () => {
       const mother = rabbits.find(r => r.name === litterFormData.mother_name);
       const father = rabbits.find(r => r.name === litterFormData.father_name);
       if (mother && father) {
-        storage.insert('mating_history', user.id, {
+        await storage.insert('mating_history', user.id, {
           female_id: mother.id,
           male_id: father.id,
           mating_date: litterFormData.mating_date,
@@ -568,7 +567,7 @@ const Inventory = () => {
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
                       <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('notes')}</p>
-                      <p className="text-white/60 leading-relaxed">{viewingRabbit.notes || t('notAvailable')}</p>
+                      <p className="text-white/60 leading-relaxed">{viewingRabbit.notes || t('noNotes')}</p>
                     </div>
                   </TabsContent>
 
@@ -591,7 +590,7 @@ const Inventory = () => {
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
                       <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('medicalNotes')}</p>
-                      <p className="text-white/60 leading-relaxed">{viewingRabbit.medical_history || t('notAvailable')}</p>
+                      <p className="text-white/60 leading-relaxed">{viewingRabbit.medical_history || t('noMedicalRecords')}</p>
                     </div>
                   </TabsContent>
 
@@ -608,7 +607,7 @@ const Inventory = () => {
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
                       <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('matingPartner')}</p>
-                      <p className="text-2xl font-black">{viewingRabbit.mating_partner || t('notAvailable')}</p>
+                      <p className="text-2xl font-black">{viewingRabbit.mating_partner || t('noneAssigned')}</p>
                     </div>
                   </TabsContent>
 
