@@ -28,20 +28,46 @@ const generateUUID = (): string => {
   });
 };
 
+/**
+ * Advanced sanitization to prevent 400 Bad Request errors.
+ * Ensures dates are null if empty, numbers are actual numbers, and JSONB is valid.
+ */
 const sanitizePayload = (obj: any): any => {
   if (obj === null || typeof obj !== 'object') {
     if (obj === "") return null;
-    if (typeof obj === 'number' && isNaN(obj)) return 0;
     return obj;
   }
+  
   if (Array.isArray(obj)) {
     return obj.map(sanitizePayload);
   }
+
   const sanitized: any = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      const value = obj[key];
-      sanitized[key] = sanitizePayload(value);
+      let value = obj[key];
+      
+      // Handle empty strings for specific types
+      if (value === "") {
+        // If it's a date field or numeric field, send null
+        if (key.includes('date') || key.includes('price') || key === 'weight' || key.includes('count') || key.includes('kits')) {
+          sanitized[key] = null;
+        } else {
+          sanitized[key] = "";
+        }
+      } 
+      // Ensure numeric fields are actually numbers
+      else if (key.includes('price') || key === 'weight' || key.includes('count') || key.includes('kits')) {
+        const num = parseFloat(value);
+        sanitized[key] = isNaN(num) ? 0 : num;
+      }
+      // Ensure JSONB fields are valid
+      else if (key === 'weight_history') {
+        sanitized[key] = Array.isArray(value) ? value : [];
+      }
+      else {
+        sanitized[key] = sanitizePayload(value);
+      }
     }
   }
   return sanitized;
@@ -83,28 +109,30 @@ export const storage = {
       created_at: item.created_at || new Date().toISOString() 
     };
     
+    const sanitizedItem = sanitizePayload(newItem);
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
-    localStorage.setItem(localKey, JSON.stringify([newItem, ...localData]));
+    localStorage.setItem(localKey, JSON.stringify([sanitizedItem, ...localData]));
     
     if (isUUID(userId)) {
-      this.addToSyncQueue({ id: validId, table, action: 'INSERT', data: sanitizePayload(newItem), timestamp: Date.now() });
+      this.addToSyncQueue({ id: validId, table, action: 'INSERT', data: sanitizedItem, timestamp: Date.now() });
     }
-    return newItem;
+    return sanitizedItem;
   },
 
   async update(table: string, userId: string, id: string, updates: any) {
+    const sanitizedUpdates = sanitizePayload(updates);
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     const updatedData = localData.map((item: any) => 
-      item.id === id ? { ...item, ...updates, updated_at: new Date().toISOString() } : item
+      item.id === id ? { ...item, ...sanitizedUpdates, updated_at: new Date().toISOString() } : item
     );
     localStorage.setItem(localKey, JSON.stringify(updatedData));
     
     if (isUUID(userId)) {
-      this.addToSyncQueue({ id, table, action: 'UPDATE', data: sanitizePayload(updates), timestamp: Date.now() });
+      this.addToSyncQueue({ id, table, action: 'UPDATE', data: sanitizedUpdates, timestamp: Date.now() });
     }
-    return updates;
+    return sanitizedUpdates;
   },
 
   async delete(table: string, userId: string, id: string) {
@@ -141,7 +169,14 @@ export const storage = {
           updatedQueue.splice(i, 1);
           i--;
         } else {
-          if (error.code === '42P01' || error.message.includes('not found')) break;
+          // If it's a 400 error, we might need to skip it or it will block the queue
+          if (error.code === '22P02' || error.code === '23502' || error.code === '42P01') {
+            console.error(`Sync critical error on ${item.table}:`, error.message);
+            updatedQueue.splice(i, 1);
+            i--;
+          } else {
+            break; 
+          }
         }
       } catch (e) { 
         break; 
