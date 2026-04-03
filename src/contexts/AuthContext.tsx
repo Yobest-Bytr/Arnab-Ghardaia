@@ -51,8 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const enterDemoMode = (email: string) => {
+    // Use a valid UUID format for the demo ID to prevent Supabase 400 errors
+    const demoUuid = '00000000-0000-0000-0000-000000000000';
     const mockUser = {
-      id: 'demo-user-id',
+      id: demoUuid,
       email: email,
       user_metadata: { display_name: email.split('@')[0] },
       aud: 'authenticated',
