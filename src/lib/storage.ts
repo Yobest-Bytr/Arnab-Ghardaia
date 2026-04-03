@@ -12,7 +12,7 @@ interface SyncItem {
 }
 
 /**
- * Strict UUID validation to prevent 'invalid input syntax' errors.
+ * Strict UUID validation.
  */
 const isUUID = (str: any): boolean => {
   if (typeof str !== 'string' || !str) return false;
@@ -32,7 +32,7 @@ const generateUUID = (): string => {
 };
 
 /**
- * Aggressive sanitization for Supabase compatibility.
+ * Aggressive sanitization to prevent 400 errors.
  */
 const sanitizePayload = (obj: any): any => {
   if (obj === null || typeof obj !== 'object') {
@@ -67,7 +67,14 @@ const sanitizePayload = (obj: any): any => {
       }
       // 4. UUID Validation for relational fields
       else if (key === 'user_id' || key === 'id') {
-        sanitized[key] = isUUID(value) ? value : generateUUID();
+        if (isUUID(value)) {
+          sanitized[key] = value;
+        } else if (key === 'id') {
+          sanitized[key] = generateUUID();
+        } else {
+          // If user_id is not a UUID, we MUST NOT sync this to cloud
+          sanitized[key] = null;
+        }
       }
       else {
         sanitized[key] = value;
@@ -83,7 +90,7 @@ export const storage = {
     const localData = localStorage.getItem(localKey);
     let data = localData ? JSON.parse(localData) : [];
 
-    // Only sync with cloud if userId is a valid UUID
+    // CLOUD KILLSWITCH: Only sync if userId is a valid UUID
     if (navigator.onLine && !masterOffline && isUUID(userId)) {
       try {
         const { data: cloudData, error } = await supabase
@@ -97,7 +104,7 @@ export const storage = {
           data = cloudData;
         }
       } catch (e) {
-        console.warn(`Cloud fetch failed for ${table}. Operating in local mode.`);
+        console.warn(`Cloud fetch failed for ${table}.`);
       }
     }
     return data;
@@ -117,7 +124,7 @@ export const storage = {
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify([sanitizedItem, ...localData]));
     
-    // CRITICAL: Only queue for sync if the user_id is a valid UUID
+    // CLOUD KILLSWITCH: Only queue for sync if the user_id is a valid UUID
     if (isUUID(userId)) {
       this.addToSyncQueue({ id: validId, table, action: 'INSERT', data: sanitizedItem, timestamp: Date.now() });
     }
