@@ -48,13 +48,16 @@ const Sales = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [salesData, rabbitData] = await Promise.all([
-      storage.get('sales', user?.id || ''),
-      storage.get('rabbits', user?.id || '')
-    ]);
-    setSales(salesData);
-    setInventory(rabbitData.filter(r => r.status !== 'Sold'));
-    setLoading(false);
+    try {
+      const [salesData, rabbitData] = await Promise.all([
+        storage.get('sales', user?.id || ''),
+        storage.get('rabbits', user?.id || '')
+      ]);
+      setSales(salesData || []);
+      setInventory((rabbitData || []).filter(r => r.status !== 'Sold'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getBreedAdvice = async () => {
@@ -62,6 +65,10 @@ const Sales = () => {
     setIsAskingAi(true);
     try {
       const breeds = Array.from(new Set(inventory.map(r => r.breed)));
+      if (breeds.length === 0) {
+        setAiAdvice("Add some rabbits to your inventory to get market advice.");
+        return;
+      }
       const prompt = `Analyze this rabbit inventory: ${breeds.join(', ')}. 
       Which breeds are currently best for selling in the Ghardaia market? 
       Provide a concise, professional recommendation based on breed characteristics and market demand. 
@@ -76,14 +83,13 @@ const Sales = () => {
     }
   };
 
-  const showInstantSuggestions = (field: string) => {
+  const showInstantSuggestions = (field: string, val: string) => {
     let list: any[] = [];
-    const val = formData[field as keyof typeof formData] as string;
 
     if (field === 'customer_name') {
       const customers = Array.from(new Set(sales.map(s => s.customer_name).filter(Boolean)));
       list = customers.filter(c => c.toLowerCase().includes(val.toLowerCase()));
-      if (list.length === 0) list = customers;
+      if (list.length === 0 && val === '') list = customers;
     } else if (field === 'rabbit_id') {
       list = inventory.filter(r => 
         val === '' || r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase())
@@ -98,8 +104,8 @@ const Sales = () => {
       setFormData(prev => ({ 
         ...prev, 
         rabbit_id: val.id, 
-        price: val.price_dzd || prev.price,
-        category: val.sale_category || prev.category || 'Adult'
+        price: val.price_dzd?.toString() || prev.price,
+        category: val.cage_type === 'Young' ? 'Young' : 'Adult'
       }));
     } else {
       setFormData(prev => ({ ...prev, [field]: val }));
@@ -135,7 +141,7 @@ const Sales = () => {
     try {
       const saleRecord = { 
         ...formData, 
-        price: parseFloat(formData.price),
+        price: parseFloat(formData.price) || 0,
         created_at: new Date().toISOString() 
       };
       
@@ -145,18 +151,17 @@ const Sales = () => {
         await storage.update('rabbits', user.id, formData.rabbit_id, { status: 'Sold' });
       }
 
-      setSales([saleRecord, ...sales]);
       setIsModalOpen(false);
       setFormData({ rabbit_id: '', customer_name: '', price: '', sale_date: new Date().toISOString().split('T')[0], category: 'Adult', notes: '' });
+      await fetchData();
       showSuccess(t('recordSale'));
-      fetchData();
     } catch (err) {
       showError("Failed to record sale.");
     }
   };
 
   const stats = useMemo(() => {
-    const total = sales.reduce((acc, curr) => acc + (curr.price || 0), 0);
+    const total = sales.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0);
     const categories: Record<string, number> = { 'Young': 0, 'Meat': 0, 'Adult': 0 };
     sales.forEach(s => {
       if (categories[s.category] !== undefined) categories[s.category]++;
@@ -175,22 +180,27 @@ const Sales = () => {
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b'];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
+      <div className="absolute inset-0 auron-radial pointer-events-none opacity-50" />
       <Navbar />
       
-      <main className="pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto">
+      <main className="pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto relative z-10">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('sales')}</h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Track revenue and analyze market demand.</p>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter">{t('sales')}</h1>
+            <p className="text-white/40 font-medium mt-1">Track revenue and analyze market demand.</p>
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="farm-button flex items-center gap-2 h-14 px-8">
+          <button onClick={() => setIsModalOpen(true)} className="auron-button flex items-center gap-2 h-14 px-8">
             <Plus size={20} /> {t('recordSale')}
           </button>
         </header>
 
         {/* AI Breed Advisor */}
-        <div className="mb-12 p-8 rounded-[3rem] bg-indigo-600 text-white relative overflow-hidden shadow-2xl shadow-indigo-500/20">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12 p-8 rounded-[3rem] bg-indigo-600 text-white relative overflow-hidden shadow-2xl shadow-indigo-500/20"
+        >
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
             <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center shrink-0">
@@ -209,10 +219,10 @@ const Sales = () => {
               Refresh Advice
             </button>
           </div>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="farm-card bg-emerald-600 text-white border-none shadow-xl shadow-emerald-500/20">
+          <div className="pill-nav p-8 bg-emerald-600 text-white border-none shadow-xl shadow-emerald-500/20">
             <div className="flex justify-between items-start mb-4">
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                 <Wallet size={20} />
@@ -222,59 +232,59 @@ const Sales = () => {
             <h3 className="text-3xl font-black">{stats.total.toLocaleString()} DA</h3>
           </div>
 
-          <div className="farm-card">
+          <div className="pill-nav p-8 bg-white/5 border-white/10">
             <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
                 <TrendingUp size={20} />
               </div>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('bestSelling')}</p>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/20">{t('bestSelling')}</p>
+            <h3 className="text-3xl font-black">
               {stats.bestSelling === 'Young' ? t('kit') : stats.bestSelling === 'Meat' ? t('meatRabbit') : t('largeRabbit')}
             </h3>
           </div>
 
-          <div className="farm-card">
+          <div className="pill-nav p-8 bg-white/5 border-white/10">
             <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400">
                 <Tag size={20} />
               </div>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Transactions</p>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white">{sales.length}</h3>
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Transactions</p>
+            <h3 className="text-3xl font-black">{sales.length}</h3>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 farm-card p-0 overflow-hidden">
-            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+          <div className="lg:col-span-2 pill-nav p-0 overflow-hidden bg-white/5 border-white/10">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
               <h3 className="text-xl font-black">Recent Transactions</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left rtl:text-right">
-                <thead className="bg-slate-50 dark:bg-slate-800/50">
+                <thead className="bg-white/5">
                   <tr>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Price</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Customer</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Category</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Price</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                <tbody className="divide-y divide-white/5">
                   {sales.map((sale, i) => (
-                    <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <tr key={i} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">{sale.customer_name || 'Guest'}</p>
+                        <p className="text-sm font-bold">{sale.customer_name || 'Guest'}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-xs font-medium text-slate-500">
+                        <span className="text-xs font-medium text-white/40">
                           {sale.category === 'Young' ? t('kit') : sale.category === 'Meat' ? t('meatRabbit') : t('largeRabbit')}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-black text-emerald-600">{sale.price} DA</span>
+                        <span className="text-sm font-black text-emerald-400">{sale.price} DA</span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-400">{sale.sale_date}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-white/20">{sale.sale_date}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -282,9 +292,9 @@ const Sales = () => {
             </div>
           </div>
 
-          <div className="farm-card">
+          <div className="pill-nav p-8 bg-white/5 border-white/10">
             <h3 className="text-xl font-black mb-8 flex items-center gap-2">
-              <PieIcon className="text-blue-600" size={20} />
+              <PieIcon className="text-blue-400" size={20} />
               {t('revenueByCategory')}
             </h3>
             <div className="h-64 w-full">
@@ -293,16 +303,16 @@ const Sales = () => {
                   <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                     {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: '#020408', border: '1px solid #ffffff10', borderRadius: '1rem' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="space-y-3 mt-6">
               {chartData.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{item.name}</span>
+                    <span className="text-xs font-bold text-white/60">{item.name}</span>
                   </div>
                   <span className="text-xs font-black">{item.value}</span>
                 </div>
@@ -314,26 +324,26 @@ const Sales = () => {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-lg w-full bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-              <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-400"><X size={24} /></button>
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4 bg-black/80 backdrop-blur-xl">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-lg w-full bg-[#020408] border border-white/10 p-10 rounded-[3rem] shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-white/40 hover:text-white transition-all"><X size={24} /></button>
               <h2 className="text-3xl font-black mb-8 tracking-tight">{t('recordSale')}</h2>
               <form onSubmit={handleRecordSale} className="space-y-6">
                 <div className="space-y-2 relative">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('customerName')}</label>
+                  <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('customerName')}</label>
                   <input 
                     type="text" 
                     required 
-                    value={formData.customer_name || ''} 
-                    onFocus={() => showInstantSuggestions('customer_name')}
-                    onChange={(e) => { setFormData({...formData, customer_name: e.target.value}); showInstantSuggestions('customer_name'); }} 
-                    className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                    value={formData.customer_name ?? ''} 
+                    onFocus={() => showInstantSuggestions('customer_name', formData.customer_name)}
+                    onChange={(e) => { setFormData({...formData, customer_name: e.target.value}); showInstantSuggestions('customer_name', e.target.value); }} 
+                    className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50" 
                   />
                   {suggestions.field === 'customer_name' && suggestions.list.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
                       {suggestions.list.map(c => (
-                        <button key={c} type="button" onClick={() => selectSuggestion(c, 'customer_name')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors flex items-center justify-between">
-                          {c} <ChevronRight size={14} className="text-slate-300" />
+                        <button key={c} type="button" onClick={() => selectSuggestion(c, 'customer_name')} className="w-full px-4 py-3 text-left hover:bg-white/5 text-sm font-bold transition-colors flex items-center justify-between">
+                          {c} <ChevronRight size={14} className="text-white/20" />
                         </button>
                       ))}
                     </div>
@@ -342,42 +352,42 @@ const Sales = () => {
                 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('rabbitType')}</label>
-                    <select value={formData.category || 'Adult'} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
-                      <option value="Young">{t('kit')}</option>
-                      <option value="Meat">{t('meatRabbit')}</option>
-                      <option value="Adult">{t('largeRabbit')}</option>
+                    <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('rabbitType')}</label>
+                    <select value={formData.category ?? 'Adult'} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="Young" className="bg-[#020408]">{t('kit')}</option>
+                      <option value="Meat" className="bg-[#020408]">{t('meatRabbit')}</option>
+                      <option value="Adult" className="bg-[#020408]">{t('largeRabbit')}</option>
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
-                    <input type="number" required value={formData.price || ''} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
+                    <input type="number" required value={formData.price ?? ''} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('saleDate')}</label>
-                  <input type="date" required value={formData.sale_date || ''} onChange={(e) => setFormData({...formData, sale_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('saleDate')}</label>
+                  <input type="date" required value={formData.sale_date ?? ''} onChange={(e) => setFormData({...formData, sale_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                 </div>
 
                 <div className="space-y-2 relative">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Select Rabbit (Optional)</label>
+                  <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">Select Rabbit (Optional)</label>
                   <input 
                     type="text" 
                     placeholder="Search inventory..."
-                    onFocus={() => showInstantSuggestions('rabbit_id')}
-                    onChange={(e) => showInstantSuggestions('rabbit_id')}
-                    className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
+                    onFocus={() => showInstantSuggestions('rabbit_id', '')}
+                    onChange={(e) => showInstantSuggestions('rabbit_id', e.target.value)}
+                    className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" 
                   />
                   {suggestions.field === 'rabbit_id' && suggestions.list.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
                       {suggestions.list.map(r => (
-                        <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'rabbit_id')} className="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-bold transition-colors flex items-center justify-between">
+                        <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'rabbit_id')} className="w-full px-4 py-3 text-left hover:bg-white/5 text-sm font-bold transition-colors flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <Rabbit size={14} className="text-emerald-600" />
+                            <Rabbit size={14} className="text-emerald-400" />
                             <span>{r.name || r.rabbit_id}</span>
                           </div>
-                          <ChevronRight size={14} className="text-slate-300" />
+                          <ChevronRight size={14} className="text-white/20" />
                         </button>
                       ))}
                     </div>
@@ -386,15 +396,15 @@ const Sales = () => {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('notes')}</label>
-                    <button type="button" onClick={handleNeuralSuggest} disabled={isGenerating} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors">
+                    <label className="text-xs font-black text-white/30 uppercase tracking-widest">{t('notes')}</label>
+                    <button type="button" onClick={handleNeuralSuggest} disabled={isGenerating} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors">
                       {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Neural Suggest
                     </button>
                   </div>
-                  <textarea value={formData.notes || ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 min-h-[100px]" />
+                  <textarea value={formData.notes ?? ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none min-h-[100px]" />
                 </div>
 
-                <button type="submit" className="farm-button w-full h-16 text-lg mt-4">{t('recordSale')}</button>
+                <button type="submit" className="auron-button w-full h-16 text-lg mt-4">{t('recordSale')}</button>
               </form>
             </motion.div>
           </div>
