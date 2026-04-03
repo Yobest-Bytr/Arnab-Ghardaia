@@ -1,73 +1,45 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Profiles Table
+-- 1. Profiles Table
 CREATE TABLE IF NOT EXISTS profiles (
-  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
   email TEXT UNIQUE,
   display_name TEXT,
-  avatar_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Rabbits Table
+-- 2. Rabbits Table (Core Inventory)
 CREATE TABLE IF NOT EXISTS rabbits (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
   rabbit_id TEXT NOT NULL,
-  name TEXT NOT NULL,
+  name TEXT,
   breed TEXT,
-  gender TEXT CHECK (gender IN ('Male', 'Female')),
+  gender TEXT,
   color TEXT,
   origin TEXT,
-  birth_date DATE,
-  weight DECIMAL(5,2),
-  status TEXT DEFAULT 'Available',
   health_status TEXT DEFAULT 'Healthy',
+  status TEXT DEFAULT 'Available',
   cage_number TEXT,
   cage_type TEXT,
-  price_dzd DECIMAL(10,2),
+  price_dzd NUMERIC,
+  weight NUMERIC,
+  birth_date DATE,
+  notes TEXT,
   mother_id TEXT,
   father_id TEXT,
   mating_partner TEXT,
-  vaccination_status TEXT,
+  vaccination_status TEXT DEFAULT 'Not Vaccinated',
   medical_history TEXT,
-  notes TEXT,
+  weight_history JSONB DEFAULT '[]',
   is_public BOOLEAN DEFAULT FALSE,
   image_url TEXT,
-  weight_history JSONB DEFAULT '[]'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Mating History Table (Tracks multiple matings per female)
-CREATE TABLE IF NOT EXISTS mating_history (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
-  female_id UUID REFERENCES rabbits(id) ON DELETE CASCADE,
-  male_id UUID REFERENCES rabbits(id) ON DELETE CASCADE,
-  mating_date DATE NOT NULL,
-  expected_birth_date DATE,
-  status TEXT DEFAULT 'Pending', -- Pending, Pregnant, Failed, Born
-  notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Weight Logs Table (Tracks growth over time)
-CREATE TABLE IF NOT EXISTS weight_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
-  rabbit_id UUID REFERENCES rabbits(id) ON DELETE CASCADE,
-  weight DECIMAL(5,2) NOT NULL,
-  log_date DATE DEFAULT CURRENT_DATE,
-  notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Litters Table
+-- 3. Litters Table (Breeding Records)
 CREATE TABLE IF NOT EXISTS litters (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
   mother_name TEXT,
   father_name TEXT,
@@ -77,64 +49,89 @@ CREATE TABLE IF NOT EXISTS litters (
   kit_count INTEGER DEFAULT 0,
   alive_kits INTEGER DEFAULT 0,
   dead_kits INTEGER DEFAULT 0,
-  status TEXT,
+  status TEXT DEFAULT 'Pregnant',
   notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Sales Table
-CREATE TABLE IF NOT EXISTS sales (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 4. Mating History Table (Detailed Tracking)
+CREATE TABLE IF NOT EXISTS mating_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
-  rabbit_id TEXT,
+  female_id UUID REFERENCES rabbits(id) ON DELETE CASCADE,
+  male_id UUID REFERENCES rabbits(id) ON DELETE CASCADE,
+  mating_date DATE,
+  status TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. Weight Logs Table (Growth Tracking)
+CREATE TABLE IF NOT EXISTS weight_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  rabbit_id UUID REFERENCES rabbits(id) ON DELETE CASCADE,
+  weight NUMERIC,
+  log_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Sales Table
+CREATE TABLE IF NOT EXISTS sales (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  rabbit_id UUID REFERENCES rabbits(id) ON DELETE SET NULL,
   customer_name TEXT,
-  price DECIMAL(10,2),
+  price NUMERIC,
   sale_date DATE,
   category TEXT,
   notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Expenses Table
+-- 7. Expenses Table
 CREATE TABLE IF NOT EXISTS expenses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
   category TEXT,
-  amount DECIMAL(10,2),
+  amount NUMERIC,
   date DATE,
   notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Tasks Table
+-- 8. Tasks Table
 CREATE TABLE IF NOT EXISTS tasks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
-  title TEXT NOT NULL,
+  title TEXT,
   category TEXT,
   priority TEXT,
   due_date DATE,
   notes TEXT,
   completed BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- RLS Policies
+-- Enable RLS on all tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rabbits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE litters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mating_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weight_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE litters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
--- Policies
-CREATE POLICY "Users can only access their own profiles" ON profiles FOR ALL USING (auth.uid() = id);
-CREATE POLICY "Users can only access their own rabbits" ON rabbits FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can only access their own mating_history" ON mating_history FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can only access their own weight_logs" ON weight_logs FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can only access their own litters" ON litters FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can only access their own sales" ON sales FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can only access their own expenses" ON expenses FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can only access their own tasks" ON tasks FOR ALL USING (auth.uid() = user_id);
+-- Create RLS Policies (User can only see their own data)
+CREATE POLICY "Users can manage their own profile" ON profiles FOR ALL USING (auth.uid() = id);
+CREATE POLICY "Users can manage their own rabbits" ON rabbits FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own litters" ON litters FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own mating history" ON mating_history FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own weight logs" ON weight_logs FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own sales" ON sales FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own expenses" ON expenses FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own tasks" ON tasks FOR ALL USING (auth.uid() = user_id);
+
+-- Public access for Boutique
+CREATE POLICY "Public can view public rabbits" ON rabbits FOR SELECT USING (is_public = TRUE);
