@@ -32,6 +32,9 @@ const translations: Translations = {
   contact: { en: "Contact", ar: "اتصل بنا", fr: "Contact" },
   about: { en: "About", ar: "حول", fr: "À propos" },
   security: { en: "Security", ar: "الأمان", fr: "Sécurité" },
+  privacyPolicy: { en: "Privacy Policy", ar: "سياسة الخصوصية", fr: "Politique de confidentialité" },
+  termsOfService: { en: "Terms of Service", ar: "شروط الخدمة", fr: "Conditions d'utilisation" },
+  copyright: { en: "© 2026 Arnab Ghardaia. All rights reserved.", ar: "© 2026 أرنب غرداية. جميع الحقوق محفوظة.", fr: "© 2026 Arnab Ghardaia. Tous droits réservés." },
 
   // Inventory Page & Modals
   addRabbit: { en: "Add Rabbit", ar: "إضافة أرنب", fr: "Ajouter un lapin" },
@@ -62,6 +65,21 @@ const translations: Translations = {
   multipleMatings: { en: "Multiple Matings Detected", ar: "تم اكتشاف تزاوجات متعددة", fr: "Saillies multiples détectées" },
   helpSelectRabbit: { en: "Search by name or ID", ar: "ابحث بالاسم أو الرقم", fr: "Chercher par nom ou ID" },
   helpMatingDate: { en: "Date of mating session", ar: "تاريخ جلسة التزاوج", fr: "Date de la saillie" },
+  updateWeight: { en: "Update Weight", ar: "تحديث الوزن", fr: "Mettre à jour le poids" },
+  mating: { en: "Mating", ar: "تزاوج", fr: "Saillie" },
+  printNeuralTag: { en: "Print Neural Tag", ar: "طباعة بطاقة عصبية", fr: "Imprimer étiquette neurale" },
+  neuralIdTag: { en: "Neural ID Tag", ar: "بطاقة الهوية العصبية", fr: "Étiquette ID Neurale" },
+  weightVelocity: { en: "Weight Velocity", ar: "سرعة الوزن", fr: "Vélocité du poids" },
+  vaccinationStatus: { en: "Vaccination Status", ar: "حالة التلقيح", fr: "Statut de vaccination" },
+  motherDam: { en: "Mother (Dam)", ar: "الأم", fr: "Mère (Lice)" },
+  fatherSire: { en: "Father (Sire)", ar: "الأب", fr: "Père (Étalon)" },
+  newWeight: { en: "New Weight (kg)", ar: "الوزن الجديد (كجم)", fr: "Nouveau poids (kg)" },
+  confirmSplit: { en: "Confirm Split", ar: "تأكيد الفصل", fr: "Confirmer la séparation" },
+  malesToCreate: { en: "Males to Create", ar: "عدد الذكور", fr: "Mâles à créer" },
+  femalesToCreate: { en: "Females to Create", ar: "عدد الإناث", fr: "Femelles à créer" },
+  neuralId: { en: "Neural ID", ar: "المعرف العصبي", fr: "ID Neural" },
+  colorMarkings: { en: "Color / Markings", ar: "اللون / العلامات", fr: "Couleur / Marquages" },
+  sourceOrigin: { en: "Source / Origin", ar: "المصدر / الأصل", fr: "Source / Origine" },
 
   // Breeding & Litters
   recordMating: { en: "Record Mating", ar: "تسجيل تزاوج", fr: "Enregistrer saillie" },
@@ -133,6 +151,34 @@ const translations: Translations = {
   nodesLinked: { en: "Nodes Linked", ar: "عقد مرتبطة", fr: "Nœuds liés" },
   secureUplink: { en: "Secure Uplink", ar: "رابط آمن", fr: "Lien sécurisé" },
   ghardaiaNode: { en: "Ghardaia Node", ar: "عقدة غرداية", fr: "Nœud Ghardaia" },
+  healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },
+
+  // Index Page
+  heroTitle: { en: "Smart Rabbit Farming", ar: "تربية الأرانب الذكية", fr: "Élevage de lapins intelligent" },
+  heroSubtitle: { en: "The ultimate management platform for modern breeders in Ghardaia.", ar: "المنصة النهائية للإدارة للمربين العصريين في غرداية.", fr: "La plateforme de gestion ultime pour les éleveurs modernes à Ghardaia." },
+  goDashboard: { en: "Go to Dashboard", ar: "اذهب إلى لوحة التحكم", fr: "Aller au tableau de bord" },
+  viewRabbits: { en: "View Rabbits", ar: "عرض الأرانب", fr: "Voir les lapins" },
+  happyCustomers: { en: "Happy Customers", ar: "زبون سعيد", fr: "Clients satisfaits" },
+  healthyRate: { en: "Healthy Rate", ar: "معدل الصحة", fr: "Taux de santé" },
+  totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total des lapins" },
+  males: { en: "Males", ar: "ذكور", fr: "Mâles" },
+  females: { en: "Females", ar: "إناث", fr: "Femelles" },
+  newBorns: { en: "New Borns", ar: "مواليد جدد", fr: "Nouveaux nés" },
+  featuresTitle: { en: "Everything you need to scale", ar: "كل ما تحتاجه للتوسع", fr: "Tout ce dont vous avez besoin pour évoluer" },
+  featuresSubtitle: { en: "Powerful tools designed specifically for rabbit farm management.", ar: "أدوات قوية مصممة خصيصاً لإدارة مزارع الأرانب.", fr: "Des outils puissants conçus spécifiquement pour la gestion des fermes de lapins." },
+  feature1Title: { en: "Real-time Analytics", ar: "تحليلات فورية", fr: "Analyses en temps réel" },
+  feature1Desc: { en: "Track growth, health, and production metrics instantly.", ar: "تتبع مقاييس النمو والصحة والإنتاج فوراً.", fr: "Suivez instantanément les indicateurs de croissance, de santé et de production." },
+  feature2Title: { en: "Breeding Management", ar: "إدارة التزاوج", fr: "Gestion de l'élevage" },
+  feature2Desc: { en: "Never miss a mating cycle or birth date again.", ar: "لا تفوت دورة تزاوج أو تاريخ ولادة مرة أخرى.", fr: "Ne manquez plus jamais un cycle de saillie ou une date de naissance." },
+  feature3Title: { en: "Inventory Control", ar: "التحكم في المخزون", fr: "Contrôle de l'inventaire" },
+  feature3Desc: { en: "Manage cages, feed, and medical supplies in one place.", ar: "إدارة الأقفاص والعلف والمستلزمات الطبية في مكان واحد.", fr: "Gérez les cages, l'alimentation et les fournitures médicales en un seul endroit." },
+  ctaTitle: { en: "Ready to modernize your farm?", ar: "جاهز لتحديث مزرعتك؟", fr: "Prêt à moderniser votre ferme ?" },
+  ctaSubtitle: { en: "Join hundreds of breeders using Arnab Ghardaia today.", ar: "انضم إلى مئات المربين الذين يستخدمون أرنب غرداية اليوم.", fr: "Rejoignez des centaines d'éleveurs utilisant Arnab Ghardaia aujourd'hui." },
+  getStartedFree: { en: "Get Started Free", ar: "ابدأ مجاناً", fr: "Commencer gratuitement" },
+  contactSales: { en: "Contact Sales", ar: "اتصل بالمبيعات", fr: "Contacter le service commercial" },
+
+  // Public Boutique
+  inquire: { en: "Inquire", ar: "استفسار", fr: "S'informer" },
 };
 
 interface LanguageContextType {

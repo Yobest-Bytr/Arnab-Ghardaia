@@ -129,14 +129,12 @@ const Inventory = () => {
       if (editingRabbit) {
         if (editingRabbit.weight !== formData.weight) {
           updatedWeightHistory.push({ weight: weightVal, date: new Date().toISOString(), notes: 'Manual update' });
-          // Also log to weight_logs table
           await storage.insert('weight_logs', user.id, { rabbit_id: editingRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
         }
         await storage.update('rabbits', user.id, editingRabbit.id, { ...formData, weight_history: updatedWeightHistory });
       } else {
         updatedWeightHistory = [{ weight: weightVal, date: new Date().toISOString(), notes: 'Initial weight' }];
         const newRabbit = await storage.insert('rabbits', user.id, { ...formData, weight_history: updatedWeightHistory });
-        // Log initial weight
         await storage.insert('weight_logs', user.id, { rabbit_id: newRabbit.id, weight: weightVal, log_date: new Date().toISOString().split('T')[0] });
       }
       
@@ -173,7 +171,6 @@ const Inventory = () => {
     try {
       await storage.insert('litters', user.id, litterFormData);
       
-      // Also record in mating_history if IDs are available
       const mother = rabbits.find(r => r.name === litterFormData.mother_name);
       const father = rabbits.find(r => r.name === litterFormData.father_name);
       if (mother && father) {
@@ -384,10 +381,10 @@ const Inventory = () => {
 
                     <div className="flex flex-wrap gap-2 mb-8">
                       <button onClick={() => { setActiveRabbit(rabbit); setQuickWeight(rabbit.weight); setIsWeightModalOpen(true); }} className="flex-1 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                        <Scale size={14} /> Update Weight
+                        <Scale size={14} /> {t('updateWeight')}
                       </button>
                       <button onClick={() => { setLitterFormData({...initialLitterForm, mother_name: rabbit.name, father_name: rabbit.mating_partner}); setIsLitterModalOpen(true); }} className="flex-1 h-10 rounded-xl bg-pink-500/10 text-pink-400 border border-pink-500/20 text-[10px] font-black uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                        <Heart size={14} /> Mating
+                        <Heart size={14} /> {t('mating')}
                       </button>
                     </div>
 
@@ -419,7 +416,7 @@ const Inventory = () => {
                     </span>
                   </div>
                   <h3 className="text-2xl font-black mb-2">{litter.mother_name}'s Litter</h3>
-                  <p className="text-xs font-bold text-white/40 mb-8 uppercase tracking-widest">Partner: {litter.father_name}</p>
+                  <p className="text-xs font-bold text-white/40 mb-8 uppercase tracking-widest">{t('father')}: {litter.father_name}</p>
                   
                   <div className="grid grid-cols-3 gap-4 mb-8">
                     <div className="text-center p-4 bg-black/40 rounded-2xl border border-white/5">
@@ -503,7 +500,7 @@ const Inventory = () => {
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-sm w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10 text-center">
               <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-black tracking-tight">Neural ID Tag</h2>
+                <h2 className="text-2xl font-black tracking-tight">{t('neuralIdTag')}</h2>
                 <button onClick={() => setIsQrModalOpen(false)} className="p-2 rounded-xl bg-white/5 text-white/40"><X size={20} /></button>
               </div>
               <div className="bg-white p-8 rounded-[2rem] mb-8 inline-block">
@@ -512,7 +509,7 @@ const Inventory = () => {
               <h3 className="text-2xl font-black mb-1">{activeRabbit.name}</h3>
               <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-8">{activeRabbit.rabbit_id}</p>
               <button onClick={() => window.print()} className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2">
-                <Download size={18} /> Print Neural Tag
+                <Download size={18} /> {t('printNeuralTag')}
               </button>
             </motion.div>
           </div>
@@ -549,20 +546,20 @@ const Inventory = () => {
                   <TabsContent value="info" className="space-y-8">
                     <div className="grid md:grid-cols-3 gap-6">
                       <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Breed</p>
+                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">{t('breedSelection')}</p>
                         <p className="text-lg font-bold">{viewingRabbit.breed}</p>
                       </div>
                       <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Gender</p>
+                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">{t('genderSelection')}</p>
                         <p className="text-lg font-bold">{viewingRabbit.gender}</p>
                       </div>
                       <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">Color</p>
+                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">{t('colorMarkings')}</p>
                         <p className="text-lg font-bold">{viewingRabbit.color || 'N/A'}</p>
                       </div>
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
-                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">Notes</p>
+                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('notes')}</p>
                       <p className="text-white/60 leading-relaxed">{viewingRabbit.notes || 'No additional notes.'}</p>
                     </div>
                   </TabsContent>
@@ -572,20 +569,20 @@ const Inventory = () => {
                       <div className="p-8 rounded-3xl bg-emerald-500/5 border border-emerald-500/10">
                         <div className="flex items-center gap-3 mb-4">
                           <ShieldCheck className="text-emerald-400" />
-                          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Vaccination Status</p>
+                          <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{t('vaccinationStatus')}</p>
                         </div>
                         <p className="text-2xl font-black">{viewingRabbit.vaccination_status}</p>
                       </div>
                       <div className="p-8 rounded-3xl bg-indigo-500/5 border border-indigo-500/10">
                         <div className="flex items-center gap-3 mb-4">
                           <Stethoscope className="text-indigo-400" />
-                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Health Status</p>
+                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{t('healthStatus')}</p>
                         </div>
                         <p className="text-2xl font-black">{viewingRabbit.health_status}</p>
                       </div>
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
-                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">Medical History</p>
+                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('medicalNotes')}</p>
                       <p className="text-white/60 leading-relaxed">{viewingRabbit.medical_history || 'No medical records found.'}</p>
                     </div>
                   </TabsContent>
@@ -593,22 +590,22 @@ const Inventory = () => {
                   <TabsContent value="lineage" className="space-y-8">
                     <div className="grid grid-cols-2 gap-8">
                       <div className="p-8 rounded-3xl bg-pink-500/5 border border-pink-500/10">
-                        <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-4">Mother (Dam)</p>
+                        <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-4">{t('motherDam')}</p>
                         <p className="text-2xl font-black">{viewingRabbit.mother_id || 'Unknown'}</p>
                       </div>
                       <div className="p-8 rounded-3xl bg-blue-500/5 border border-blue-500/10">
-                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4">Father (Sire)</p>
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4">{t('fatherSire')}</p>
                         <p className="text-2xl font-black">{viewingRabbit.father_id || 'Unknown'}</p>
                       </div>
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
-                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">Mating Partner</p>
+                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('matingPartner')}</p>
                       <p className="text-2xl font-black">{viewingRabbit.mating_partner || 'None Assigned'}</p>
                     </div>
                   </TabsContent>
 
                   <TabsContent value="history" className="space-y-8">
-                    <h3 className="text-xl font-black flex items-center gap-3"><TrendingUp className="text-indigo-400" /> Weight Velocity</h3>
+                    <h3 className="text-xl font-black flex items-center gap-3"><TrendingUp className="text-indigo-400" /> {t('weightVelocity')}</h3>
                     <div className="h-64 w-full bg-white/5 rounded-3xl p-6 border border-white/10">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={getRabbitWeightData(viewingRabbit.id)}>
@@ -633,10 +630,10 @@ const Inventory = () => {
         {isWeightModalOpen && activeRabbit && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-sm w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
-              <h2 className="text-2xl font-black mb-8 tracking-tight">Update Weight</h2>
+              <h2 className="text-2xl font-black mb-8 tracking-tight">{t('updateWeight')}</h2>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">New Weight (kg)</label>
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('newWeight')}</label>
                   <input 
                     type="number" 
                     step="0.1"
@@ -647,8 +644,8 @@ const Inventory = () => {
                   />
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button onClick={() => { setIsWeightModalOpen(false); setActiveRabbit(null); }} className="flex-1 h-14 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">Cancel</button>
-                  <button onClick={handleQuickWeightUpdate} className="flex-1 h-14 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest">Update</button>
+                  <button onClick={() => { setIsWeightModalOpen(false); setActiveRabbit(null); }} className="flex-1 h-14 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">{t('cancel')}</button>
+                  <button onClick={handleQuickWeightUpdate} className="flex-1 h-14 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest">{t('save')}</button>
                 </div>
               </div>
             </motion.div>
@@ -664,16 +661,16 @@ const Inventory = () => {
               <h2 className="text-3xl font-black mb-8 tracking-tight">{t('splitLitter')}</h2>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Males to Create</label>
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('malesToCreate')}</label>
                   <input type="number" value={splitData.males} onChange={(e) => setSplitData({...splitData, males: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Females to Create</label>
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('femalesToCreate')}</label>
                   <input type="number" value={splitData.females} onChange={(e) => setSplitData({...splitData, females: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button onClick={() => { setIsSplitModalOpen(false); setSplittingLitter(null); }} className="flex-1 h-14 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">Cancel</button>
-                  <button onClick={handleSplitLitter} className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest">Confirm Split</button>
+                  <button onClick={() => { setIsSplitModalOpen(false); setSplittingLitter(null); }} className="flex-1 h-14 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">{t('cancel')}</button>
+                  <button onClick={handleSplitLitter} className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest">{t('confirmSplit')}</button>
                 </div>
               </div>
             </motion.div>
@@ -693,7 +690,7 @@ const Inventory = () => {
               <form onSubmit={handleAction} className="space-y-8">
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Neural ID</label>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('neuralId')}</label>
                     <input type="text" required value={formData.rabbit_id} onChange={(e) => setFormData({...formData, rabbit_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
                   </div>
                   <div className="space-y-2">
@@ -732,14 +729,14 @@ const Inventory = () => {
 
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Color / Markings</label>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('colorMarkings')}</label>
                     <div className="relative">
                       <Palette className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
                       <input type="text" value={formData.color} onChange={(e) => setFormData({...formData, color: e.target.value})} className="w-full h-14 pl-12 pr-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" placeholder="e.g., Broken Black" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Source / Origin</label>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('sourceOrigin')}</label>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
                       <input type="text" value={formData.origin} onChange={(e) => setFormData({...formData, origin: e.target.value})} className="w-full h-14 pl-12 pr-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" placeholder="e.g., Purchased from Ghardaia" />
@@ -869,7 +866,7 @@ const Inventory = () => {
                   </div>
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button type="button" onClick={() => setIsLitterModalOpen(false)} className="flex-1 h-16 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">Cancel</button>
+                  <button type="button" onClick={() => setIsLitterModalOpen(false)} className="flex-1 h-16 rounded-2xl bg-white/5 text-white/40 font-black text-xs uppercase tracking-widest">{t('cancel')}</button>
                   <button type="submit" className="flex-1 auron-button h-16 text-lg">{t('recordMating')}</button>
                 </div>
               </form>
