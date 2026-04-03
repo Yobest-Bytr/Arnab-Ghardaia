@@ -111,6 +111,15 @@ const translations: Translations = {
   successRate: { en: "Success Rate", ar: "نسبة النجاح", fr: "Taux de réussite" },
   daysRemaining: { en: "Days Remaining", ar: "أيام متبقية", fr: "Jours restants" },
   litterSuffix: { en: "'s Litter", ar: "بطن", fr: "Portée de" },
+  editLitter: { en: "Edit Litter", ar: "تعديل البطن", fr: "Modifier la portée" },
+  addKitsToInventory: { en: "Add Kits to Inventory", ar: "إضافة المواليد للمخزون", fr: "Ajouter lapereaux à l'inventaire" },
+  confirmAddKits: { en: "Confirm Addition", ar: "تأكيد الإضافة", fr: "Confirmer l'ajout" },
+
+  // Loading & Waiting
+  waitingSaving: { en: "Saving neural data...", ar: "جاري حفظ البيانات...", fr: "Enregistrement des données..." },
+  waitingAddingKits: { en: "Adding kits to inventory...", ar: "جاري إضافة المواليد...", fr: "Ajout des lapereaux..." },
+  waitingUpdatingWeight: { en: "Updating weight log...", ar: "جاري تحديث الوزن...", fr: "Mise à jour du poids..." },
+  waitingProcessing: { en: "Processing request...", ar: "جاري المعالجة...", fr: "Traitement en cours..." },
 
   // QR Manager & Scanner
   qrManagerTitle: { en: "QR Printing Studio", ar: "استوديو طباعة QR", fr: "Studio d'Impression QR" },
