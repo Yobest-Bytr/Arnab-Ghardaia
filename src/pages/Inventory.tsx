@@ -298,6 +298,13 @@ const Inventory = () => {
     showSuccess(t('rabbitRemoved'));
   };
 
+  const handleDeleteLitter = async (id: string) => {
+    if (!user || !confirm(t('delete') + "?")) return;
+    await storage.delete('litters', user.id, id);
+    setLitters(prev => prev.filter(l => l.id !== id));
+    showSuccess(t('operationFailed'));
+  };
+
   const handleQrScan = (decodedText: string) => {
     setIsScannerOpen(false);
     const rabbit = rabbits.find(r => r.rabbit_id === decodedText);
@@ -434,6 +441,7 @@ const Inventory = () => {
                     <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/20"><Heart size={24} /></div>
                     <div className="flex gap-2">
                       <button onClick={() => { setEditingLitter(litter); setLitterFormData(litter); setIsLitterModalOpen(true); }} className="p-2 rounded-xl bg-white/5 text-white/40 hover:text-white transition-all"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDeleteLitter(litter.id)} className="p-2 rounded-xl bg-white/5 text-white/40 hover:text-rose-400 transition-all"><Trash2 size={16} /></button>
                       <span className={cn("px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest", litter.status === 'Pregnant' ? "bg-amber-500/20 text-amber-400" : "bg-emerald-500/20 text-emerald-400")}>{litter.status}</span>
                     </div>
                   </div>
@@ -451,10 +459,312 @@ const Inventory = () => {
               ))}
             </div>
           </TabsContent>
-          {/* ... rest of the tabs ... */}
+
+          <TabsContent value="mating_history" className="space-y-8 md:space-y-12">
+            <div className="pill-nav bg-white/5 border-white/10 overflow-hidden">
+              <table className="w-full text-left rtl:text-right">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">{t('mother')}</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">{t('father')}</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">{t('matingDate')}</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">{t('status')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {matingHistory.map((m, i) => {
+                    const female = rabbits.find(r => r.id === m.female_id);
+                    const male = rabbits.find(r => r.id === m.male_id);
+                    return (
+                      <tr key={i} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-bold">{female?.name || t('unknown')}</td>
+                        <td className="px-6 py-4 font-bold">{male?.name || t('unknown')}</td>
+                        <td className="px-6 py-4 text-white/40">{m.mating_date}</td>
+                        <td className="px-6 py-4">
+                          <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">{m.status}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
-      {/* ... modals ... */}
+
+      {/* Add/Edit Rabbit Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-4xl w-full bg-[#020408] border border-white/10 rounded-[3rem] p-8 md:p-12 max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <div className="flex justify-between items-center mb-10">
+                <h2 className="text-3xl font-black tracking-tighter">{editingRabbit ? t('edit') : t('addRabbit')}</h2>
+                <button onClick={() => setIsModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={24} /></button>
+              </div>
+              <form onSubmit={handleAction} className="space-y-10">
+                <div className="grid md:grid-cols-3 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('rabbitName')}</label>
+                    <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('genderSelection')}</label>
+                    <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="Female" className="bg-[#020408]">Female</option>
+                      <option value="Male" className="bg-[#020408]">Male</option>
+                    </select>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('breedSelection')}</label>
+                    <select value={formData.breed} onChange={(e) => setFormData({...formData, breed: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      {BREEDS.map(b => <option key={b} value={b} className="bg-[#020408]">{b}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-3 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('weightKg')}</label>
+                    <input type="number" step="0.01" required value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('birthDate')}</label>
+                    <input type="date" value={formData.birth_date} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
+                    <input type="number" value={formData.price_dzd} onChange={(e) => setFormData({...formData, price_dzd: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageNumber')}</label>
+                    <input type="text" value={formData.cage_number} onChange={(e) => setFormData({...formData, cage_number: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('cageType')}</label>
+                    <select value={formData.cage_type} onChange={(e) => setFormData({...formData, cage_type: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      {CAGE_TYPES.map(c => <option key={c} value={c} className="bg-[#020408]">{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('notes')}</label>
+                  <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none min-h-[120px]" />
+                </div>
+                <button type="submit" className="auron-button w-full h-16 text-lg">{t('save')}</button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* View Rabbit Modal */}
+      <AnimatePresence>
+        {isViewModalOpen && viewingRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-2xl p-4">
+            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="max-w-5xl w-full bg-[#020408] border border-white/10 rounded-[3rem] overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+              <div className="w-full md:w-1/3 bg-indigo-600 p-10 flex flex-col items-center justify-center text-center relative">
+                <button onClick={() => setIsViewModalOpen(false)} className="absolute top-6 left-6 p-3 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-all md:hidden"><X size={24} /></button>
+                <div className="w-32 h-32 rounded-[2.5rem] bg-white/20 flex items-center justify-center text-white mb-6 shadow-2xl"><Rabbit size={64} /></div>
+                <h2 className="text-4xl font-black tracking-tighter mb-2">{viewingRabbit.name}</h2>
+                <p className="text-indigo-200 font-black uppercase tracking-widest text-xs">{viewingRabbit.rabbit_id}</p>
+                <div className="mt-10 bg-white p-4 rounded-3xl shadow-2xl"><QRCodeSVG value={viewingRabbit.rabbit_id} size={120} /></div>
+              </div>
+              <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar space-y-12">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-2xl font-black tracking-tight flex items-center gap-3"><Info className="text-indigo-400" /> {t('basicInfo')}</h3>
+                  <button onClick={() => setIsViewModalOpen(false)} className="hidden md:block p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={24} /></button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5"><p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">{t('breedSelection')}</p><p className="font-bold">{viewingRabbit.breed}</p></div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5"><p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">{t('genderSelection')}</p><p className="font-bold">{viewingRabbit.gender}</p></div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5"><p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">{t('age')}</p><p className="font-bold">{calculateAge(viewingRabbit.birth_date)}</p></div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5"><p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">{t('cageNumber')}</p><p className="font-bold">#{viewingRabbit.cage_number || 'N/A'}</p></div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5"><p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">{t('status')}</p><p className="font-bold text-emerald-400">{viewingRabbit.status}</p></div>
+                  <div className="p-6 rounded-3xl bg-white/5 border border-white/5"><p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">{t('salePrice')}</p><p className="font-bold text-indigo-400">{viewingRabbit.price_dzd} DA</p></div>
+                </div>
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-black tracking-tight flex items-center gap-3"><TrendingUp className="text-emerald-400" /> {t('weightVelocity')}</h3>
+                  <div className="h-64 w-full bg-white/5 rounded-[2rem] p-6 border border-white/5">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={getRabbitWeightData(viewingRabbit.id)}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
+                        <XAxis dataKey="date" hide />
+                        <YAxis hide />
+                        <Tooltip contentStyle={{ backgroundColor: '#020408', border: '1px solid #ffffff10', borderRadius: '1rem' }} />
+                        <Line type="monotone" dataKey="weight" stroke="#10b981" strokeWidth={4} dot={{ fill: '#10b981', r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Quick Weight Modal */}
+      <AnimatePresence>
+        {isWeightModalOpen && activeRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-black tracking-tighter">{t('updateWeight')}</h2>
+                <button onClick={() => setIsWeightModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={24} /></button>
+              </div>
+              <div className="space-y-6">
+                <div className="p-6 rounded-3xl bg-indigo-600/10 border border-indigo-500/20 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white"><Rabbit size={24} /></div>
+                  <div><p className="text-xs font-black uppercase tracking-widest text-indigo-400">{activeRabbit.rabbit_id}</p><p className="text-lg font-bold">{activeRabbit.name}</p></div>
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('newWeight')}</label>
+                  <input type="number" step="0.01" autoFocus value={quickWeight} onChange={(e) => setQuickWeight(e.target.value)} className="w-full h-16 px-8 bg-white/5 border border-white/10 rounded-2xl font-black text-2xl outline-none focus:border-emerald-500/50 text-emerald-400" />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">Log Date</label>
+                  <input type="date" value={weightLogDate} onChange={(e) => setWeightLogDate(e.target.value)} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                </div>
+                <button onClick={handleQuickWeightUpdate} className="auron-button w-full h-16 text-lg bg-emerald-600 hover:bg-emerald-500">{t('save')}</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Mating/Litter Modal */}
+      <AnimatePresence>
+        {isLitterModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <div className="flex justify-between items-center mb-10">
+                <h2 className="text-3xl font-black tracking-tighter">{editingLitter ? t('editLitter') : t('recordMating')}</h2>
+                <button onClick={() => setIsLitterModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={24} /></button>
+              </div>
+              <form onSubmit={handleLitterAction} className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('mother')}</label>
+                    <select required value={litterFormData.mother_name} onChange={(e) => setLitterFormData({...litterFormData, mother_name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="" className="bg-[#020408]">{t('selectMother')}</option>
+                      {mothers.map(m => <option key={m.id} value={m.name} className="bg-[#020408]">{m.name} ({m.rabbit_id})</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('father')}</label>
+                    <select required value={litterFormData.father_name} onChange={(e) => setLitterFormData({...litterFormData, father_name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="" className="bg-[#020408]">{t('selectFather')}</option>
+                      {fathers.map(f => <option key={f.id} value={f.name} className="bg-[#020408]">{f.name} ({f.rabbit_id})</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('matingDate')}</label>
+                    <input type="date" required value={litterFormData.mating_date} onChange={(e) => setLitterFormData({...litterFormData, mating_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('status')}</label>
+                    <select value={litterFormData.status} onChange={(e) => setLitterFormData({...litterFormData, status: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="Pregnant" className="bg-[#020408]">Pregnant</option>
+                      <option value="Born" className="bg-[#020408]">Born</option>
+                      <option value="Weaned" className="bg-[#020408]">Weaned</option>
+                      <option value="Failed" className="bg-[#020408]">Failed</option>
+                    </select>
+                  </div>
+                </div>
+                {litterFormData.status === 'Born' && (
+                  <div className="grid md:grid-cols-3 gap-8 p-8 rounded-[2rem] bg-white/5 border border-white/5">
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('kitsBorn')}</label>
+                      <input type="number" value={litterFormData.kit_count} onChange={(e) => setLitterFormData({...litterFormData, kit_count: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('kitsAlive')}</label>
+                      <input type="number" value={litterFormData.alive_kits} onChange={(e) => setLitterFormData({...litterFormData, alive_kits: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-emerald-400" />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('kitsDead')}</label>
+                      <input type="number" value={litterFormData.dead_kits} onChange={(e) => setLitterFormData({...litterFormData, dead_kits: parseInt(e.target.value)})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-rose-400" />
+                    </div>
+                  </div>
+                )}
+                <button type="submit" className="auron-button w-full h-16 text-lg">{t('save')}</button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Split Litter Modal */}
+      <AnimatePresence>
+        {isSplitModalOpen && splittingLitter && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-black tracking-tighter">{t('splitLitter')}</h2>
+                <button onClick={() => setIsSplitModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={24} /></button>
+              </div>
+              <div className="space-y-8">
+                <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">{t('kitsAlive')}</p>
+                  <p className="text-4xl font-black">{splittingLitter.alive_kits}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('malesToCreate')}</label>
+                    <input type="number" value={splitData.males} onChange={(e) => setSplitData({...splitData, males: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-blue-400" />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('femalesToCreate')}</label>
+                    <input type="number" value={splitData.females} onChange={(e) => setSplitData({...splitData, females: parseInt(e.target.value) || 0})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none text-pink-400" />
+                  </div>
+                </div>
+                <button onClick={handleSplitLitter} className="auron-button w-full h-16 text-lg bg-indigo-600 hover:bg-indigo-500">{t('confirmSplit')}</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Modal */}
+      <AnimatePresence>
+        {isQrModalOpen && activeRabbit && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-sm w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10 text-center">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-xl font-black tracking-tighter">{t('neuralIdTag')}</h2>
+                <button onClick={() => setIsQrModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={24} /></button>
+              </div>
+              <div className="bg-white p-8 rounded-[2.5rem] mb-8 inline-block shadow-2xl">
+                <QRCodeSVG value={activeRabbit.rabbit_id} size={200} />
+              </div>
+              <h3 className="text-2xl font-black mb-1">{activeRabbit.name}</h3>
+              <p className="text-xs font-black text-white/20 uppercase tracking-widest mb-8">{activeRabbit.rabbit_id}</p>
+              <button onClick={() => window.print()} className="auron-button w-full h-14 flex items-center justify-center gap-3"><Download size={20} /> {t('printNeuralTag')}</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Scanner Modal */}
+      <AnimatePresence>
+        {isScannerOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-6">
+            <div className="max-w-lg w-full">
+              <div className="flex justify-between items-center mb-10">
+                <div>
+                  <h2 className="text-4xl font-black tracking-tighter">{t('neuralScan')}</h2>
+                  <p className="text-white/40 font-bold text-sm mt-1 uppercase tracking-widest">{t('alignNeuralTag')}</p>
+                </div>
+                <button onClick={() => setIsScannerOpen(false)} className="p-4 rounded-[1.5rem] bg-white/5 text-white/40 hover:text-white transition-all"><X size={28} /></button>
+              </div>
+              <QrScanner onScanSuccess={handleQrScan} />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

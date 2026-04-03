@@ -10,7 +10,8 @@ const ALLOWED_COLUMNS: Record<string, string[]> = {
   expenses: ['id', 'user_id', 'category', 'amount', 'date', 'notes', 'created_at'],
   weight_logs: ['id', 'user_id', 'rabbit_id', 'weight', 'log_date', 'created_at'],
   mating_history: ['id', 'user_id', 'female_id', 'male_id', 'mating_date', 'status', 'notes', 'created_at'],
-  profiles: ['id', 'display_name', 'email', 'avatar_url', 'updated_at']
+  profiles: ['id', 'display_name', 'email', 'avatar_url', 'updated_at'],
+  tasks: ['id', 'user_id', 'title', 'category', 'priority', 'due_date', 'notes', 'completed', 'created_at']
 };
 
 interface SyncItem {
@@ -50,7 +51,7 @@ const sanitizePayload = (table: string, obj: any): any => {
       sanitized[key] = isNaN(parseFloat(value)) ? 0 : parseFloat(value);
     } else if (key === 'weight_history') {
       sanitized[key] = Array.isArray(value) ? value : [];
-    } else if (key === 'is_public') {
+    } else if (key === 'is_public' || key === 'completed') {
       sanitized[key] = !!value;
     } else if (key === 'user_id' || key === 'id') {
       sanitized[key] = isUUID(value) ? value : generateUUID();
@@ -67,7 +68,6 @@ export const storage = {
     const localData = localStorage.getItem(localKey);
     let data = localData ? JSON.parse(localData) : [];
 
-    // If we are in demo mode or have an invalid ID, return local data only
     if (!isUUID(userId) || userId === DEMO_UUID || !navigator.onLine) {
       return data;
     }
@@ -135,6 +135,7 @@ export const storage = {
   },
 
   addToSyncQueue(item: SyncItem) {
+    if (item.data?.user_id && !isUUID(item.data.user_id)) return;
     const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify([...queue, item]));
     this.processSyncQueue().catch(() => {});
@@ -144,7 +145,6 @@ export const storage = {
     if (!navigator.onLine) return;
     let queue: SyncItem[] = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     
-    // POISON PILL PURGE: Instantly remove any items containing invalid IDs
     const cleanQueue = queue.filter(item => {
       const dataStr = JSON.stringify(item.data || {});
       return !dataStr.includes('"yonr"') && !dataStr.includes('"demo-user"') && !dataStr.includes(DEMO_UUID);
