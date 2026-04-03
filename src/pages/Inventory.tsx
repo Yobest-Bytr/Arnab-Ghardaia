@@ -117,6 +117,14 @@ const Inventory = () => {
     }
   };
 
+  // Helper to resolve Rabbit Name from ID
+  const getRabbitName = (idOrName: string) => {
+    if (!idOrName) return t('unknown');
+    // Check if it's a UUID or a name
+    const rabbit = rabbits.find(r => r.id === idOrName || r.rabbit_id === idOrName);
+    return rabbit ? (rabbit.name || rabbit.rabbit_id) : idOrName;
+  };
+
   const showInstantSuggestions = (type: string, val: string) => {
     let filtered: any[] = [];
     if (type === 'mother' || type === 'father') {
@@ -265,7 +273,7 @@ const Inventory = () => {
         await storage.insert('rabbits', user.id, {
           ...initialForm,
           rabbit_id: generateAutoId('Male'),
-          name: `${t('sonOf')} ${splittingLitter.mother_name}`,
+          name: `${t('sonOf')} ${getRabbitName(splittingLitter.mother_name)}`,
           gender: 'Male',
           birth_date: birthDate,
           mother_id: splittingLitter.mother_name,
@@ -279,7 +287,7 @@ const Inventory = () => {
         await storage.insert('rabbits', user.id, {
           ...initialForm,
           rabbit_id: generateAutoId('Female'),
-          name: `${t('daughterOf')} ${splittingLitter.mother_name}`,
+          name: `${t('daughterOf')} ${getRabbitName(splittingLitter.mother_name)}`,
           gender: 'Female',
           birth_date: birthDate,
           mother_id: splittingLitter.mother_name,
@@ -443,8 +451,8 @@ const Inventory = () => {
                       <span className={cn("px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest", litter.status === 'Pregnant' ? "bg-amber-500/20 text-amber-400" : "bg-emerald-500/20 text-emerald-400")}>{litter.status}</span>
                     </div>
                   </div>
-                  <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2 truncate">{litter.mother_name}{t('litterSuffix')}</h3>
-                  <p className="text-[10px] md:text-xs font-bold text-white/40 mb-6 md:mb-8 uppercase tracking-widest truncate">{t('father')}: {litter.father_name}</p>
+                  <h3 className="text-xl md:text-2xl font-black mb-1 md:mb-2 truncate">{getRabbitName(litter.mother_name)}{t('litterSuffix')}</h3>
+                  <p className="text-[10px] md:text-xs font-bold text-white/40 mb-6 md:mb-8 uppercase tracking-widest truncate">{t('father')}: {getRabbitName(litter.father_name)}</p>
                   <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
                     <div className="text-center p-3 md:p-4 bg-black/40 rounded-2xl border border-white/5"><p className="text-[8px] md:text-[9px] font-black text-white/20 uppercase mb-1">{t('kitsBorn')}</p><p className="text-lg md:text-xl font-black">{litter.kit_count}</p></div>
                     <div className="text-center p-3 md:p-4 bg-black/40 rounded-2xl border border-white/5"><p className="text-[8px] md:text-[9px] font-black text-white/20 uppercase mb-1">{t('kitsAlive')}</p><p className="text-lg md:text-xl font-black text-emerald-400">{litter.alive_kits}</p></div>
@@ -473,8 +481,8 @@ const Inventory = () => {
                   {matingHistory.map((m, i) => {
                     return (
                       <tr key={i} className="hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4 font-bold">{m.female_id || t('unknown')}</td>
-                        <td className="px-6 py-4 font-bold">{m.male_id || t('unknown')}</td>
+                        <td className="px-6 py-4 font-bold">{getRabbitName(m.female_id || m.mother_name)}</td>
+                        <td className="px-6 py-4 font-bold">{getRabbitName(m.male_id || m.father_name)}</td>
                         <td className="px-6 py-4 text-white/40">{m.mating_date}</td>
                         <td className="px-6 py-4">
                           <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">{m.status}</span>
