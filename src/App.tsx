@@ -28,6 +28,7 @@ import NeuralLab from "./pages/NeuralLab";
 import AIInsights from "./pages/AIInsights";
 import Collaborators from "./pages/Collaborators";
 import Tasks from "./pages/Tasks";
+import QrManager from "./pages/QrManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,11 @@ const App = () => (
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/qr-manager" element={
+                  <ProtectedRoute>
+                    <QrManager />
                   </ProtectedRoute>
                 } />
                 <Route path="/neural-lab" element={

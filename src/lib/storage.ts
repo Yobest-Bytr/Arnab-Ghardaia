@@ -47,10 +47,6 @@ const sanitizePayload = (obj: any): any => {
 };
 
 export const storage = {
-  isOffline() {
-    return !navigator.onLine || masterOffline;
-  },
-
   async get(table: string, userId: string) {
     const localKey = `${table}_${userId}`;
     const localData = localStorage.getItem(localKey);
@@ -76,11 +72,7 @@ export const storage = {
   },
 
   async insert(table: string, userId: string, item: any) {
-    let validId = item.id;
-    if (!isUUID(validId)) {
-      validId = generateUUID();
-    }
-
+    let validId = item.id || generateUUID();
     const newItem = { 
       ...item, 
       id: validId,
@@ -93,20 +85,12 @@ export const storage = {
     localStorage.setItem(localKey, JSON.stringify([newItem, ...localData]));
     
     if (isUUID(userId)) {
-      this.addToSyncQueue({ 
-        id: validId, 
-        table, 
-        action: 'INSERT', 
-        data: sanitizePayload(newItem), 
-        timestamp: Date.now() 
-      });
+      this.addToSyncQueue({ id: validId, table, action: 'INSERT', data: sanitizePayload(newItem), timestamp: Date.now() });
     }
     return newItem;
   },
 
   async update(table: string, userId: string, id: string, updates: any) {
-    if (!isUUID(id)) return updates;
-
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     const updatedData = localData.map((item: any) => 
@@ -115,20 +99,12 @@ export const storage = {
     localStorage.setItem(localKey, JSON.stringify(updatedData));
     
     if (isUUID(userId)) {
-      this.addToSyncQueue({ 
-        id, 
-        table, 
-        action: 'UPDATE', 
-        data: sanitizePayload(updates), 
-        timestamp: Date.now() 
-      });
+      this.addToSyncQueue({ id, table, action: 'UPDATE', data: sanitizePayload(updates), timestamp: Date.now() });
     }
     return updates;
   },
 
   async delete(table: string, userId: string, id: string) {
-    if (!isUUID(id)) return;
-
     const localKey = `${table}_${userId}`;
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify(localData.filter((i: any) => i.id !== id)));
@@ -146,61 +122,25 @@ export const storage = {
 
   async processSyncQueue() {
     if (!navigator.onLine || masterOffline) return;
-    
     const queue: SyncItem[] = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     if (queue.length === 0) return;
 
     const updatedQueue = [...queue];
-    let hasChanges = false;
-
     for (let i = 0; i < updatedQueue.length; i++) {
       const item = updatedQueue[i];
-      if (!isUUID(item.id)) {
-        updatedQueue.splice(i, 1);
-        i--;
-        hasChanges = true;
-        continue;
-      }
-
-      const finalData = sanitizePayload(item.data);
-
       try {
         let error;
-        if (item.action === 'INSERT') {
-          ({ error } = await supabase.from(item.table).upsert([finalData]));
-        } else if (item.action === 'UPDATE') {
-          ({ error } = await supabase.from(item.table).update(finalData).eq('id', item.id));
-        } else if (item.action === 'DELETE') {
-          ({ error } = await supabase.from(item.table).delete().eq('id', item.id));
-        }
+        if (item.action === 'INSERT') ({ error } = await supabase.from(item.table).upsert([item.data]));
+        else if (item.action === 'UPDATE') ({ error } = await supabase.from(item.table).update(item.data).eq('id', item.id));
+        else if (item.action === 'DELETE') ({ error } = await supabase.from(item.table).delete().eq('id', item.id));
 
         if (!error) {
           updatedQueue.splice(i, 1);
           i--;
-          hasChanges = true;
-        } else {
-          const match = error.message.match(/column ['"](.+?)['"]/i);
-          const columnName = match ? match[1] : null;
-          if (columnName && item.data[columnName] !== undefined) {
-            const { [columnName]: _, ...sanitizedData } = item.data;
-            updatedQueue[i] = { ...item, data: sanitizedData, retryCount: (item.retryCount || 0) + 1 };
-            hasChanges = true;
-            if ((item.retryCount || 0) > 15) {
-              updatedQueue.splice(i, 1);
-              i--;
-            }
-            continue; 
-          }
-          break; 
         }
-      } catch (e) {
-        break; 
-      }
+      } catch (e) { break; }
     }
-
-    if (hasChanges) {
-      localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueue));
-    }
+    localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueue));
   }
 };
 

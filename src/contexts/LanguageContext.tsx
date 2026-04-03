@@ -9,126 +9,64 @@ interface Translations {
 }
 
 const translations: Translations = {
-  // Hero & General
-  heroTitle: { en: "Smart Rabbit Farm Management", ar: "إدارة ذكية لمزارع الأرانب", fr: "Gestion Intelligente de Ferme de Lapins" },
-  heroSubtitle: { en: "The ultimate platform for breeders in Ghardaia. Track growth, manage cages, and optimize your sales with neural precision.", ar: "المنصة المثالية للمربين في غرداية. تتبع النمو، أدر الأقفاص، وحسن مبيعاتك بدقة عالية.", fr: "La plateforme ultime pour les éleveurs à Ghardaia. Suivez la croissance, gérez les cages et optimisez vos ventes." },
-  goDashboard: { en: "Go to Dashboard", ar: "اذهب للوحة التحكم", fr: "Aller au tableau de bord" },
-  viewRabbits: { en: "View Rabbits", ar: "عرض الأرانب", fr: "Voir les lapins" },
-  happyCustomers: { en: "Happy Breeders", ar: "مربي سعيد", fr: "Éleveurs satisfaits" },
-  healthStatus: { en: "Health Status", ar: "الحالة الصحية", fr: "État de santé" },
-  healthyRate: { en: "Healthy Rate", ar: "معدل الصحة", fr: "Taux de santé" },
+  // General & Navigation
   appName: { en: "Arnab Ghardaia", ar: "أرنب غرداية", fr: "Arnab Ghardaia" },
-  save: { en: "Save Changes", ar: "حفظ التغييرات", fr: "Enregistrer" },
   home: { en: "Home", ar: "الرئيسية", fr: "Accueil" },
-  login: { en: "Login", ar: "تسجيل الدخول", fr: "Connexion" },
   dashboard: { en: "Dashboard", ar: "لوحة التحكم", fr: "Tableau de bord" },
   inventory: { en: "Inventory", ar: "المخزون", fr: "Inventaire" },
   breeding: { en: "Breeding", ar: "التزاوج", fr: "Élevage" },
   reports: { en: "Reports", ar: "التقارير", fr: "Rapports" },
   sales: { en: "Sales", ar: "المبيعات", fr: "Ventes" },
   expenses: { en: "Expenses", ar: "المصاريف", fr: "Dépenses" },
-  about: { en: "About", ar: "حول", fr: "À propos" },
-  contact: { en: "Contact", ar: "اتصل بنا", fr: "Contact" },
-  profile: { en: "Profile Settings", ar: "إعدادات الملف الشخصي", fr: "Paramètres du profil" },
-  
-  // Features Section
-  featuresTitle: { en: "Powerful Management Tools", ar: "أدوات إدارة قوية", fr: "Outils de Gestion Puissants" },
-  featuresSubtitle: { en: "Everything you need to scale your rabbit production.", ar: "كل ما تحتاجه لتوسيع إنتاج الأرانب الخاص بك.", fr: "Tout ce dont vous avez besoin pour développer votre production." },
-  feature1Title: { en: "Real-time Analytics", ar: "تحليلات فورية", fr: "Analyses en Temps Réel" },
-  feature1Desc: { en: "Monitor growth rates and health metrics with live data visualization.", ar: "راقب معدلات النمو ومقاييس الصحة مع تصور البيانات الحية.", fr: "Surveillez les taux de croissance et la santé avec des graphiques en direct." },
-  feature2Title: { en: "Cage Management", ar: "إدارة الأقفاص", fr: "Gestion des Cages" },
-  feature2Desc: { en: "Organize your farm layout and track occupancy with a visual map.", ar: "نظم تخطيط مزرعتك وتتبع الإشغال بخريطة مرئية.", fr: "Organisez votre ferme et suivez l'occupation avec une carte visuelle." },
-  feature3Title: { en: "Breeding Cycles", ar: "دورات التزاوج", fr: "Cycles d'Élevage" },
-  feature3Desc: { en: "Automated reminders for pregnancy checks and weaning dates.", ar: "تذكيرات تلقائية لفحوصات الحمل وتواريخ الفطام.", fr: "Rappels automatiques pour les contrôles de grossesse et le sevrage." },
-  
-  // CTA Section
-  ctaTitle: { en: "Ready to modernize your farm?", ar: "هل أنت مستعد لتحديث مزرعتك؟", fr: "Prêt à moderniser votre ferme ?" },
-  ctaSubtitle: { en: "Join hundreds of breeders in Ghardaia using Arnab Ghardaia to optimize their production.", ar: "انضم إلى مئات المربين في غرداية الذين يستخدمون أرنب غرداية لتحسين إنتاجهم.", fr: "Rejoignez des centaines d'éleveurs à Ghardaia utilisant Arnab Ghardaia." },
-  getStartedFree: { en: "Get Started Free", ar: "ابدأ مجاناً", fr: "Commencer Gratuitement" },
-  contactSales: { en: "Contact Support", ar: "اتصل بالدعم", fr: "Contacter le Support" },
+  qrStudio: { en: "QR Studio", ar: "استوديو QR", fr: "Studio QR" },
+  profile: { en: "Profile", ar: "الملف الشخصي", fr: "Profil" },
+  login: { en: "Login", ar: "تسجيل الدخول", fr: "Connexion" },
+  logout: { en: "Log Out", ar: "تسجيل الخروج", fr: "Déconnexion" },
+  save: { en: "Save", ar: "حفظ", fr: "Enregistrer" },
+  cancel: { en: "Cancel", ar: "إلغاء", fr: "Annuler" },
+  delete: { en: "Delete", ar: "حذف", fr: "Supprimer" },
+  edit: { en: "Edit", ar: "تعديل", fr: "Modifier" },
+  view: { en: "View", ar: "عرض", fr: "Voir" },
 
-  // Inventory Page
-  addRabbit: { en: "Add New Rabbit", ar: "إضافة أرنب جديد", fr: "Ajouter un Lapin" },
-  rabbitName: { en: "Rabbit Name", ar: "اسم الأرنب", fr: "Nom du lapin" },
-  breedSelection: { en: "Breed Selection", ar: "اختيار السلالة", fr: "Sélection de race" },
-  genderSelection: { en: "Gender Selection", ar: "اختيار الجنس", fr: "Sélection du sexe" },
-  birthDate: { en: "Birth Date", ar: "تاريخ الميلاد", fr: "Date de naissance" },
+  // QR Manager
+  qrManagerTitle: { en: "QR Printing Studio", ar: "استوديو طباعة QR", fr: "Studio d'Impression QR" },
+  qrManagerDesc: { en: "Select rabbits to generate a printable PDF of Neural ID tags.", ar: "اختر الأرانب لإنشاء ملف PDF قابل للطباعة لبطاقات الهوية العصبية.", fr: "Sélectionnez les lapins pour générer un PDF imprimable." },
+  generatePdf: { en: "Generate PDF", ar: "إنشاء PDF", fr: "Générer PDF" },
+  selectAll: { en: "Select All", ar: "تحديد الكل", fr: "Tout sélectionner" },
+  deselectAll: { en: "Deselect All", ar: "إلغاء تحديد الكل", fr: "Tout désélectionner" },
+
+  // Advanced Inventory & Mating
+  matingHistory: { en: "Mating History", ar: "سجل التزاوج", fr: "Historique des saillies" },
+  weightEvolution: { en: "Weight Evolution", ar: "تطور الوزن", fr: "Évolution du poids" },
+  multipleMatings: { en: "Multiple Matings Detected", ar: "تم اكتشاف تزاوجات متعددة", fr: "Saillies multiples détectées" },
+  lastMatedWith: { en: "Last Mated With", ar: "آخر تزاوج مع", fr: "Dernière saillie avec" },
   weightKg: { en: "Weight (kg)", ar: "الوزن (كجم)", fr: "Poids (kg)" },
-  cageNumber: { en: "Cage #", ar: "رقم القفص", fr: "N° Cage" },
-  cageType: { en: "Cage Type", ar: "نوع القفص", fr: "Type de cage" },
-  status: { en: "Status", ar: "الحالة", fr: "Statut" },
-  available: { en: "Available", ar: "متاح", fr: "Disponible" },
-  sold: { en: "Sold", ar: "تم البيع", fr: "Vendu" },
-  died: { en: "Died", ar: "نافق", fr: "Mort" },
+  addWeight: { en: "Log Weight", ar: "تسجيل الوزن", fr: "Enregistrer le poids" },
+  matingDate: { en: "Mating Date", ar: "تاريخ التزاوج", fr: "Date de saillie" },
+  expectedBirth: { en: "Expected Birth", ar: "الولادة المتوقعة", fr: "Naissance prévue" },
+  
+  // Statuses
   healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },
   sick: { en: "Sick", ar: "مريض", fr: "Malade" },
-  recovering: { en: "Recovering", ar: "يتعافى", fr: "En récupération" },
-  motherId: { en: "Mother ID", ar: "رقم الأم", fr: "ID Mère" },
-  fatherId: { en: "Father ID", ar: "رقم الأب", fr: "ID Père" },
-  matingPartner: { en: "Mating Partner", ar: "شريك التزاوج", fr: "Partenaire" },
-  vaccination: { en: "Vaccination", ar: "التطعيم", fr: "Vaccination" },
-  medicalNotes: { en: "Medical Notes", ar: "ملاحظات طبية", fr: "Notes médicales" },
-  publishToShop: { en: "Publish to Boutique", ar: "نشر في المتجر", fr: "Publier en Boutique" },
-  publishDesc: { en: "Make this rabbit visible to public buyers.", ar: "اجعل هذا الأرنب مرئياً للمشترين.", fr: "Rendre visible aux acheteurs." },
+  available: { en: "Available", ar: "متاح", fr: "Disponible" },
+  sold: { en: "Sold", ar: "تم البيع", fr: "Vendu" },
+  pregnant: { en: "Pregnant", ar: "حامل", fr: "Gestante" },
+
+  // Hero Section
+  heroTitle: { en: "Smart Rabbit Farm Management", ar: "إدارة ذكية لمزارع الأرانب", fr: "Gestion Intelligente de Ferme" },
+  heroSubtitle: { en: "The ultimate platform for breeders in Ghardaia. Track growth, manage cages, and optimize your sales.", ar: "المنصة المثالية للمربين في غرداية. تتبع النمو، أدر الأقفاص، وحسن مبيعاتك.", fr: "La plateforme ultime pour les éleveurs à Ghardaia." },
   
-  // Breeding Page
-  recordMating: { en: "Record Mating", ar: "تسجيل تزاوج", fr: "Enregistrer saillie" },
-  activePregnancies: { en: "Active Pregnancies", ar: "حالات حمل نشطة", fr: "Grossesses actives" },
-  expectedBirth: { en: "Expected Birth", ar: "الولادة المتوقعة", fr: "Naissance prévue" },
-  actualBirthDate: { en: "Actual Birth Date", ar: "تاريخ الولادة الفعلي", fr: "Date de naissance réelle" },
-  daysRemaining: { en: "Days Remaining", ar: "أيام متبقية", fr: "Jours restants" },
-  mother: { en: "Mother", ar: "الأم", fr: "Mère" },
-  father: { en: "Father", ar: "الأب", fr: "Père" },
-  matingDate: { en: "Mating Date", ar: "تاريخ التزاوج", fr: "Date de saillie" },
-  totalKits: { en: "Total Kits", ar: "إجمالي المواليد", fr: "Total lapereaux" },
-  kitsAlive: { en: "Kits Alive", ar: "مواليد أحياء", fr: "Lapereaux vivants" },
-  kitsDead: { en: "Kits Dead", ar: "مواليد نافقة", fr: "Lapereaux morts" },
-  splitLitter: { en: "Split Litter", ar: "فصل البطن", fr: "Séparer la portée" },
+  // Features
+  feature1Title: { en: "Real-time Analytics", ar: "تحليلات فورية", fr: "Analyses en Temps Réel" },
+  feature1Desc: { en: "Monitor growth rates and health metrics with live data visualization.", ar: "راقب معدلات النمو ومقاييس الصحة مع تصور البيانات الحية.", fr: "Surveillez les taux de croissance et la santé." },
+  feature2Title: { en: "Cage Management", ar: "إدارة الأقفاص", fr: "Gestion des Cages" },
+  feature2Desc: { en: "Organize your farm layout and track occupancy with a visual map.", ar: "نظم تخطيط مزرعتك وتتبع الإشغال بخريطة مرئية.", fr: "Organisez votre ferme avec une carte visuelle." },
+  feature3Title: { en: "Breeding Cycles", ar: "دورات التزاوج", fr: "Cycles d'Élevage" },
+  feature3Desc: { en: "Automated reminders for pregnancy checks and weaning dates.", ar: "تذكيرات تلقائية لفحوصات الحمل وتواريخ الفطام.", fr: "Rappels automatiques pour les contrôles." },
   
-  // Sales & Expenses
-  recordSale: { en: "Record Sale", ar: "تسجيل عملية بيع", fr: "Enregistrer une vente" },
-  customerName: { en: "Customer Name", ar: "اسم المشتري", fr: "Nom du client" },
-  salePrice: { en: "Sale Price", ar: "سعر البيع", fr: "Prix de vente" },
-  saleDate: { en: "Sale Date", ar: "تاريخ البيع", fr: "Date de vente" },
-  totalSales: { en: "Total Sales", ar: "إجمالي المبيعات", fr: "Ventes totales" },
-  expenseCategory: { en: "Category", ar: "الفئة", fr: "Catégorie" },
-  amount: { en: "Amount", ar: "المبلغ", fr: "Montant" },
-  addRecord: { en: "Add Record", ar: "إضافة سجل", fr: "Ajouter un record" },
-  
-  // Tasks & Schedule
-  initializeTask: { en: "Initialize Task", ar: "بدء مهمة", fr: "Initialiser tâche" },
-  efficiencyRating: { en: "Efficiency Rating", ar: "معدل الكفاءة", fr: "Taux d'efficacité" },
-  pendingNodes: { en: "Pending Nodes", ar: "مهام معلقة", fr: "Tâches en attente" },
-  criticalAlerts: { en: "Critical Alerts", ar: "تنبيهات حرجة", fr: "Alertes critiques" },
-  taskOptimized: { en: "Task Optimized", ar: "تم إنجاز المهمة", fr: "Tâche optimisée" },
-  taskRestored: { en: "Task Restored", ar: "تم استعادة المهمة", fr: "Tâche restaurée" },
-  
-  // Profile & Settings
-  neuralSettings: { en: "Neural Settings", ar: "الإعدادات العصبية", fr: "Paramètres Neuraux" },
-  identity: { en: "Identity", ar: "الهوية", fr: "Identité" },
-  neuralKeys: { en: "Neural Keys", ar: "المفاتيح العصبية", fr: "Clés Neurales" },
-  security: { en: "Security", ar: "الأمان", fr: "Sécurité" },
-  displayName: { en: "Display Name", ar: "اسم العرض", fr: "Nom d'affichage" },
-  emailAddress: { en: "Email Address", ar: "البريد الإلكتروني", fr: "Adresse e-mail" },
-  saveIdentity: { en: "Save Identity", ar: "حفظ الهوية", fr: "Enregistrer l'identité" },
-  initializeUplink: { en: "Initialize Neural Uplink", ar: "بدء الربط العصبي", fr: "Initialiser le lien" },
-  terminateSession: { en: "Terminate Session", ar: "إنهاء الجلسة", fr: "Terminer la session" },
-  
-  // Reports
-  neuralAudit: { en: "Neural Audit", ar: "التدقيق العصبي", fr: "Audit Neural" },
-  downloadPDF: { en: "Download PDF", ar: "تحميل PDF", fr: "Télécharger PDF" },
-  mortalityRate: { en: "Mortality Rate", ar: "معدل النفوق", fr: "Taux de mortalité" },
-  breedingSuccess: { en: "Breeding Success", ar: "نجاح التزاوج", fr: "Succès d'élevage" },
-  salesVsExpenses: { en: "Sales vs Expenses", ar: "المبيعات مقابل المصاريف", fr: "Ventes vs Dépenses" },
-  productionSummary: { en: "Production Summary", ar: "ملخص الإنتاج", fr: "Résumé de production" },
-  
-  // Neural Lab
-  neuralLab: { en: "Neural Lab", ar: "المختبر العصبي", fr: "Labo Neural" },
-  engineOnline: { en: "Engine Online", ar: "المحرك متصل", fr: "Moteur en ligne" },
-  nodesLinked: { en: "Nodes Linked", ar: "عقد متصلة", fr: "Nœuds liés" },
-  secureUplink: { en: "Secure Uplink", ar: "رابط آمن", fr: "Lien sécurisé" },
-  ghardaiaNode: { en: "Ghardaia Node", ar: "عقدة غرداية", fr: "Nœud Ghardaia" },
-  askAiPlaceholder: { en: "Ask Yobest AI to analyze, add, or edit...", ar: "اسأل ذكاء Yobest للتحليل أو الإضافة أو التعديل...", fr: "Demandez à l'IA d'analyser, ajouter ou modifier..." },
+  // CTA
+  ctaTitle: { en: "Ready to modernize your farm?", ar: "هل أنت مستعد لتحديث مزرعتك؟", fr: "Prêt à moderniser votre ferme ?" },
+  ctaSubtitle: { en: "Join hundreds of breeders in Ghardaia using Arnab Ghardaia to optimize their production.", ar: "انضم إلى مئات المربين في غرداية الذين يستخدمون أرنب غرداية لتحسين إنتاجهم.", fr: "Rejoignez des centaines d'éleveurs à Ghardaia." },
 };
 
 interface LanguageContextType {
