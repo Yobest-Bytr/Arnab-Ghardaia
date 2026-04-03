@@ -273,7 +273,10 @@ const Inventory = () => {
 
   const handleQrScan = (decodedText: string) => {
     setIsScannerOpen(false);
-    const rabbit = rabbits.find(r => r.rabbit_id === decodedText);
+    // Clean the decoded text (sometimes scanners add whitespace)
+    const cleanId = decodedText.trim();
+    const rabbit = rabbits.find(r => r.rabbit_id === cleanId);
+    
     if (rabbit) {
       setViewingRabbit(rabbit);
       setIsViewModalOpen(true);
@@ -426,12 +429,10 @@ const Inventory = () => {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {matingHistory.map((m, i) => {
-                    const female = rabbits.find(r => r.id === m.female_id);
-                    const male = rabbits.find(r => r.id === m.male_id);
                     return (
                       <tr key={i} className="hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4 font-bold">{female?.name || t('unknown')}</td>
-                        <td className="px-6 py-4 font-bold">{male?.name || t('unknown')}</td>
+                        <td className="px-6 py-4 font-bold">{m.female_id || t('unknown')}</td>
+                        <td className="px-6 py-4 font-bold">{m.male_id || t('unknown')}</td>
                         <td className="px-6 py-4 text-white/40">{m.mating_date}</td>
                         <td className="px-6 py-4">
                           <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">{m.status}</span>
