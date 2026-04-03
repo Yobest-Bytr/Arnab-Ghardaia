@@ -21,6 +21,7 @@ const NeuralLab = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('yobest-ai');
   const [farmSnapshot, setFarmSnapshot] = useState<any>({ rabbits: [], sales: [], litters: [] });
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +91,7 @@ const NeuralLab = () => {
       [ACTION: RECORD_MATING {"mother_name": "...", "father_name": "...", "mating_date": "${today}"}]`;
 
       await grokChat(input || "Analyze this image.", { 
-        modelId: 'yobest-ai', 
+        modelId: selectedModel, 
         userId: user?.id, 
         stream: true,
         image,
@@ -104,7 +105,7 @@ const NeuralLab = () => {
             id: Date.now() + 1, 
             role: 'assistant', 
             content: responseText, 
-            model: 'Yobest AI 4.1', 
+            model: selectedModel === 'yobest-ai' ? 'Yobest AI 4.1' : selectedModel, 
             timestamp: new Date().toISOString(),
             thought: "Analyzing neural context and visual data..."
           }];
@@ -184,8 +185,8 @@ const NeuralLab = () => {
             onChange={setInput} 
             onSubmit={handleSend} 
             isGenerating={isGenerating} 
-            selectedModelId="yobest-ai" 
-            onModelChange={() => {}} 
+            selectedModelId={selectedModel} 
+            onModelChange={(m) => setSelectedModel(m.id)} 
             onQrScan={() => setIsScannerOpen(true)}
           />
         </div>

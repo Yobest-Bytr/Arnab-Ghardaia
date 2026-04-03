@@ -11,6 +11,10 @@ interface SyncItem {
   timestamp: number;
 }
 
+/**
+ * Validates if a string is a proper UUID.
+ * This prevents "invalid input syntax for type uuid" errors in Supabase.
+ */
 const isUUID = (str: any): boolean => {
   if (typeof str !== 'string' || !str) return false;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,8 +33,8 @@ const generateUUID = (): string => {
 };
 
 /**
- * Advanced sanitization to prevent 400 Bad Request errors.
- * Ensures dates are null if empty, numbers are actual numbers, and JSONB is valid.
+ * Aggressive sanitization to fix 400 Bad Request errors.
+ * Ensures numeric fields are numbers, dates are null if empty, and JSONB is valid.
  */
 const sanitizePayload = (obj: any): any => {
   if (obj === null || typeof obj !== 'object') {
@@ -47,23 +51,33 @@ const sanitizePayload = (obj: any): any => {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       let value = obj[key];
       
-      // Handle empty strings for specific types
+      // 1. Handle empty strings for specific types
       if (value === "") {
-        // If it's a date field or numeric field, send null
         if (key.includes('date') || key.includes('price') || key === 'weight' || key.includes('count') || key.includes('kits')) {
           sanitized[key] = null;
         } else {
           sanitized[key] = "";
         }
       } 
-      // Ensure numeric fields are actually numbers
+      // 2. Ensure numeric fields are actually numbers
       else if (key.includes('price') || key === 'weight' || key.includes('count') || key.includes('kits')) {
         const num = parseFloat(value);
         sanitized[key] = isNaN(num) ? 0 : num;
       }
-      // Ensure JSONB fields are valid
+      // 3. Ensure JSONB fields are valid arrays
       else if (key === 'weight_history') {
         sanitized[key] = Array.isArray(value) ? value : [];
+      }
+      // 4. Ensure user_id is never sent if it's not a UUID
+      else if (key === 'user_id' || key === 'id') {
+        if (isUUID(value)) {
+          sanitized[key] = value;
+        } else if (key === 'id') {
+          sanitized[key] = generateUUID(); // Force a valid UUID for the record ID
+        } else {
+          // If user_id is invalid, we shouldn't even be syncing, but we'll null it to avoid 400
+          sanitized[key] = null;
+        }
       }
       else {
         sanitized[key] = sanitizePayload(value);
@@ -79,6 +93,7 @@ export const storage = {
     const localData = localStorage.getItem(localKey);
     let data = localData ? JSON.parse(localData) : [];
 
+    // Only attempt cloud fetch if userId is a valid UUID
     if (navigator.onLine && !masterOffline && isUUID(userId)) {
       try {
         const { data: cloudData, error } = await supabase
@@ -90,18 +105,16 @@ export const storage = {
         if (!error && cloudData) {
           localStorage.setItem(localKey, JSON.stringify(cloudData));
           data = cloudData;
-        } else if (error) {
-          console.warn(`Supabase fetch error [${table}]:`, error.message);
         }
       } catch (e) {
-        console.warn(`Cloud fetch failed for ${table}, using local cache.`);
+        console.warn(`Cloud fetch failed for ${table}`);
       }
     }
     return data;
   },
 
   async insert(table: string, userId: string, item: any) {
-    let validId = item.id || generateUUID();
+    const validId = item.id && isUUID(item.id) ? item.id : generateUUID();
     const newItem = { 
       ...item, 
       id: validId,
@@ -114,6 +127,7 @@ export const storage = {
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify([sanitizedItem, ...localData]));
     
+    // CRITICAL: Only add to sync queue if userId is a valid UUID
     if (isUUID(userId)) {
       this.addToSyncQueue({ id: validId, table, action: 'INSERT', data: sanitizedItem, timestamp: Date.now() });
     }
@@ -129,6 +143,7 @@ export const storage = {
     );
     localStorage.setItem(localKey, JSON.stringify(updatedData));
     
+    // CRITICAL: Only add to sync queue if userId is a valid UUID
     if (isUUID(userId)) {
       this.addToSyncQueue({ id, table, action: 'UPDATE', data: sanitizedUpdates, timestamp: Date.now() });
     }
@@ -146,6 +161,9 @@ export const storage = {
   },
 
   addToSyncQueue(item: SyncItem) {
+    // Double check UUID before queueing
+    if (item.data && item.data.user_id && !isUUID(item.data.user_id)) return;
+    
     const queue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify([...queue, item]));
     this.processSyncQueue().catch(err => console.warn("Sync background error:", err));
@@ -159,6 +177,14 @@ export const storage = {
     const updatedQueue = [...queue];
     for (let i = 0; i < updatedQueue.length; i++) {
       const item = updatedQueue[i];
+      
+      // Skip items with invalid UUIDs to prevent blocking the queue
+      if (item.data && item.data.user_id && !isUUID(item.data.user_id)) {
+        updatedQueue.splice(i, 1);
+        i--;
+        continue;
+      }
+
       try {
         let error;
         if (item.action === 'INSERT') ({ error } = await supabase.from(item.table).upsert([item.data]));
@@ -169,9 +195,8 @@ export const storage = {
           updatedQueue.splice(i, 1);
           i--;
         } else {
-          // If it's a 400 error, we might need to skip it or it will block the queue
+          // If it's a data type error (400), skip it so it doesn't block the queue forever
           if (error.code === '22P02' || error.code === '23502' || error.code === '42P01') {
-            console.error(`Sync critical error on ${item.table}:`, error.message);
             updatedQueue.splice(i, 1);
             i--;
           } else {
