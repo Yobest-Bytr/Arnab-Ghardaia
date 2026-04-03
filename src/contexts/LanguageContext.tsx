@@ -88,6 +88,9 @@ const translations: Translations = {
   noNotes: { en: "No additional notes.", ar: "لا توجد ملاحظات إضافية.", fr: "Aucune note supplémentaire." },
   noMedicalRecords: { en: "No medical records found.", ar: "لم يتم العثور على سجلات طبية.", fr: "Aucun dossier médical trouvé." },
   noneAssigned: { en: "None Assigned", ar: "لم يتم التعيين", fr: "Aucun assigné" },
+  updatingWeightOn: { en: "Updating weight on", ar: "تحديث الوزن في", fr: "Mise à jour du poids le" },
+  selectMother: { en: "Select Mother", ar: "اختر الأم", fr: "Choisir la mère" },
+  selectFather: { en: "Select Father", ar: "اختر الأب", fr: "Choisir le père" },
 
   // Breeding & Litters
   recordMating: { en: "Record Mating", ar: "تسجيل تزاوج", fr: "Enregistrer saillie" },
@@ -124,7 +127,7 @@ const translations: Translations = {
   splitFailed: { en: "Split failed.", ar: "فشل الفصل.", fr: "Échec de la séparation." },
   rabbitRemoved: { en: "Rabbit removed.", ar: "تمت إزالة الأرنب.", fr: "Lapin supprimé." },
   splitExceedsKits: { en: "Total split exceeds alive kits.", ar: "إجمالي الفصل يتجاوز المواليد الأحياء.", fr: "Le total dépasse les lapereaux vivants." },
-  neuralIdFound: { en: "Neural ID Found: ", ar: "تم العور على المعرف العصبي: ", fr: "ID Neural trouvé: " },
+  neuralIdFound: { en: "Neural ID Found: ", ar: "تم العثور على المعرف العصبي: ", fr: "ID Neural trouvé: " },
   neuralIdNotFound: { en: "Neural ID not recognized in local database.", ar: "المعرف العصبي غير معترف به في قاعدة البيانات المحلية.", fr: "ID Neural non reconnu dans la base de données locale." },
   sonOf: { en: "Son of", ar: "ابن", fr: "Fils de" },
   daughterOf: { en: "Daughter of", ar: "ابنة", fr: "Fille de" },
@@ -199,7 +202,7 @@ const translations: Translations = {
   heroSubtitle: { en: "The ultimate management platform for modern breeders in Ghardaia.", ar: "المنصة النهائية للإدارة للمربين العصريين في غرداية.", fr: "La plateforme de gestion ultime pour les éleveurs modernes à Ghardaia." },
   goDashboard: { en: "Go to Dashboard", ar: "اذهب إلى لوحة التحكم", fr: "Aller au tableau de bord" },
   viewRabbits: { en: "View Rabbits", ar: "عرض الأرانب", fr: "Voir les lapins" },
-  happyCustomers: { en: "Happy Customers", ar: "زبون سعيد", fr: "Clients satisfاits" },
+  happyCustomers: { en: "Happy Customers", ar: "زبون سعيد", fr: "Clients satisfaits" },
   healthyRate: { en: "Healthy Rate", ar: "معدل الصحة", fr: "Taux de santé" },
   totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total des lapins" },
   males: { en: "Males", ar: "ذكور", fr: "Mâles" },

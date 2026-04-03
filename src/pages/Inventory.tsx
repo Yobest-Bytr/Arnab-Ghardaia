@@ -7,7 +7,7 @@ import {
   Search, Plus, Rabbit, Download, X, Loader2, Edit2, Trash2, 
   QrCode, Eye, Info, Calendar, Weight, ShieldCheck, Activity, TrendingUp, Camera,
   Stethoscope, Heart, Layers, Wand2, Sparkles, ChevronRight, ArrowLeft, ShoppingBag,
-  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale, RefreshCw, CheckCircle2, AlertCircle, Users, Share2, Palette, MapPin
+  Zap, ArrowUpRight, Filter, History, FileText, LayoutGrid, Scale, RefreshCw, CheckCircle2, AlertCircle, Users, Share2, Palette, MapPin, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -180,8 +180,8 @@ const Inventory = () => {
     try {
       await storage.insert('litters', user.id, litterFormData);
       
-      const mother = rabbits.find(r => r.name === litterFormData.mother_name);
-      const father = rabbits.find(r => r.name === litterFormData.father_name);
+      const mother = rabbits.find(r => r.name === litterFormData.mother_name || r.rabbit_id === litterFormData.mother_name);
+      const father = rabbits.find(r => r.name === litterFormData.father_name || r.rabbit_id === litterFormData.father_name);
       if (mother && father) {
         await storage.insert('mating_history', user.id, {
           female_id: mother.id,
@@ -296,6 +296,9 @@ const Inventory = () => {
         return { ...m, partner_name: partner?.name || t('unknown') };
       });
   };
+
+  const mothers = useMemo(() => rabbits.filter(r => r.gender === 'Female'), [rabbits]);
+  const fathers = useMemo(() => rabbits.filter(r => r.gender === 'Male'), [rabbits]);
 
   return (
     <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
@@ -642,7 +645,13 @@ const Inventory = () => {
         {isWeightModalOpen && activeRabbit && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-sm w-full bg-[#020408] border border-white/10 rounded-[3rem] p-10">
-              <h2 className="text-2xl font-black mb-8 tracking-tight">{t('updateWeight')}</h2>
+              <h2 className="text-2xl font-black mb-4 tracking-tight">{t('updateWeight')}</h2>
+              <div className="flex items-center gap-2 mb-8 p-3 rounded-xl bg-white/5 border border-white/5">
+                <Clock size={14} className="text-indigo-400" />
+                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                  {t('updatingWeightOn')} {new Date().toLocaleString()}
+                </p>
+              </div>
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('newWeight')}</label>
@@ -784,11 +793,17 @@ const Inventory = () => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('motherId')}</label>
-                    <input type="text" value={formData.mother_id} onChange={(e) => setFormData({...formData, mother_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <select value={formData.mother_id} onChange={(e) => setFormData({...formData, mother_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="">{t('selectMother')}</option>
+                      {mothers.map(m => <option key={m.id} value={m.name || m.rabbit_id} className="bg-[#020408]">{m.name} ({m.rabbit_id})</option>)}
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('fatherId')}</label>
-                    <input type="text" value={formData.father_id} onChange={(e) => setFormData({...formData, father_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <select value={formData.father_id} onChange={(e) => setFormData({...formData, father_id: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="">{t('selectFather')}</option>
+                      {fathers.map(f => <option key={f.id} value={f.name || f.rabbit_id} className="bg-[#020408]">{f.name} ({f.rabbit_id})</option>)}
+                    </select>
                   </div>
                 </div>
 
@@ -846,11 +861,17 @@ const Inventory = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('mother')}</label>
-                    <input type="text" required value={litterFormData.mother_name} onChange={(e) => setLitterFormData({...litterFormData, mother_name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <select value={litterFormData.mother_name} onChange={(e) => setLitterFormData({...litterFormData, mother_name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="">{t('selectMother')}</option>
+                      {mothers.map(m => <option key={m.id} value={m.name || m.rabbit_id} className="bg-[#020408]">{m.name} ({m.rabbit_id})</option>)}
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest ml-2">{t('father')}</label>
-                    <input type="text" required value={litterFormData.father_name} onChange={(e) => setLitterFormData({...litterFormData, father_name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                    <select value={litterFormData.father_name} onChange={(e) => setLitterFormData({...litterFormData, father_name: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
+                      <option value="">{t('selectFather')}</option>
+                      {fathers.map(f => <option key={f.id} value={f.name || f.rabbit_id} className="bg-[#020408]">{f.name} ({f.rabbit_id})</option>)}
+                    </select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-6">
