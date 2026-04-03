@@ -144,7 +144,7 @@ const Inventory = () => {
       fetchData();
       showSuccess(t('save'));
     } catch (err) {
-      showError("Operation failed.");
+      showError(t('operationFailed'));
     }
   };
 
@@ -159,9 +159,9 @@ const Inventory = () => {
       setQuickWeight('');
       setActiveRabbit(null);
       fetchData();
-      showSuccess("Weight updated.");
+      showSuccess(t('weightUpdated'));
     } catch (err) {
-      showError("Update failed.");
+      showError(t('updateFailed'));
     }
   };
 
@@ -188,7 +188,7 @@ const Inventory = () => {
       fetchData();
       showSuccess(t('recordMating'));
     } catch (err) {
-      showError("Failed to record litter.");
+      showError(t('operationFailed'));
     }
   };
 
@@ -197,7 +197,7 @@ const Inventory = () => {
     try {
       const totalToSplit = splitData.males + splitData.females;
       if (totalToSplit > splittingLitter.alive_kits) {
-        showError("Total split exceeds alive kits.");
+        showError(t('splitExceedsKits'));
         return;
       }
 
@@ -205,7 +205,7 @@ const Inventory = () => {
         await storage.insert('rabbits', user.id, {
           ...initialForm,
           rabbit_id: generateAutoId('Male'),
-          name: `Son of ${splittingLitter.mother_name}`,
+          name: `${t('sonOf')} ${splittingLitter.mother_name}`,
           gender: 'Male',
           birth_date: splittingLitter.actual_birth_date,
           mother_id: splittingLitter.mother_name,
@@ -217,7 +217,7 @@ const Inventory = () => {
         await storage.insert('rabbits', user.id, {
           ...initialForm,
           rabbit_id: generateAutoId('Female'),
-          name: `Daughter of ${splittingLitter.mother_name}`,
+          name: `${t('daughterOf')} ${splittingLitter.mother_name}`,
           gender: 'Female',
           birth_date: splittingLitter.actual_birth_date,
           mother_id: splittingLitter.mother_name,
@@ -232,15 +232,15 @@ const Inventory = () => {
       fetchData();
       showSuccess(t('splitLitter'));
     } catch (err) {
-      showError("Split failed.");
+      showError(t('splitFailed'));
     }
   };
 
   const handleDeleteRabbit = async (id: string) => {
-    if (!user || !confirm("Delete this rabbit?")) return;
+    if (!user || !confirm(t('delete') + "?")) return;
     await storage.delete('rabbits', user.id, id);
     setRabbits(prev => prev.filter(r => r.id !== id));
-    showSuccess("Rabbit removed.");
+    showSuccess(t('rabbitRemoved'));
   };
 
   const handleQrScan = (decodedText: string) => {
@@ -249,14 +249,14 @@ const Inventory = () => {
     if (rabbit) {
       setViewingRabbit(rabbit);
       setIsViewModalOpen(true);
-      showSuccess(`Neural ID Found: ${rabbit.name}`);
+      showSuccess(`${t('neuralIdFound')} ${rabbit.name}`);
     } else {
-      showError("Neural ID not recognized in local database.");
+      showError(t('neuralIdNotFound'));
     }
   };
 
   const calculateAge = (birthDate: string) => {
-    if (!birthDate) return 'N/A';
+    if (!birthDate) return t('notAvailable');
     const diff = Math.abs(new Date().getTime() - new Date(birthDate).getTime());
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
     const months = Math.floor(days / 30);
@@ -281,7 +281,7 @@ const Inventory = () => {
       .map(m => {
         const partnerId = m.female_id === rabbitId ? m.male_id : m.female_id;
         const partner = rabbits.find(r => r.id === partnerId);
-        return { ...m, partner_name: partner?.name || 'Unknown' };
+        return { ...m, partner_name: partner?.name || t('unknown') };
       });
   };
 
@@ -295,10 +295,10 @@ const Inventory = () => {
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black mb-6 uppercase tracking-[0.2em]">
               <Zap size={14} className="fill-current" />
-              <span>Neural Inventory Active</span>
+              <span>{t('neuralInventoryActive')}</span>
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4">
-              The <span className="dopamine-text">Stockpile.</span>
+              The <span className="dopamine-text">{t('theStockpile')}</span>
             </h1>
           </motion.div>
           
@@ -307,7 +307,7 @@ const Inventory = () => {
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-indigo-400 transition-colors" size={20} />
               <input 
                 type="text" 
-                placeholder="Search Neural ID..." 
+                placeholder={t('searchNeuralId')} 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-14 pl-14 pr-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50 transition-all w-64"
@@ -415,7 +415,7 @@ const Inventory = () => {
                       {litter.status}
                     </span>
                   </div>
-                  <h3 className="text-2xl font-black mb-2">{litter.mother_name}'s Litter</h3>
+                  <h3 className="text-2xl font-black mb-2">{litter.mother_name}{t('litterSuffix')}</h3>
                   <p className="text-xs font-bold text-white/40 mb-8 uppercase tracking-widest">{t('father')}: {litter.father_name}</p>
                   
                   <div className="grid grid-cols-3 gap-4 mb-8">
@@ -460,8 +460,8 @@ const Inventory = () => {
                     const male = rabbits.find(r => r.id === m.male_id);
                     return (
                       <tr key={i} className="hover:bg-white/5 transition-colors">
-                        <td className="px-8 py-6 font-bold">{female?.name || 'Unknown'}</td>
-                        <td className="px-8 py-6 font-bold">{male?.name || 'Unknown'}</td>
+                        <td className="px-8 py-6 font-bold">{female?.name || t('unknown')}</td>
+                        <td className="px-8 py-6 font-bold">{male?.name || t('unknown')}</td>
                         <td className="px-8 py-6 text-white/40">{m.mating_date}</td>
                         <td className="px-8 py-6">
                           <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase">{m.status}</span>
@@ -483,8 +483,8 @@ const Inventory = () => {
             <div className="max-w-lg w-full">
               <div className="flex justify-between items-center mb-10">
                 <div>
-                  <h2 className="text-4xl font-black tracking-tighter">Neural <span className="text-indigo-400">Scan.</span></h2>
-                  <p className="text-white/40 font-bold text-sm mt-1 uppercase tracking-widest">Align Neural ID Tag to Initialize</p>
+                  <h2 className="text-4xl font-black tracking-tighter">{t('neuralScan')}</h2>
+                  <p className="text-white/40 font-bold text-sm mt-1 uppercase tracking-widest">{t('alignNeuralTag')}</p>
                 </div>
                 <button onClick={() => setIsScannerOpen(false)} className="p-4 rounded-[1.5rem] bg-white/5 text-white/40 hover:text-white transition-all"><X size={28} /></button>
               </div>
@@ -555,12 +555,12 @@ const Inventory = () => {
                       </div>
                       <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
                         <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2">{t('colorMarkings')}</p>
-                        <p className="text-lg font-bold">{viewingRabbit.color || 'N/A'}</p>
+                        <p className="text-lg font-bold">{viewingRabbit.color || t('notAvailable')}</p>
                       </div>
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
                       <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('notes')}</p>
-                      <p className="text-white/60 leading-relaxed">{viewingRabbit.notes || 'No additional notes.'}</p>
+                      <p className="text-white/60 leading-relaxed">{viewingRabbit.notes || t('notAvailable')}</p>
                     </div>
                   </TabsContent>
 
@@ -583,7 +583,7 @@ const Inventory = () => {
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
                       <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('medicalNotes')}</p>
-                      <p className="text-white/60 leading-relaxed">{viewingRabbit.medical_history || 'No medical records found.'}</p>
+                      <p className="text-white/60 leading-relaxed">{viewingRabbit.medical_history || t('notAvailable')}</p>
                     </div>
                   </TabsContent>
 
@@ -591,16 +591,16 @@ const Inventory = () => {
                     <div className="grid grid-cols-2 gap-8">
                       <div className="p-8 rounded-3xl bg-pink-500/5 border border-pink-500/10">
                         <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-4">{t('motherDam')}</p>
-                        <p className="text-2xl font-black">{viewingRabbit.mother_id || 'Unknown'}</p>
+                        <p className="text-2xl font-black">{viewingRabbit.mother_id || t('unknown')}</p>
                       </div>
                       <div className="p-8 rounded-3xl bg-blue-500/5 border border-blue-500/10">
                         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4">{t('fatherSire')}</p>
-                        <p className="text-2xl font-black">{viewingRabbit.father_id || 'Unknown'}</p>
+                        <p className="text-2xl font-black">{viewingRabbit.father_id || t('unknown')}</p>
                       </div>
                     </div>
                     <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
                       <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-4">{t('matingPartner')}</p>
-                      <p className="text-2xl font-black">{viewingRabbit.mating_partner || 'None Assigned'}</p>
+                      <p className="text-2xl font-black">{viewingRabbit.mating_partner || t('notAvailable')}</p>
                     </div>
                   </TabsContent>
 
