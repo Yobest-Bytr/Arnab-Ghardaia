@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -97,7 +99,7 @@ const Sales = () => {
         ...prev, 
         rabbit_id: val.id, 
         price: val.price_dzd || prev.price,
-        category: val.sale_category || prev.category
+        category: val.sale_category || prev.category || 'Adult'
       }));
     } else {
       setFormData(prev => ({ ...prev, [field]: val }));
@@ -322,7 +324,7 @@ const Sales = () => {
                   <input 
                     type="text" 
                     required 
-                    value={formData.customer_name} 
+                    value={formData.customer_name || ''} 
                     onFocus={() => showInstantSuggestions('customer_name')}
                     onChange={(e) => { setFormData({...formData, customer_name: e.target.value}); showInstantSuggestions('customer_name'); }} 
                     className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" 
@@ -341,7 +343,7 @@ const Sales = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('rabbitType')}</label>
-                    <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
+                    <select value={formData.category || 'Adult'} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500">
                       <option value="Young">{t('kit')}</option>
                       <option value="Meat">{t('meatRabbit')}</option>
                       <option value="Adult">{t('largeRabbit')}</option>
@@ -349,13 +351,13 @@ const Sales = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
-                    <input type="number" required value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" required value={formData.price || ''} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">{t('saleDate')}</label>
-                  <input type="date" required value={formData.sale_date} onChange={(e) => setFormData({...formData, sale_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
+                  <input type="date" required value={formData.sale_date || ''} onChange={(e) => setFormData({...formData, sale_date: e.target.value})} className="w-full h-14 px-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500" />
                 </div>
 
                 <div className="space-y-2 relative">
@@ -389,7 +391,7 @@ const Sales = () => {
                       {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Neural Suggest
                     </button>
                   </div>
-                  <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 min-h-[100px]" />
+                  <textarea value={formData.notes || ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-slate-50 dark:bg-slate-800 border-none rounded-xl font-medium focus:ring-2 focus:ring-emerald-500 min-h-[100px]" />
                 </div>
 
                 <button type="submit" className="farm-button w-full h-16 text-lg mt-4">{t('recordSale')}</button>
