@@ -9,7 +9,6 @@ interface SyncItem {
   action: 'INSERT' | 'UPDATE' | 'DELETE';
   data: any;
   timestamp: number;
-  retryCount?: number;
 }
 
 const isUUID = (str: any): boolean => {

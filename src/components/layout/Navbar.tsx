@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Rabbit, Globe, ChevronDown, LayoutDashboard, ShoppingBag, Info, Phone, User, LogOut, Search, DollarSign, BarChart3, Heart, BrainCircuit, Wallet, Settings } from 'lucide-react';
+import { Rabbit, Globe, ChevronDown, LayoutDashboard, ShoppingBag, Info, Phone, User, LogOut, Search, DollarSign, BarChart3, Heart, BrainCircuit, Wallet, Settings, Printer } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -120,6 +120,12 @@ const Navbar = () => {
                   <Link to="/dashboard" className="flex items-center gap-3">
                     <LayoutDashboard size={18} className="text-emerald-600" />
                     <span className="font-bold">{t('dashboard')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">
+                  <Link to="/qr-manager" className="flex items-center gap-3">
+                    <Printer size={18} className="text-indigo-600" />
+                    <span className="font-bold">{t('qrStudio')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-3">

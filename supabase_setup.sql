@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS rabbits (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Mating History Table (New: Tracks multiple matings per female)
+-- Mating History Table (Tracks multiple matings per female)
 CREATE TABLE IF NOT EXISTS mating_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS mating_history (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Weight Logs Table (New: Tracks growth over time)
+-- Weight Logs Table (Tracks growth over time)
 CREATE TABLE IF NOT EXISTS weight_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- RLS Policies (Enable Row Level Security)
+-- RLS Policies
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rabbits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mating_history ENABLE ROW LEVEL SECURITY;
@@ -128,7 +128,12 @@ ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
--- Create policies for each table (Example for rabbits)
-CREATE POLICY "Users can only access their own rabbits" ON rabbits
-  FOR ALL USING (auth.uid() = user_id);
--- (Repeat for other tables...)
+-- Policies
+CREATE POLICY "Users can only access their own profiles" ON profiles FOR ALL USING (auth.uid() = id);
+CREATE POLICY "Users can only access their own rabbits" ON rabbits FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can only access their own mating_history" ON mating_history FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can only access their own weight_logs" ON weight_logs FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can only access their own litters" ON litters FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can only access their own sales" ON sales FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can only access their own expenses" ON expenses FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can only access their own tasks" ON tasks FOR ALL USING (auth.uid() = user_id);
