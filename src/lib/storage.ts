@@ -1,37 +1,16 @@
 import { supabase } from '@/integrations/supabase/client';
 
 const SYNC_QUEUE_KEY = 'arnab_sync_queue';
-let masterOffline = false;
+const DEMO_UUID = '00000000-0000-0000-0000-000000000000';
 
-// Define allowed columns for each table to prevent sending unknown fields that cause 400 errors
 const ALLOWED_COLUMNS: Record<string, string[]> = {
-  rabbits: [
-    'id', 'user_id', 'rabbit_id', 'name', 'breed', 'gender', 'color', 'origin', 
-    'health_status', 'status', 'cage_number', 'cage_type', 'price_dzd', 'weight', 
-    'birth_date', 'notes', 'mother_id', 'father_id', 'mating_partner', 
-    'vaccination_status', 'medical_history', 'weight_history', 'is_public', 
-    'image_url', 'created_at', 'updated_at'
-  ],
-  litters: [
-    'id', 'user_id', 'mother_name', 'father_name', 'mating_date', 
-    'expected_birth_date', 'actual_birth_date', 'kit_count', 
-    'alive_kits', 'dead_kits', 'status', 'notes', 'created_at'
-  ],
-  sales: [
-    'id', 'user_id', 'rabbit_id', 'customer_name', 'price', 'sale_date', 'category', 'notes', 'created_at'
-  ],
-  expenses: [
-    'id', 'user_id', 'category', 'amount', 'date', 'notes', 'created_at'
-  ],
-  weight_logs: [
-    'id', 'user_id', 'rabbit_id', 'weight', 'log_date', 'created_at'
-  ],
-  mating_history: [
-    'id', 'user_id', 'female_id', 'male_id', 'mating_date', 'status', 'notes', 'created_at'
-  ],
-  profiles: [
-    'id', 'display_name', 'email', 'avatar_url', 'updated_at'
-  ]
+  rabbits: ['id', 'user_id', 'rabbit_id', 'name', 'breed', 'gender', 'color', 'origin', 'health_status', 'status', 'cage_number', 'cage_type', 'price_dzd', 'weight', 'birth_date', 'notes', 'mother_id', 'father_id', 'mating_partner', 'vaccination_status', 'medical_history', 'weight_history', 'is_public', 'image_url', 'created_at', 'updated_at'],
+  litters: ['id', 'user_id', 'mother_name', 'father_name', 'mating_date', 'expected_birth_date', 'actual_birth_date', 'kit_count', 'alive_kits', 'dead_kits', 'status', 'notes', 'created_at'],
+  sales: ['id', 'user_id', 'rabbit_id', 'customer_name', 'price', 'sale_date', 'category', 'notes', 'created_at'],
+  expenses: ['id', 'user_id', 'category', 'amount', 'date', 'notes', 'created_at'],
+  weight_logs: ['id', 'user_id', 'rabbit_id', 'weight', 'log_date', 'created_at'],
+  mating_history: ['id', 'user_id', 'female_id', 'male_id', 'mating_date', 'status', 'notes', 'created_at'],
+  profiles: ['id', 'display_name', 'email', 'avatar_url', 'updated_at']
 };
 
 interface SyncItem {
@@ -59,21 +38,16 @@ const generateUUID = (): string => {
 
 const sanitizePayload = (table: string, obj: any): any => {
   if (!obj || typeof obj !== 'object') return obj;
-  
   const allowed = ALLOWED_COLUMNS[table] || [];
   const sanitized: any = {};
-  
   for (const key of allowed) {
     let value = obj[key];
-    
     if (value === undefined || value === "") {
       sanitized[key] = null;
       continue;
     }
-
     if (key.includes('price') || key === 'weight' || key.includes('count') || key.includes('kits') || key === 'amount') {
-      const num = parseFloat(value);
-      sanitized[key] = isNaN(num) ? 0 : num;
+      sanitized[key] = isNaN(parseFloat(value)) ? 0 : parseFloat(value);
     } else if (key === 'weight_history') {
       sanitized[key] = Array.isArray(value) ? value : [];
     } else if (key === 'is_public') {
@@ -93,21 +67,24 @@ export const storage = {
     const localData = localStorage.getItem(localKey);
     let data = localData ? JSON.parse(localData) : [];
 
-    if (navigator.onLine && !masterOffline && isUUID(userId) && userId !== '00000000-0000-0000-0000-000000000000') {
-      try {
-        const { data: cloudData, error } = await supabase
-          .from(table)
-          .select('*')
-          .eq(table === 'profiles' ? 'id' : 'user_id', userId)
-          .order('created_at', { ascending: false });
-        
-        if (!error && cloudData) {
-          localStorage.setItem(localKey, JSON.stringify(cloudData));
-          data = cloudData;
-        }
-      } catch (e) {
-        console.warn(`Cloud fetch failed for ${table}.`);
+    // If we are in demo mode or have an invalid ID, return local data only
+    if (!isUUID(userId) || userId === DEMO_UUID || !navigator.onLine) {
+      return data;
+    }
+
+    try {
+      const { data: cloudData, error } = await supabase
+        .from(table)
+        .select('*')
+        .eq(table === 'profiles' ? 'id' : 'user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (!error && cloudData) {
+        localStorage.setItem(localKey, JSON.stringify(cloudData));
+        return cloudData;
       }
+    } catch (e) {
+      console.warn(`Cloud fetch failed for ${table}.`);
     }
     return data;
   },
@@ -126,8 +103,7 @@ export const storage = {
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify([sanitizedItem, ...localData]));
     
-    // Only sync if it's a real user UUID (not demo)
-    if (isUUID(userId) && userId !== '00000000-0000-0000-0000-000000000000') {
+    if (isUUID(userId) && userId !== DEMO_UUID) {
       this.addToSyncQueue({ id: validId, table, action: 'INSERT', data: sanitizedItem, timestamp: Date.now() });
     }
     return sanitizedItem;
@@ -142,7 +118,7 @@ export const storage = {
     );
     localStorage.setItem(localKey, JSON.stringify(updatedData));
     
-    if (isUUID(userId) && userId !== '00000000-0000-0000-0000-000000000000') {
+    if (isUUID(userId) && userId !== DEMO_UUID) {
       this.addToSyncQueue({ id, table, action: 'UPDATE', data: sanitizedUpdates, timestamp: Date.now() });
     }
     return sanitizedUpdates;
@@ -153,7 +129,7 @@ export const storage = {
     const localData = JSON.parse(localStorage.getItem(localKey) || '[]');
     localStorage.setItem(localKey, JSON.stringify(localData.filter((i: any) => i.id !== id)));
     
-    if (isUUID(userId) && userId !== '00000000-0000-0000-0000-000000000000') {
+    if (isUUID(userId) && userId !== DEMO_UUID) {
       this.addToSyncQueue({ id, table, action: 'DELETE', data: null, timestamp: Date.now() });
     }
   },
@@ -165,17 +141,16 @@ export const storage = {
   },
 
   async processSyncQueue() {
-    if (!navigator.onLine || masterOffline) return;
+    if (!navigator.onLine) return;
     let queue: SyncItem[] = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
     
-    // POISON PILL PURGE: Instantly remove any items containing "yonr" or invalid IDs
+    // POISON PILL PURGE: Instantly remove any items containing invalid IDs
     const cleanQueue = queue.filter(item => {
       const dataStr = JSON.stringify(item.data || {});
-      return !dataStr.includes('"yonr"') && !dataStr.includes('"demo-user"');
+      return !dataStr.includes('"yonr"') && !dataStr.includes('"demo-user"') && !dataStr.includes(DEMO_UUID);
     });
 
     if (cleanQueue.length !== queue.length) {
-      console.log(`Purged ${queue.length - cleanQueue.length} invalid legacy items.`);
       localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(cleanQueue));
       queue = cleanQueue;
     }
@@ -185,11 +160,9 @@ export const storage = {
     const updatedQueue = [...queue];
     for (let i = 0; i < updatedQueue.length; i++) {
       const item = updatedQueue[i];
-      
       try {
         let error;
         const cleanData = item.data ? sanitizePayload(item.table, item.data) : null;
-
         if (item.action === 'INSERT') ({ error } = await supabase.from(item.table).upsert([cleanData]));
         else if (item.action === 'UPDATE') ({ error } = await supabase.from(item.table).update(cleanData).eq('id', item.id));
         else if (item.action === 'DELETE') ({ error } = await supabase.from(item.table).delete().eq('id', item.id));
@@ -197,18 +170,13 @@ export const storage = {
         if (!error) {
           updatedQueue.splice(i, 1);
           i--;
+        } else if (error.code.startsWith('22') || error.code.startsWith('23') || error.code === 'PGRST204') {
+          updatedQueue.splice(i, 1);
+          i--;
         } else {
-          // If it's a 400 error, it's a permanent data failure, purge it
-          if (error.code.startsWith('22') || error.code.startsWith('23') || error.code === 'PGRST204') {
-            updatedQueue.splice(i, 1);
-            i--;
-          } else {
-            break; 
-          }
+          break; 
         }
-      } catch (e) { 
-        break; 
-      }
+      } catch (e) { break; }
     }
     localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueue));
   },

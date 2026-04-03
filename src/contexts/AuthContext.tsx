@@ -18,7 +18,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing demo session first
+    // CRITICAL: GHOST PURGE
+    // If the browser has 'yonr' or 'demo-user' stored, wipe it immediately.
+    const legacyUser = localStorage.getItem('yobest_demo_user');
+    if (legacyUser && (legacyUser.includes('"yonr"') || legacyUser.includes('"demo-user"'))) {
+      console.log("Purging legacy session...");
+      localStorage.removeItem('yobest_demo_user');
+      // Also clear the sync queue which might contain the poison pills
+      localStorage.removeItem('arnab_sync_queue');
+    }
+
+    // Check for existing demo session
     const demoUser = localStorage.getItem('yobest_demo_user');
     if (demoUser) {
       const parsedUser = JSON.parse(demoUser);
@@ -35,7 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // Listen for changes on auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setSession(session);
@@ -51,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const enterDemoMode = (email: string) => {
-    // Use a valid UUID format for the demo ID to prevent Supabase 400 errors
+    // Use a valid UUID format for the demo ID
     const demoUuid = '00000000-0000-0000-0000-000000000000';
     const mockUser = {
       id: demoUuid,
