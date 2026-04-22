@@ -2,38 +2,48 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
-  Loader2, Activity, Database, ArrowRight, Info, Clock, X, Terminal, Shield, Globe
+  Loader2, Activity, Database, ArrowRight, Info, Clock, X, Terminal, Shield, Globe,
+  Settings as SettingsIcon
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { storage, Rabbit, BreedingRecord, Litter } from '@/lib/storage';
+import { storage, Rabbit, BreedingRecord, Litter, Cage } from '@/lib/storage';
 import { QRScanner } from '@/components/QrScanner';
 import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 
 const NeuralLab = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [farmData, setFarmData] = useState<{rabbits: Rabbit[], breeding: BreedingRecord[], litters: Litter[]}>({
+  const [farmData, setFarmData] = useState<{
+    rabbits: Rabbit[], 
+    breeding: BreedingRecord[], 
+    litters: Litter[],
+    cages: Cage[]
+  }>({
     rabbits: [],
     breeding: [],
-    litters: []
+    litters: [],
+    cages: []
   });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const settings = storage.getSettings();
 
   useEffect(() => {
     const rabbits = storage.getRabbits();
     const breeding = storage.getBreedingRecords();
     const litters = storage.getLitters();
-    setFarmData({ rabbits, breeding, litters });
+    const cages = storage.getCages();
+    setFarmData({ rabbits, breeding, litters, cages });
 
     setMessages([{
       id: 'welcome',
       role: 'assistant',
-      content: "Neural Link Established. I am your AI Farm Assistant. I have analyzed your farm data and I'm ready to help you optimize your rabbitry. How can I assist you today?",
+      content: `Neural Link Established. I am your AI Farm Assistant. I have analyzed your farm data (${rabbits.length} rabbits, ${breeding.length} breeding records, ${cages.length} cages) and I'm ready to help you optimize your rabbitry. How can I assist you today?`,
       timestamp: new Date().toISOString(),
     }]);
   }, []);
@@ -56,21 +66,31 @@ const NeuralLab = () => {
     };
     
     setMessages(prev => [...prev, userMsg]);
-    const currentInput = input;
+    const currentInput = input.toLowerCase();
     setInput('');
     setIsGenerating(true);
 
     // Simulate AI response based on farm data
     setTimeout(() => {
-      let response = "I've analyzed your request. ";
+      let response = "";
       
-      if (currentInput.toLowerCase().includes('status') || currentInput.toLowerCase().includes('summary')) {
-        response += `You currently have ${farmData.rabbits.length} rabbits in your inventory. There are ${farmData.breeding.filter(r => r.status !== 'Weaned' && r.status !== 'Failed').length} active breeding cycles.`;
-      } else if (currentInput.toLowerCase().includes('breeding') || currentInput.toLowerCase().includes('litter')) {
+      if (currentInput.includes('status') || currentInput.includes('summary')) {
         const activeDoes = farmData.rabbits.filter(r => r.gender === 'Doe' && r.status === 'Active').length;
-        response += `Based on your ${activeDoes} active does, I recommend scheduling 2 more matings this week to maintain optimal production flow.`;
+        const activeBucks = farmData.rabbits.filter(r => r.gender === 'Buck' && r.status === 'Active').length;
+        response = `Your farm is currently operating with ${activeDoes} active does and ${activeBucks} active bucks. You have ${farmData.cages.filter(c => c.status === 'Empty').length} empty cages available for expansion.`;
+      } else if (currentInput.includes('breeding') || currentInput.includes('litter')) {
+        const pendingPalpations = farmData.breeding.filter(r => r.status === 'Mated').length;
+        response = `I've detected ${pendingPalpations} pending palpations. Based on your historical survival rate of ${((farmData.litters.reduce((s, l) => s + l.aliveKits, 0) / farmData.litters.reduce((s, l) => s + l.totalKits, 0)) * 100 || 0).toFixed(1)}%, I project a stock increase of approximately ${Math.round(pendingPalpations * 6 * 0.8)} kits in the next 30 days.`;
+      } else if (currentInput.includes('weight') || currentInput.includes('growth')) {
+        const avgWeight = farmData.rabbits.length > 0 
+          ? (farmData.rabbits.reduce((s, r) => s + r.weight, 0) / farmData.rabbits.length).toFixed(2) 
+          : 0;
+        response = `The average weight across your stock is ${avgWeight} kg. I recommend checking the feed conversion ratio for rabbits in Section B, as their growth curve is slightly below the breed standard.`;
+      } else if (currentInput.includes('cage') || currentInput.includes('space')) {
+        const occupancy = ((farmData.cages.filter(c => c.status === 'Occupied').length / farmData.cages.length) * 100 || 0).toFixed(1);
+        response = `Your current cage occupancy is at ${occupancy}%. You have ${farmData.cages.filter(c => c.status === 'Maintenance').length} cages under maintenance. I suggest prioritizing the repair of G-01 to accommodate the upcoming weaning batch.`;
       } else {
-        response += "I'm monitoring the farm's vital signs. Everything looks optimal for the current season. Do you have specific questions about a rabbit or a breeding record?";
+        response = "I'm monitoring the farm's vital signs. Everything looks optimal for the current season. I can help you with breeding projections, weight analysis, or cage management. What would you like to focus on?";
       }
 
       const aiMsg = {
@@ -88,7 +108,9 @@ const NeuralLab = () => {
     setIsScannerOpen(false);
     const rabbit = farmData.rabbits.find(r => r.tagId === decodedText || r.id === decodedText);
     if (rabbit) {
-      setInput(`Tell me about rabbit ${rabbit.name} (${rabbit.tagId})`);
+      setInput(`Analyze rabbit ${rabbit.name} (${rabbit.tagId})`);
+      // Auto-send
+      setTimeout(() => handleSend(), 100);
     } else {
       setInput(`I scanned a tag: ${decodedText}. I couldn't find this rabbit in the database.`);
     }
@@ -110,22 +132,28 @@ const NeuralLab = () => {
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="rounded-full gap-2" onClick={() => setIsScannerOpen(true)}>
-          <Zap className="h-4 w-4" />
-          Quick Scan
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="rounded-full gap-2 hidden md:flex" onClick={() => navigate('/settings')}>
+            <SettingsIcon className="h-4 w-4" />
+            AI Config
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-full gap-2" onClick={() => setIsScannerOpen(true)}>
+            <Zap className="h-4 w-4" />
+            Quick Scan
+          </Button>
+        </div>
       </div>
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6" ref={scrollRef}>
         {messages.map((msg) => (
           <div key={msg.id} className={cn(
-            "flex gap-4 max-w-3xl",
+            "flex gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-2 duration-300",
             msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
           )}>
             <div className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-              msg.role === 'assistant' ? "bg-primary text-white" : "bg-slate-200 text-slate-600"
+              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
+              msg.role === 'assistant' ? "bg-primary text-white" : "bg-white text-slate-600 border"
             )}>
               {msg.role === 'assistant' ? <BrainCircuit size={20} /> : <Activity size={20} />}
             </div>
@@ -135,7 +163,7 @@ const NeuralLab = () => {
             )}>
               <p className="text-sm leading-relaxed">{msg.content}</p>
               <p className={cn(
-                "text-[10px] mt-2",
+                "text-[10px] mt-2 font-bold uppercase tracking-widest",
                 msg.role === 'assistant' ? "text-muted-foreground" : "text-white/60"
               )}>
                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -165,7 +193,7 @@ const NeuralLab = () => {
           <input 
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything about your farm..."
+            placeholder={settings.aiKey ? "Ask anything about your farm..." : "Enter AI Key in Settings to enable full power..."}
             className="w-full pl-6 pr-16 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
           />
           <Button 
@@ -177,9 +205,11 @@ const NeuralLab = () => {
             <Send className="h-4 w-4" />
           </Button>
         </form>
-        <p className="text-center text-[10px] text-muted-foreground mt-4 uppercase tracking-widest font-bold">
-          Powered by Hop Farm Neural Engine v4.1
-        </p>
+        <div className="flex justify-center gap-4 mt-4">
+          <button onClick={() => setInput("Farm status summary")} className="text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:text-primary transition-colors">Status</button>
+          <button onClick={() => setInput("Breeding projections")} className="text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:text-primary transition-colors">Breeding</button>
+          <button onClick={() => setInput("Cage occupancy analysis")} className="text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:text-primary transition-colors">Cages</button>
+        </div>
       </div>
 
       {/* Scanner Modal */}

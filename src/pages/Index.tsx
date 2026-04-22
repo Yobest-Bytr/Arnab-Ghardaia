@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { storage, Rabbit, BreedingRecord, Task } from '@/lib/storage';
+import { storage, Rabbit, BreedingRecord, Task, Cage } from '@/lib/storage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,20 +15,22 @@ import {
   BrainCircuit,
   ArrowRight,
   Baby,
-  Activity
+  Activity,
+  Box
 } from 'lucide-react';
 import { FlowBoard } from '@/components/FlowBoard';
 import { QRScanner } from '@/components/QrScanner';
 import { format, addDays, isBefore, isAfter } from 'date-fns';
-
+import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
-
+  const { user } = useAuth();
   const [rabbits, setRabbits] = useState<Rabbit[]>([]);
   const [breedingRecords, setBreedingRecords] = useState<BreedingRecord[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [cages, setCages] = useState<Cage[]>([]);
   const [showScanner, setShowScanner] = useState(false);
   const navigate = useNavigate();
 
@@ -36,9 +38,9 @@ const Index = () => {
     const initialRabbits = storage.getRabbits();
     if (initialRabbits.length === 0) {
       const demoRabbits: Rabbit[] = [
-        { id: '1', tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, status: 'Active', cageNumber: 'C-01' },
-        { id: '2', tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, status: 'Active', cageNumber: 'C-02' },
-        { id: '3', tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, status: 'Active', cageNumber: 'C-03' },
+        { id: '1', tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, weightHistory: [{date: '2023-05-10', weight: 4.2}], status: 'Active', cageId: 'c1' },
+        { id: '2', tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, weightHistory: [{date: '2023-06-15', weight: 5.5}], status: 'Active', cageId: 'c2' },
+        { id: '3', tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, weightHistory: [{date: '2023-08-20', weight: 3.8}], status: 'Active', cageId: 'c3' },
       ];
       storage.saveRabbits(demoRabbits);
       setRabbits(demoRabbits);
@@ -59,6 +61,7 @@ const Index = () => {
     }
 
     setTasks(storage.getTasks());
+    setCages(storage.getCages());
   }, []);
 
   const activeDoes = rabbits.filter(r => r.gender === 'Doe' && r.status === 'Active').length;
@@ -67,21 +70,18 @@ const Index = () => {
 
   const handleScan = (data: string) => {
     setShowScanner(false);
-    // Assuming data is the rabbit ID
     const rabbit = rabbits.find(r => r.id === data || r.tagId === data);
     if (rabbit) {
       navigate(`/inventory?search=${rabbit.tagId}`);
     } else {
-      alert(`Scanned: ${data}. No matching rabbit found.`);
+      toast.error(`Scanned: ${data}. No matching rabbit found.`);
     }
   };
 
-  // Smart Insights Logic
   const getInsights = () => {
     const insights = [];
     const today = new Date();
 
-    // Check for palpation due
     breedingRecords.filter(r => r.status === 'Mated').forEach(record => {
       const palpationDate = addDays(new Date(record.date), 14);
       if (isBefore(palpationDate, addDays(today, 2))) {
@@ -94,7 +94,6 @@ const Index = () => {
       }
     });
 
-    // Check for kindling due
     breedingRecords.filter(r => r.status === 'Confirmed').forEach(record => {
       const kindlingDate = addDays(new Date(record.date), 31);
       if (isBefore(kindlingDate, addDays(today, 3))) {
@@ -107,7 +106,6 @@ const Index = () => {
       }
     });
 
-    // Check for weaning due
     storage.getLitters().forEach(litter => {
       const weaningDate = addDays(new Date(litter.birthDate), 30);
       if (isBefore(weaningDate, addDays(today, 2)) && !litter.weaningDate) {
@@ -120,7 +118,6 @@ const Index = () => {
       }
     });
 
-    // General health check reminder
     if (rabbits.length > 0) {
       insights.push({
         type: 'info',
@@ -140,8 +137,8 @@ const Index = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-primary">Hop Farm Flow</h1>
-          <p className="text-muted-foreground">Manage your rabbitry with precision and ease.</p>
+          <h1 className="text-4xl font-black tracking-tight text-primary">Welcome, {user?.name}!</h1>
+          <p className="text-muted-foreground">Here's what's happening on your farm today.</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setShowScanner(true)} variant="outline" className="rounded-full gap-2">
@@ -157,66 +154,66 @@ const Index = () => {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
+        <Card className="bg-white border-2 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="p-2 bg-green-100 rounded-lg text-green-600">
+              <div className="p-2 bg-green-100 rounded-xl text-green-600">
                 <Activity className="h-5 w-5" />
               </div>
               <Badge variant="secondary" className="bg-green-200 text-green-800">Active</Badge>
             </div>
             <div className="mt-4">
               <div className="text-3xl font-bold">{totalRabbits}</div>
-              <div className="text-xs text-muted-foreground">Total Rabbits</div>
+              <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Total Stock</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-pink-50 to-white border-pink-100">
+        <Card className="bg-white border-2 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="p-2 bg-pink-100 rounded-lg text-pink-600">
+              <div className="p-2 bg-pink-100 rounded-xl text-pink-600">
                 <TrendingUp className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-4">
               <div className="text-3xl font-bold">{activeDoes}</div>
-              <div className="text-xs text-muted-foreground">Active Does</div>
+              <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Active Does</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
+        <Card className="bg-white border-2 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+              <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
                 <TrendingUp className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-4">
               <div className="text-3xl font-bold">{activeBucks}</div>
-              <div className="text-xs text-muted-foreground">Active Bucks</div>
+              <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Active Bucks</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-white border-orange-100">
+        <Card className="bg-white border-2 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
-                <Baby className="h-5 w-5" />
+              <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
+                <Box className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-3xl font-bold">{breedingRecords.filter(r => r.status === 'Mated' || r.status === 'Confirmed').length}</div>
-              <div className="text-xs text-muted-foreground">Active Breedings</div>
+              <div className="text-3xl font-bold">{cages.filter(c => c.status === 'Empty').length}</div>
+              <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Empty Cages</div>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Smart Insights "Think" Section */}
-      <Card className="border-2 border-primary/20 bg-primary/5 overflow-hidden">
+      <Card className="border-2 border-primary/20 bg-primary/5 overflow-hidden shadow-lg">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <BrainCircuit className="h-5 w-5 text-primary" />
@@ -230,7 +227,7 @@ const Index = () => {
               <p className="text-sm text-muted-foreground italic">Everything looks good! No urgent actions needed.</p>
             ) : (
               insights.map((insight, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 bg-white rounded-xl border shadow-sm">
+                <div key={idx} className="flex items-start gap-3 p-3 bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow">
                   {insight.priority === 'Critical' ? (
                     <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
                   ) : insight.type === 'action' ? (
@@ -269,14 +266,14 @@ const Index = () => {
         <FlowBoard records={breedingRecords} rabbits={rabbits} />
       </div>
 
-      {/* Tasks Section */}
+      {/* Tasks & Litters Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-4">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Calendar className="h-6 w-6 text-primary" />
             Upcoming Tasks
           </h2>
-          <Card>
+          <Card className="border-2">
             <CardContent className="p-0">
               <div className="divide-y">
                 {tasks.length === 0 ? (
@@ -314,13 +311,13 @@ const Index = () => {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {storage.getLitters().slice(0, 4).map((litter) => (
-              <Card key={litter.id} className="bg-white shadow-sm">
+              <Card key={litter.id} className="bg-white shadow-sm border-2 hover:border-primary/30 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-bold text-sm">{rabbits.find(r => r.id === litter.doeId)?.name}'s Litter</span>
                     <Badge className="bg-green-100 text-green-700 border-green-200">{litter.aliveKits} Kits</Badge>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">Born: {litter.birthDate}</p>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Born: {litter.birthDate}</p>
                 </CardContent>
               </Card>
             ))}
@@ -329,7 +326,6 @@ const Index = () => {
       </div>
 
       {/* QR Scanner Modal */}
-
       {showScanner && (
         <QRScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
       )}
@@ -337,4 +333,5 @@ const Index = () => {
   );
 };
 
+import { toast } from 'sonner';
 export default Index;

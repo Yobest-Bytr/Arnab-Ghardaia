@@ -1,89 +1,50 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { storage } from '@/lib/storage';
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  signOut: () => Promise<void>;
-  enterDemoMode: (email: string) => void;
+  user: any | null;
+  login: (email: string, pass: string) => Promise<void>;
+  signup: (email: string, pass: string, name: string) => Promise<void>;
+  logout: () => void;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // CRITICAL: GHOST PURGE
-    // If the browser has 'yonr' or 'demo-user' stored, wipe it immediately.
-    const legacyUser = localStorage.getItem('yobest_demo_user');
-    if (legacyUser && (legacyUser.includes('"yonr"') || legacyUser.includes('"demo-user"'))) {
-      console.log("Purging legacy session...");
-      localStorage.removeItem('yobest_demo_user');
-      // Also clear the sync queue which might contain the poison pills
-      localStorage.removeItem('arnab_sync_queue');
+    const savedUser = storage.getAuth();
+    if (savedUser) {
+      setUser(savedUser);
     }
-
-    // Check for existing demo session
-    const demoUser = localStorage.getItem('yobest_demo_user');
-    if (demoUser) {
-      const parsedUser = JSON.parse(demoUser);
-      setUser(parsedUser);
-      setLoading(false);
-    }
-
-    // Check active Supabase sessions
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-      }
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-      } else if (!localStorage.getItem('yobest_demo_user')) {
-        setSession(null);
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    setIsLoading(false);
   }, []);
 
-  const enterDemoMode = (email: string) => {
-    // Use a valid UUID format for the demo ID
-    const demoUuid = '00000000-0000-0000-0000-000000000000';
-    const mockUser = {
-      id: demoUuid,
-      email: email,
-      user_metadata: { display_name: email.split('@')[0] },
-      aud: 'authenticated',
-      role: 'authenticated',
-    } as any;
-    
-    localStorage.setItem('yobest_demo_user', JSON.stringify(mockUser));
+  const login = async (email: string, pass: string) => {
+    // Mock login
+    const mockUser = { id: '1', email, name: email.split('@')[0] };
     setUser(mockUser);
-    setLoading(false);
+    storage.saveAuth(mockUser);
   };
 
-  const signOut = async () => {
-    localStorage.removeItem('yobest_demo_user');
-    await supabase.auth.signOut();
+  const signup = async (email: string, pass: string, name: string) => {
+    // Mock signup
+    const mockUser = { id: '1', email, name };
+    setUser(mockUser);
+    storage.saveAuth(mockUser);
+  };
+
+  const logout = () => {
     setUser(null);
-    setSession(null);
+    storage.clearAuth();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut, enterDemoMode }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
