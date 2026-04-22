@@ -1,77 +1,60 @@
-"use client";
 
 import React, { useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
-import { Camera, RefreshCw } from 'lucide-react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
-interface QrScannerProps {
-  onScanSuccess: (decodedText: string) => void;
+interface QRScannerProps {
+  onScan: (decodedText: string) => void;
+  onClose: () => void;
 }
 
-const QrScanner: React.FC<QrScannerProps> = ({ onScanSuccess }) => {
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerId = "qr-reader-element";
+export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose }) => {
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   useEffect(() => {
-    const startScanner = async () => {
-      try {
-        // Create instance
-        const html5QrCode = new Html5Qrcode(containerId);
-        scannerRef.current = html5QrCode;
+    scannerRef.current = new Html5QrcodeScanner(
+      "reader",
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      /* verbose= */ false
+    );
 
-        const config = { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0 
-        };
-
-        // Start scanning
-        await html5QrCode.start(
-          { facingMode: "environment" }, 
-          config, 
-          (decodedText) => {
-            // On success
-            html5QrCode.stop().then(() => {
-              onScanSuccess(decodedText);
-            }).catch(err => {
-              console.error("Failed to stop scanner", err);
-              onScanSuccess(decodedText);
-            });
-          },
-          undefined // On error (ignore noisy frame errors)
-        );
-      } catch (err) {
-        console.error("Unable to start scanner", err);
+    scannerRef.current.render(
+      (decodedText) => {
+        onScan(decodedText);
+        if (scannerRef.current) {
+          scannerRef.current.clear();
+        }
+      },
+      (error) => {
+        // console.warn(error);
       }
-    };
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(startScanner, 500);
+    );
 
     return () => {
-      clearTimeout(timer);
-      if (scannerRef.current && scannerRef.current.isScanning) {
-        scannerRef.current.stop().catch(err => console.error("Cleanup stop failed", err));
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(err => console.error("Failed to clear scanner", err));
       }
     };
-  }, [onScanSuccess]);
+  }, [onScan]);
 
   return (
-    <div className="relative rounded-[2.5rem] overflow-hidden border-2 border-indigo-500/30 bg-black shadow-2xl aspect-square max-w-md mx-auto">
-      <div id={containerId} className="w-full h-full" />
-      
-      {/* Overlay UI */}
-      <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-        <div className="w-64 h-64 border-2 border-indigo-400 rounded-3xl border-dashed opacity-40 animate-pulse" />
-        <div className="absolute bottom-10 left-0 right-0 flex flex-col items-center gap-2">
-          <div className="px-4 py-2 bg-indigo-600/80 backdrop-blur-md rounded-full flex items-center gap-2">
-            <RefreshCw size={14} className="animate-spin text-white" />
-            <span className="text-[10px] font-black text-white uppercase tracking-widest">Searching for Neural ID</span>
-          </div>
-        </div>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <Card className="w-full max-w-md overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg font-bold">Scan QR Code</CardTitle>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div id="reader" className="w-full overflow-hidden rounded-lg"></div>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Point your camera at a rabbit's QR code to view details.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
-
-export default QrScanner;

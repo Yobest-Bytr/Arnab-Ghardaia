@@ -1,44 +1,42 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import Navbar from '@/components/layout/Navbar';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
   Loader2, Activity, Database, ArrowRight, Info, Clock, X, Terminal, Shield, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { grokChat } from '@/lib/puter';
-import { storage } from '@/lib/storage';
-import { ChatMessage } from '@/components/ChatMessage';
-import ChatInput from '@/components/ChatInput';
-import QrScanner from '@/components/QrScanner';
+import { storage, Rabbit, BreedingRecord, Litter } from '@/lib/storage';
+import { QRScanner } from '@/components/QrScanner';
 import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const NeuralLab = () => {
-  const { user } = useAuth();
-  const { language, t } = useLanguage();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('yobest-ai');
-  const [farmSnapshot, setFarmSnapshot] = useState<any>({ rabbits: [], sales: [], litters: [] });
+  const [farmData, setFarmData] = useState<{rabbits: Rabbit[], breeding: BreedingRecord[], litters: Litter[]}>({
+    rabbits: [],
+    breeding: [],
+    litters: []
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchFarmSnapshot();
-      setMessages([{
-        id: 'welcome',
-        role: 'assistant',
-        content: language === 'ar' 
-          ? "تم إنشاء الرابط العصبي. لدي حق الوصول الكامل إلى بيانات مزرعتك. يمكنني تحليل الصور ومسح رموز QR وتنفيذ إجراءات مثل إضافة أو تعديل الأرانب. كيف يمكنني مساعدتك اليوم؟"
-          : "Neural Link Established. I have full access to your farm data. I can analyze images, scan QR codes, and perform actions like adding or editing rabbits. How can I assist you today?",
-        timestamp: new Date().toISOString(),
-        model: 'Yobest AI 4.1'
-      }]);
-    }
-  }, [user, language]);
+    const rabbits = storage.getRabbits();
+    const breeding = storage.getBreedingRecords();
+    const litters = storage.getLitters();
+    setFarmData({ rabbits, breeding, litters });
+
+    setMessages([{
+      id: 'welcome',
+      role: 'assistant',
+      content: "Neural Link Established. I am your AI Farm Assistant. I have analyzed your farm data and I'm ready to help you optimize your rabbitry. How can I assist you today?",
+      timestamp: new Date().toISOString(),
+    }]);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -46,168 +44,148 @@ const NeuralLab = () => {
     }
   }, [messages]);
 
-  const fetchFarmSnapshot = async () => {
-    if (!user) return;
-    const [rabbits, sales, litters] = await Promise.all([
-      storage.get('rabbits', user.id),
-      storage.get('sales', user.id),
-      storage.get('litters', user.id)
-    ]);
-    setFarmSnapshot({ rabbits, sales, litters });
-  };
-
-  const handleSend = async (e: React.FormEvent, image?: string) => {
-    if (!input.trim() && !image) return;
+  const handleSend = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!input.trim()) return;
     
     const userMsg = { 
       id: Date.now(), 
       role: 'user', 
-      content: input || "Analyze this image.", 
+      content: input, 
       timestamp: new Date().toISOString(),
-      image 
     };
     
     setMessages(prev => [...prev, userMsg]);
+    const currentInput = input;
     setInput('');
     setIsGenerating(true);
 
-    try {
-      let responseText = "";
-      const today = new Date().toISOString().split('T')[0];
-      const systemPrompt = `You are the Yobest AI Neural Architect. You manage a rabbit farm in Ghardaia.
+    // Simulate AI response based on farm data
+    setTimeout(() => {
+      let response = "I've analyzed your request. ";
       
-      LANGUAGE: Respond strictly in ${language === 'ar' ? 'Arabic' : language === 'fr' ? 'French' : 'English'}.
-      
-      NEURAL SNAPSHOT (FULL ACCESS):
-      - Rabbits: ${JSON.stringify(farmSnapshot.rabbits)}
-      - Sales: ${JSON.stringify(farmSnapshot.sales)}
-      - Litters: ${JSON.stringify(farmSnapshot.litters)}
-      
-      ACTION CAPABILITIES:
-      If you want to perform an action, include the tag:
-      [ACTION: ADD_RABBIT {"name": "...", "breed": "...", "gender": "...", "weight": "...", "birth_date": "${today}"}]
-      [ACTION: UPDATE_RABBIT {"id": "...", "updates": {"status": "..."}}]
-      [ACTION: RECORD_SALE {"customer_name": "...", "price": 0, "category": "...", "sale_date": "${today}"}]
-      [ACTION: RECORD_MATING {"mother_name": "...", "father_name": "...", "mating_date": "${today}"}]`;
+      if (currentInput.toLowerCase().includes('status') || currentInput.toLowerCase().includes('summary')) {
+        response += `You currently have ${farmData.rabbits.length} rabbits in your inventory. There are ${farmData.breeding.filter(r => r.status !== 'Weaned' && r.status !== 'Failed').length} active breeding cycles.`;
+      } else if (currentInput.toLowerCase().includes('breeding') || currentInput.toLowerCase().includes('litter')) {
+        const activeDoes = farmData.rabbits.filter(r => r.gender === 'Doe' && r.status === 'Active').length;
+        response += `Based on your ${activeDoes} active does, I recommend scheduling 2 more matings this week to maintain optimal production flow.`;
+      } else {
+        response += "I'm monitoring the farm's vital signs. Everything looks optimal for the current season. Do you have specific questions about a rabbit or a breeding record?";
+      }
 
-      await grokChat(input || "Analyze this image.", { 
-        modelId: selectedModel, 
-        userId: user?.id, 
-        stream: true,
-        image,
-        systemPrompt
-      }, (chunk) => {
-        responseText += chunk;
-        setMessages(prev => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant') return [...prev.slice(0, -1), { ...last, content: responseText }];
-          return [...prev, { 
-            id: Date.now() + 1, 
-            role: 'assistant', 
-            content: responseText, 
-            model: selectedModel === 'yobest-ai' ? 'Yobest AI 4.1' : selectedModel, 
-            timestamp: new Date().toISOString(),
-            thought: "Analyzing neural context and visual data..."
-          }];
-        });
-      });
-    } finally {
+      const aiMsg = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: response,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, aiMsg]);
       setIsGenerating(false);
-      fetchFarmSnapshot(); 
-    }
+    }, 1500);
   };
 
   const handleQrScan = (decodedText: string) => {
     setIsScannerOpen(false);
-    setInput(`Analyze this Neural ID: ${decodedText}`);
-    const fakeEvent = { preventDefault: () => {} } as any;
-    handleSend(fakeEvent);
+    const rabbit = farmData.rabbits.find(r => r.tagId === decodedText || r.id === decodedText);
+    if (rabbit) {
+      setInput(`Tell me about rabbit ${rabbit.name} (${rabbit.tagId})`);
+    } else {
+      setInput(`I scanned a tag: ${decodedText}. I couldn't find this rabbit in the database.`);
+    }
   };
 
   return (
-    <div className="h-screen bg-[#020408] text-white relative overflow-hidden flex flex-col">
-      <div className="absolute inset-0 auron-radial pointer-events-none opacity-30" />
-      <Navbar />
-      
-      <main className="flex-1 mt-20 w-full relative z-10 overflow-hidden flex flex-col max-w-6xl mx-auto px-6">
-        <div className="py-8 border-b border-white/5 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-[2rem] bg-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-indigo-500/30">
-              <BrainCircuit size={32} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tighter">{t('neuralLab')}.</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="flex items-center gap-1.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {t('engineOnline')}
-                </span>
-                <span className="text-white/10">•</span>
-                <span className="text-[9px] font-black text-white/20 uppercase tracking-widest flex items-center gap-1.5">
-                  <Database size={10} /> {farmSnapshot.rabbits.length} {t('nodesLinked')}
-                </span>
-              </div>
-            </div>
+    <div className="flex flex-col h-[calc(100vh-64px)] md:h-screen bg-slate-50">
+      {/* Header */}
+      <div className="p-6 bg-white border-b flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
+            <BrainCircuit size={24} />
           </div>
-          
-          <div className="hidden md:flex items-center gap-4">
-            <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
-              <Shield size={14} className="text-indigo-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('secureUplink')}</span>
-            </div>
-            <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
-              <Globe size={14} className="text-indigo-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{t('ghardaiaNode')}</span>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight">Neural Lab</h1>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">AI Engine Online</span>
             </div>
           </div>
         </div>
+        <Button variant="outline" size="sm" className="rounded-full gap-2" onClick={() => setIsScannerOpen(true)}>
+          <Zap className="h-4 w-4" />
+          Quick Scan
+        </Button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto py-10 pr-4 custom-scrollbar space-y-12" ref={scrollRef}>
-          {messages.map((msg) => (
-            <ChatMessage key={msg.id} {...msg} />
-          ))}
-          {isGenerating && (
-            <div className="flex gap-5 animate-in fade-in duration-500">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-              <div className="space-y-2 mt-2">
-                <div className="h-2 w-48 bg-white/5 rounded-full animate-pulse" />
-                <div className="h-2 w-32 bg-white/5 rounded-full animate-pulse" />
-              </div>
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6" ref={scrollRef}>
+        {messages.map((msg) => (
+          <div key={msg.id} className={cn(
+            "flex gap-4 max-w-3xl",
+            msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
+          )}>
+            <div className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+              msg.role === 'assistant' ? "bg-primary text-white" : "bg-slate-200 text-slate-600"
+            )}>
+              {msg.role === 'assistant' ? <BrainCircuit size={20} /> : <Activity size={20} />}
             </div>
-          )}
-        </div>
-
-        <div className="pb-10 pt-6 shrink-0">
-          <ChatInput 
-            value={input} 
-            onChange={setInput} 
-            onSubmit={handleSend} 
-            isGenerating={isGenerating} 
-            selectedModelId={selectedModel} 
-            onModelChange={(m) => setSelectedModel(m.id)} 
-            onQrScan={() => setIsScannerOpen(true)}
-          />
-        </div>
-      </main>
-
-      <AnimatePresence>
-        {isScannerOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-6">
-            <div className="max-w-lg w-full">
-              <div className="flex justify-between items-center mb-10">
-                <div>
-                  <h2 className="text-4xl font-black tracking-tighter">Neural <span className="text-indigo-400">Scan.</span></h2>
-                  <p className="text-white/40 font-bold text-sm mt-1 uppercase tracking-widest">Align Neural ID Tag to Initialize</p>
-                </div>
-                <button onClick={() => setIsScannerOpen(false)} className="p-4 rounded-[1.5rem] bg-white/5 text-white/40 hover:text-white transition-all"><X size={28} /></button>
+            <div className={cn(
+              "p-4 rounded-2xl shadow-sm border",
+              msg.role === 'assistant' ? "bg-white border-slate-100" : "bg-primary text-white border-primary"
+            )}>
+              <p className="text-sm leading-relaxed">{msg.content}</p>
+              <p className={cn(
+                "text-[10px] mt-2",
+                msg.role === 'assistant' ? "text-muted-foreground" : "text-white/60"
+              )}>
+                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+        ))}
+        {isGenerating && (
+          <div className="flex gap-4">
+            <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+              <div className="flex gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:0.2s]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce [animation-delay:0.4s]" />
               </div>
-              <QrScanner onScanSuccess={handleQrScan} />
             </div>
           </div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* Input Area */}
+      <div className="p-4 md:p-8 bg-white border-t">
+        <form onSubmit={handleSend} className="max-w-4xl mx-auto relative">
+          <input 
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask anything about your farm..."
+            className="w-full pl-6 pr-16 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+          />
+          <Button 
+            type="submit" 
+            size="icon" 
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl h-10 w-10"
+            disabled={!input.trim() || isGenerating}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+        <p className="text-center text-[10px] text-muted-foreground mt-4 uppercase tracking-widest font-bold">
+          Powered by Hop Farm Neural Engine v4.1
+        </p>
+      </div>
+
+      {/* Scanner Modal */}
+      {isScannerOpen && (
+        <QRScanner onScan={handleQrScan} onClose={() => setIsScannerOpen(false)} />
+      )}
     </div>
   );
 };

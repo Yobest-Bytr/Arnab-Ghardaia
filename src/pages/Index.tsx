@@ -1,192 +1,338 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Rabbit, ArrowRight, CheckCircle, Users, Activity, Leaf, Phone, ShieldCheck, Star } from 'lucide-react';
-import { motion } from 'framer-motion';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+
+import React, { useState, useEffect } from 'react';
+import { storage, Rabbit, BreedingRecord, Task } from '@/lib/storage';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Plus, 
+  QrCode, 
+  TrendingUp, 
+  Calendar, 
+  AlertTriangle, 
+  CheckCircle2, 
+  BrainCircuit,
+  ArrowRight,
+  Baby,
+  Activity
+} from 'lucide-react';
+import { FlowBoard } from '@/components/FlowBoard';
+import { QRScanner } from '@/components/QrScanner';
+import { format, addDays, isBefore, isAfter } from 'date-fns';
+
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
-  const { t, isRTL } = useLanguage();
 
-  const stats = [
-    { label: t('totalRabbits'), val: "1,240", icon: Rabbit, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: t('males'), val: "450", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: t('females'), val: "790", icon: Users, color: "text-pink-600", bg: "bg-pink-50" },
-    { label: t('newBorns'), val: "124", icon: Activity, color: "text-orange-600", bg: "bg-orange-50" },
-  ];
+  const [rabbits, setRabbits] = useState<Rabbit[]>([]);
+  const [breedingRecords, setBreedingRecords] = useState<BreedingRecord[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [showScanner, setShowScanner] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const initialRabbits = storage.getRabbits();
+    if (initialRabbits.length === 0) {
+      const demoRabbits: Rabbit[] = [
+        { id: '1', tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, status: 'Active', cageNumber: 'C-01' },
+        { id: '2', tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, status: 'Active', cageNumber: 'C-02' },
+        { id: '3', tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, status: 'Active', cageNumber: 'C-03' },
+      ];
+      storage.saveRabbits(demoRabbits);
+      setRabbits(demoRabbits);
+    } else {
+      setRabbits(initialRabbits);
+    }
+
+    const initialBreeding = storage.getBreedingRecords();
+    if (initialBreeding.length === 0) {
+      const demoBreeding: BreedingRecord[] = [
+        { id: 'b1', buckId: '2', doeId: '1', date: format(addDays(new Date(), -15), 'yyyy-MM-dd'), status: 'Mated' },
+        { id: 'b2', buckId: '2', doeId: '3', date: format(addDays(new Date(), -35), 'yyyy-MM-dd'), status: 'Kindled' },
+      ];
+      storage.saveBreedingRecords(demoBreeding);
+      setBreedingRecords(demoBreeding);
+    } else {
+      setBreedingRecords(initialBreeding);
+    }
+
+    setTasks(storage.getTasks());
+  }, []);
+
+  const activeDoes = rabbits.filter(r => r.gender === 'Doe' && r.status === 'Active').length;
+  const activeBucks = rabbits.filter(r => r.gender === 'Buck' && r.status === 'Active').length;
+  const totalRabbits = rabbits.length;
+
+  const handleScan = (data: string) => {
+    setShowScanner(false);
+    // Assuming data is the rabbit ID
+    const rabbit = rabbits.find(r => r.id === data || r.tagId === data);
+    if (rabbit) {
+      navigate(`/inventory?search=${rabbit.tagId}`);
+    } else {
+      alert(`Scanned: ${data}. No matching rabbit found.`);
+    }
+  };
+
+  // Smart Insights Logic
+  const getInsights = () => {
+    const insights = [];
+    const today = new Date();
+
+    // Check for palpation due
+    breedingRecords.filter(r => r.status === 'Mated').forEach(record => {
+      const palpationDate = addDays(new Date(record.date), 14);
+      if (isBefore(palpationDate, addDays(today, 2))) {
+        insights.push({
+          type: 'action',
+          title: 'Palpation Due',
+          description: `Doe ${rabbits.find(r => r.id === record.doeId)?.name} is ready for palpation.`,
+          priority: 'High'
+        });
+      }
+    });
+
+    // Check for kindling due
+    breedingRecords.filter(r => r.status === 'Confirmed').forEach(record => {
+      const kindlingDate = addDays(new Date(record.date), 31);
+      if (isBefore(kindlingDate, addDays(today, 3))) {
+        insights.push({
+          type: 'alert',
+          title: 'Kindling Imminent',
+          description: `Doe ${rabbits.find(r => r.id === record.doeId)?.name} is expected to kindle soon. Prepare nest box.`,
+          priority: 'Critical'
+        });
+      }
+    });
+
+    // Check for weaning due
+    storage.getLitters().forEach(litter => {
+      const weaningDate = addDays(new Date(litter.birthDate), 30);
+      if (isBefore(weaningDate, addDays(today, 2)) && !litter.weaningDate) {
+        insights.push({
+          type: 'action',
+          title: 'Weaning Due',
+          description: `Litter from ${rabbits.find(r => r.id === litter.doeId)?.name} is ready for weaning.`,
+          priority: 'Medium'
+        });
+      }
+    });
+
+    // General health check reminder
+    if (rabbits.length > 0) {
+      insights.push({
+        type: 'info',
+        title: 'Weekly Health Check',
+        description: 'Time to check weights and ear health for all active rabbits.',
+        priority: 'Medium'
+      });
+    }
+
+    return insights;
+  };
+
+  const insights = getInsights();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
-      <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-emerald-50/50 dark:bg-emerald-900/5 -z-10 rounded-bl-[10rem] hidden lg:block" />
-        
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: isRTL ? 50 : -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="space-y-8"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-sm font-bold">
-              <Star size={16} className="fill-current" />
-              <span>{t('appName')}</span>
+    <div className="container mx-auto p-4 md:p-8 space-y-8 pb-24">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-primary">Hop Farm Flow</h1>
+          <p className="text-muted-foreground">Manage your rabbitry with precision and ease.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowScanner(true)} variant="outline" className="rounded-full gap-2">
+            <QrCode className="h-4 w-4" />
+            Scan
+          </Button>
+          <Button onClick={() => navigate('/inventory')} className="rounded-full gap-2">
+            <Plus className="h-4 w-4" />
+            Add Rabbit
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                <Activity className="h-5 w-5" />
+              </div>
+              <Badge variant="secondary" className="bg-green-200 text-green-800">Active</Badge>
             </div>
-            <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-[1.1] text-slate-900 dark:text-white">
-              <span className="text-emerald-600">{t('heroTitle')}</span>
-            </h1>
-            <p className="text-xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xl">
-              {t('heroSubtitle')}
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Link to="/dashboard">
-                <button className="farm-button flex items-center gap-2 h-16 px-10 text-lg shadow-xl shadow-emerald-500/30">
-                  {t('goDashboard')}
-                  <ArrowRight size={20} className={cn(isRTL && "rotate-180")} />
-                </button>
-              </Link>
-              <Link to="/shop">
-                <button className="px-10 h-16 rounded-2xl border-2 border-emerald-100 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 font-black hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-all">
-                  {t('viewRabbits')}
-                </button>
-              </Link>
+            <div className="mt-4">
+              <div className="text-3xl font-bold">{totalRabbits}</div>
+              <div className="text-xs text-muted-foreground">Total Rabbits</div>
             </div>
-            
-            <div className="flex items-center gap-6 pt-4">
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 overflow-hidden">
-                    <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-pink-50 to-white border-pink-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="p-2 bg-pink-100 rounded-lg text-pink-600">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-bold">{activeDoes}</div>
+              <div className="text-xs text-muted-foreground">Active Does</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-bold">{activeBucks}</div>
+              <div className="text-xs text-muted-foreground">Active Bucks</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-white border-orange-100">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
+                <Baby className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="text-3xl font-bold">{breedingRecords.filter(r => r.status === 'Mated' || r.status === 'Confirmed').length}</div>
+              <div className="text-xs text-muted-foreground">Active Breedings</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Smart Insights "Think" Section */}
+      <Card className="border-2 border-primary/20 bg-primary/5 overflow-hidden">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <BrainCircuit className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg">Smart Insights</CardTitle>
+          </div>
+          <CardDescription>AI-powered suggestions for your farm</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {insights.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">Everything looks good! No urgent actions needed.</p>
+            ) : (
+              insights.map((insight, idx) => (
+                <div key={idx} className="flex items-start gap-3 p-3 bg-white rounded-xl border shadow-sm">
+                  {insight.priority === 'Critical' ? (
+                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
+                  ) : insight.type === 'action' ? (
+                    <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5" />
+                  ) : (
+                    <Calendar className="h-5 w-5 text-green-500 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-bold text-sm">{insight.title}</h4>
+                      <Badge variant={insight.priority === 'Critical' ? 'destructive' : 'outline'} className="text-[10px]">
+                        {insight.priority}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{insight.description}</p>
                   </div>
-                ))}
-              </div>
-              <p className="text-sm font-bold text-slate-400">
-                <span className="text-slate-900 dark:text-white">500+</span> {t('happyCustomers')}
-              </p>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
-          >
-            <div className="aspect-[4/5] rounded-[4rem] overflow-hidden shadow-2xl border-[12px] border-white dark:border-slate-900 relative z-10 group">
-              <img 
-                src="https://fieldandstream.com/wp-content/uploads/2024/06/BGHA45BMURB4HK43PODKL2UICQ.jpg" 
-                alt="Rabbit Farm" 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-60" />
-            </div>
-            
-            {/* Floating Stats Card */}
-            <motion.div 
-              animate={{ y: [0, -15, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -bottom-8 -left-8 bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl border border-emerald-50 dark:border-slate-800 flex items-center gap-4 z-20"
-            >
-              <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600">
-                <ShieldCheck size={28} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('healthStatus')}</p>
-                <p className="text-xl font-black text-emerald-600">98.4% {t('healthyRate')}</p>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Quick Stats */}
-      <section className="py-24 bg-slate-50 dark:bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ y: -10 }}
-                className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-xl border border-emerald-50 dark:border-slate-800 text-center group transition-all"
-              >
-                <div className={cn("w-16 h-16 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform", stat.bg, stat.color)}>
-                  <stat.icon size={32} />
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
-                <h3 className="text-4xl font-black text-slate-900 dark:text-white mb-2 tracking-tighter">{stat.val}</h3>
-                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-              </motion.div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Breeding Flow Board */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <TrendingUp className="h-6 w-6 text-primary" />
+            Breeding Flow
+          </h2>
+          <Button variant="link" onClick={() => navigate('/breeding')}>View All Records</Button>
+        </div>
+        <FlowBoard records={breedingRecords} rabbits={rabbits} />
+      </div>
+
+      {/* Tasks Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Calendar className="h-6 w-6 text-primary" />
+            Upcoming Tasks
+          </h2>
+          <Card>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {tasks.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <p>No pending tasks. You're all caught up!</p>
+                  </div>
+                ) : (
+                  tasks.map((task) => (
+                    <div key={task.id} className="p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors">
+                      <div className={cn(
+                        "h-10 w-10 rounded-full flex items-center justify-center",
+                        task.priority === 'High' ? "bg-red-100 text-red-600" :
+                        task.priority === 'Medium' ? "bg-orange-100 text-orange-600" :
+                        "bg-blue-100 text-blue-600"
+                      )}>
+                        <CheckCircle2 className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-sm">{task.title}</h4>
+                        <p className="text-xs text-muted-foreground">{task.dueDate}</p>
+                      </div>
+                      <Badge variant="outline">{task.category}</Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Baby className="h-6 w-6 text-primary" />
+            Recent Litters
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {storage.getLitters().slice(0, 4).map((litter) => (
+              <Card key={litter.id} className="bg-white shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-sm">{rabbits.find(r => r.id === litter.doeId)?.name}'s Litter</span>
+                    <Badge className="bg-green-100 text-green-700 border-green-200">{litter.aliveKits} Kits</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Born: {litter.birthDate}</p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Features Section */}
-      <section className="py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-24">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-black uppercase tracking-widest mb-6">
-              <Activity size={14} />
-              <span>{t('dashboard')}</span>
-            </div>
-            <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">{t('featuresTitle')}</h2>
-            <p className="text-xl text-slate-500 dark:text-slate-400 font-medium max-w-2xl mx-auto">{t('featuresSubtitle')}</p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-12">
-            {[
-              { title: t('feature1Title'), desc: t('feature1Desc'), icon: Activity, color: "text-emerald-600", bg: "bg-emerald-50" },
-              { title: t('feature2Title'), desc: t('feature2Desc'), icon: Rabbit, color: "text-blue-600", bg: "bg-blue-50" },
-              { title: t('feature3Title'), desc: t('feature3Desc'), icon: Leaf, color: "text-orange-600", bg: "bg-orange-50" },
-            ].map((feature, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
-                className="p-10 rounded-[3rem] bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:shadow-2xl hover:shadow-emerald-500/5 transition-all group"
-              >
-                <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center mb-8 group-hover:rotate-6 transition-transform", feature.bg, feature.color)}>
-                  <feature.icon size={40} />
-                </div>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-4">{feature.title}</h3>
-                <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* QR Scanner Modal */}
 
-      {/* CTA Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-emerald-600 rounded-[4rem] p-12 md:p-24 text-center text-white relative overflow-hidden shadow-2xl shadow-emerald-500/20">
-            <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
-            <div className="relative z-10">
-              <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight">{t('ctaTitle')}</h2>
-              <p className="text-xl text-emerald-100 font-medium mb-12 max-w-xl mx-auto">{t('ctaSubtitle')}</p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/signup">
-                  <button className="h-16 px-10 bg-white text-emerald-600 font-black rounded-2xl hover:scale-105 transition-transform shadow-xl">
-                    {t('getStartedFree')}
-                  </button>
-                </Link>
-                <Link to="/contact">
-                  <button className="h-16 px-10 bg-emerald-700 text-white font-black rounded-2xl hover:bg-emerald-800 transition-all">
-                    {t('contactSales')}
-                  </button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <Footer />
+      {showScanner && (
+        <QRScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
+      )}
     </div>
   );
 };

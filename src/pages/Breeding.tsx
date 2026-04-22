@@ -1,316 +1,340 @@
-"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { storage } from '@/lib/storage';
-import Navbar from '@/components/layout/Navbar';
+import React, { useState, useEffect } from 'react';
+import { storage, BreedingRecord, Rabbit, Litter } from '@/lib/storage';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { 
-  Heart, Calendar, Plus, History, 
-  AlertCircle, CheckCircle2, ArrowRight, Rabbit, Activity, X, Info, Trash2, Search, ChevronRight, TrendingUp
+  Plus, 
+  Heart, 
+  Calendar, 
+  CheckCircle2, 
+  Baby, 
+  Home, 
+  Trash2, 
+  ChevronRight,
+  AlertCircle,
+  X
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { showSuccess, showError } from '@/utils/toast';
+import { format, addDays } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const Breeding = () => {
-  const { user } = useAuth();
-  const { t, isRTL } = useLanguage();
-  const [litters, setLitters] = useState<any[]>([]);
-  const [inventory, setInventory] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
+  const [records, setRecords] = useState<BreedingRecord[]>([]);
+  const [rabbits, setRabbits] = useState<Rabbit[]>([]);
+  const [litters, setLitters] = useState<Litter[]>([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isLitterModalOpen, setIsLitterModalOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<BreedingRecord | null>(null);
+
   const [formData, setFormData] = useState({
-    mother_name: '',
-    father_name: '',
-    mating_date: new Date().toISOString().split('T')[0],
-    expected_birth_date: '',
-    kit_count: 0,
+    buckId: '',
+    doeId: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
     notes: ''
   });
 
-  const [suggestions, setSuggestions] = useState<{ type: 'mother' | 'father', list: any[] }>({ type: 'mother', list: [] });
+  const [litterData, setLitterData] = useState({
+    totalKits: 0,
+    aliveKits: 0,
+    deadKits: 0,
+    notes: ''
+  });
 
   useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
+    loadData();
+  }, []);
 
-  useEffect(() => {
-    if (formData.mating_date) {
-      const matingDate = new Date(formData.mating_date);
-      const expectedDate = new Date(matingDate);
-      expectedDate.setDate(matingDate.getDate() + 31);
-      setFormData(prev => ({ ...prev, expected_birth_date: expectedDate.toISOString().split('T')[0] }));
-    }
-  }, [formData.mating_date]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [litterData, rabbitData] = await Promise.all([
-        storage.get('litters', user?.id || ''),
-        storage.get('rabbits', user?.id || '')
-      ]);
-      setLitters(litterData || []);
-      setInventory(rabbitData || []);
-    } finally {
-      setLoading(false);
-    }
+  const loadData = () => {
+    setRecords(storage.getBreedingRecords());
+    setRabbits(storage.getRabbits());
+    setLitters(storage.getLitters());
   };
 
-  const successRate = useMemo(() => {
-    if (litters.length === 0) return 0;
-    const successful = litters.filter(l => l.kit_count > 0 || l.status === 'Born' || l.status === 'Weaned').length;
-    return Math.round((successful / litters.length) * 100);
-  }, [litters]);
-
-  const showInstantSuggestions = (type: 'mother' | 'father', val: string) => {
-    const gender = type === 'mother' ? 'Female' : 'Male';
-    
-    const filtered = inventory.filter(r => 
-      r.gender === gender &&
-      (val === '' || r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase()))
-    );
-    
-    setSuggestions({ type, list: filtered.slice(0, 6) });
-  };
-
-  const selectSuggestion = (rabbit: any, type: 'mother' | 'father') => {
-    setFormData(prev => ({ ...prev, [`${type}_name`]: rabbit.name || rabbit.rabbit_id }));
-    setSuggestions({ type, list: [] });
-  };
-
-  const handleAddMating = async (e: React.FormEvent) => {
+  const handleAddBreeding = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    const newRecord: BreedingRecord = {
+      id: crypto.randomUUID(),
+      ...formData,
+      status: 'Mated',
+      palpationDate: format(addDays(new Date(formData.date), 14), 'yyyy-MM-dd'),
+      expectedKindlingDate: format(addDays(new Date(formData.date), 31), 'yyyy-MM-dd'),
+    };
 
-    try {
-      const newMating = { ...formData, status: 'Pregnant' };
-      await storage.insert('litters', user.id, newMating);
-      setIsModalOpen(false);
-      setFormData({ mother_name: '', father_name: '', mating_date: new Date().toISOString().split('T')[0], expected_birth_date: '', kit_count: 0, notes: '' });
-      await fetchData();
-      showSuccess(t('recordMating'));
-    } catch (err) {
-      showError("Failed to record mating.");
-    }
+    const updatedRecords = [newRecord, ...records];
+    storage.saveBreedingRecords(updatedRecords);
+    setRecords(updatedRecords);
+    setIsAddModalOpen(false);
+    setFormData({ buckId: '', doeId: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
+    toast.success('Breeding record added successfully');
   };
 
-  const handleDelete = async (id: string) => {
-    if (!user || !confirm("Delete record?")) return;
-    await storage.delete('litters', user.id, id);
-    setLitters(prev => prev.filter(l => l.id !== id));
-    showSuccess("Deleted.");
+  const updateStatus = (id: string, status: BreedingRecord['status']) => {
+    const updatedRecords = records.map(r => {
+      if (r.id === id) {
+        if (status === 'Kindled') {
+          setSelectedRecord(r);
+          setIsLitterModalOpen(true);
+        }
+        return { ...r, status };
+      }
+      return r;
+    });
+    storage.saveBreedingRecords(updatedRecords);
+    setRecords(updatedRecords);
+    toast.info(`Status updated to ${status}`);
   };
 
-  const getDaysRemaining = (expectedDate: string) => {
-    const diff = new Date(expectedDate).getTime() - new Date().getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const handleRecordLitter = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRecord) return;
+
+    const newLitter: Litter = {
+      id: crypto.randomUUID(),
+      breedingId: selectedRecord.id,
+      doeId: selectedRecord.doeId,
+      birthDate: format(new Date(), 'yyyy-MM-dd'),
+      ...litterData
+    };
+
+    const updatedLitters = [newLitter, ...litters];
+    storage.saveLitters(updatedLitters);
+    setLitters(updatedLitters);
+    setIsLitterModalOpen(false);
+    setLitterData({ totalKits: 0, aliveKits: 0, deadKits: 0, notes: '' });
+    toast.success('Litter recorded successfully');
   };
+
+  const deleteRecord = (id: string) => {
+    const updatedRecords = records.filter(r => r.id !== id);
+    storage.saveBreedingRecords(updatedRecords);
+    setRecords(updatedRecords);
+    toast.error('Record deleted');
+  };
+
+  const getRabbitName = (id: string) => rabbits.find(r => r.id === id)?.name || 'Unknown';
+  const bucks = rabbits.filter(r => r.gender === 'Buck' && r.status === 'Active');
+  const does = rabbits.filter(r => r.gender === 'Doe' && r.status === 'Active');
 
   return (
-    <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
-      <div className="absolute inset-0 auron-radial pointer-events-none opacity-50" />
-      <Navbar />
-      
-      <main className="pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto relative z-10">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter">{t('breeding')}</h1>
-            <p className="text-white/40 font-medium mt-1">Manage mating pairs and track pregnancy cycles.</p>
-          </div>
-          <div className="flex gap-4">
-            <div className="px-6 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 shadow-sm">
-              <TrendingUp className="text-emerald-400" size={20} />
-              <div>
-                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">{t('successRate')}</p>
-                <p className="text-lg font-black text-emerald-400">{successRate}%</p>
-              </div>
-            </div>
-            <button onClick={() => setIsModalOpen(true)} className="auron-button flex items-center justify-center gap-2 h-14 px-8">
-              <Plus size={20} />
-              {t('recordMating')}
-            </button>
-          </div>
-        </header>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <h3 className="text-xl font-black flex items-center gap-2">
-              <Activity className="text-emerald-400" size={20} />
-              {t('activePregnancies')}
-            </h3>
-            
-            <div className="grid sm:grid-cols-2 gap-6">
-              {litters.filter(l => l.status === 'Pregnant').map((litter, i) => {
-                const daysLeft = getDaysRemaining(litter.expected_birth_date);
-                const progress = Math.max(0, Math.min(100, ((31 - daysLeft) / 31) * 100));
-                
-                return (
-                  <motion.div 
-                    key={i} 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="pill-nav p-8 relative overflow-hidden group bg-white/5 border-white/10"
-                  >
-                    <button onClick={() => handleDelete(litter.id)} className="absolute top-4 right-4 p-2 rounded-lg bg-rose-500/10 text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Trash2 size={14} />
-                    </button>
-                    <div className="mb-4 flex justify-between items-center">
-                      <span className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 text-[10px] font-black uppercase tracking-widest">
-                        {t('expectedBirth')}: {litter.expected_birth_date}
-                      </span>
-                      <span className="text-[10px] font-black text-white/20 uppercase">{daysLeft} {t('daysRemaining')}</span>
-                    </div>
-                    
-                    <div className="w-full h-2 bg-white/5 rounded-full mb-6 overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        className="h-full bg-emerald-500"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-400 border border-pink-500/20">
-                        <Heart size={24} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black">{litter.mother_name} ({t('mother')})</p>
-                        <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{t('father')}: {litter.father_name}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-              {litters.filter(l => l.status === 'Pregnant').length === 0 && (
-                <div className="col-span-2 py-20 text-center pill-nav bg-white/5 border-white/10 border-dashed">
-                  <p className="text-white/20 font-bold">No active pregnancies detected.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <h3 className="text-xl font-black flex items-center gap-2">
-              <History className="text-indigo-400" size={20} />
-              {t('recentActivity')}
-            </h3>
-            
-            <div className="space-y-4">
-              {litters.slice(0, 8).map((litter, i) => (
-                <div key={i} className="pill-nav p-4 bg-white/5 border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-black">
-                      {litter.kit_count || '0'}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black">{litter.mother_name}</p>
-                      <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{litter.mating_date}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => handleDelete(litter.id)} className="text-white/10 hover:text-rose-400 transition-colors">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+    <div className="container mx-auto p-4 md:p-8 space-y-8 pb-24">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-black text-primary">Breeding Management</h1>
+          <p className="text-muted-foreground">Track mating cycles and litter production.</p>
         </div>
-      </main>
+        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+          <DialogTrigger asChild>
+            <Button className="rounded-full gap-2">
+              <Plus className="h-4 w-4" />
+              New Breeding
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Record New Breeding</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddBreeding} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>Doe (Female)</Label>
+                <Select onValueChange={(v) => setFormData({...formData, doeId: v})} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Doe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {does.map(r => (
+                      <SelectItem key={r.id} value={r.id}>{r.name} ({r.tagId})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Buck (Male)</Label>
+                <Select onValueChange={(v) => setFormData({...formData, buckId: v})} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Buck" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bucks.map(r => (
+                      <SelectItem key={r.id} value={r.id}>{r.name} ({r.tagId})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Mating Date</Label>
+                <Input 
+                  type="date" 
+                  value={formData.date} 
+                  onChange={(e) => setFormData({...formData, date: e.target.value})} 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea 
+                  value={formData.notes} 
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})} 
+                  placeholder="Any special observations?"
+                />
+              </div>
+              <Button type="submit" className="w-full">Save Breeding Record</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/80 backdrop-blur-xl">
-            <motion.div 
-              initial={{ opacity: 0, y: 100 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: 100 }} 
-              className="w-full max-w-lg bg-[#020408] border border-white/10 rounded-[3rem] shadow-2xl relative flex flex-col max-h-[90vh]"
-            >
-              <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
-                <h2 className="text-3xl font-black tracking-tighter">{t('recordMating')}</h2>
-                <button onClick={() => setIsModalOpen(false)} className="p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white transition-all"><X size={24} /></button>
+      {/* Active Records */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {records.map((record) => (
+          <Card key={record.id} className="overflow-hidden border-2 hover:border-primary/50 transition-colors">
+            <CardHeader className="pb-2 bg-muted/30">
+              <div className="flex justify-between items-start">
+                <Badge className={
+                  record.status === 'Mated' ? 'bg-pink-100 text-pink-700' :
+                  record.status === 'Confirmed' ? 'bg-blue-100 text-blue-700' :
+                  record.status === 'Kindled' ? 'bg-orange-100 text-orange-700' :
+                  'bg-green-100 text-green-700'
+                }>
+                  {record.status}
+                </Badge>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteRecord(record.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <CardTitle className="text-xl mt-2">
+                {getRabbitName(record.doeId)} × {getRabbitName(record.buckId)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" /> Mated
+                  </p>
+                  <p className="font-medium">{format(new Date(record.date), 'MMM d, yyyy')}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" /> Expected
+                  </p>
+                  <p className="font-medium text-orange-600">
+                    {record.expectedKindlingDate ? format(new Date(record.expectedKindlingDate), 'MMM d, yyyy') : 'N/A'}
+                  </p>
+                </div>
               </div>
 
-              <form onSubmit={handleAddMating} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2 relative">
-                    <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('mother')}</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={formData.mother_name ?? ''} 
-                      onFocus={() => showInstantSuggestions('mother', formData.mother_name)}
-                      onChange={(e) => { setFormData({...formData, mother_name: e.target.value}); showInstantSuggestions('mother', e.target.value); }} 
-                      className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50" 
-                    />
-                    {suggestions.type === 'mother' && suggestions.list.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
-                        {suggestions.list.map(r => (
-                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'mother')} className="w-full px-4 py-3 text-left hover:bg-white/5 flex items-center justify-between transition-colors">
-                            <div className="flex items-center gap-3">
-                              <Rabbit size={14} className="text-emerald-400" />
-                              <span className="text-sm font-bold">{r.name || r.rabbit_id}</span>
-                            </div>
-                            <ChevronRight size={14} className="text-white/20" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {record.status === 'Mated' && (
+                  <>
+                    <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus(record.id, 'Confirmed')}>
+                      <CheckCircle2 className="h-3 w-3 mr-1" /> Confirm
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1 text-destructive" onClick={() => updateStatus(record.id, 'Failed')}>
+                      <X className="h-3 w-3 mr-1" /> Failed
+                    </Button>
+                  </>
+                )}
+                {record.status === 'Confirmed' && (
+                  <Button size="sm" className="flex-1 bg-orange-600 hover:bg-orange-700" onClick={() => updateStatus(record.id, 'Kindled')}>
+                    <Baby className="h-3 w-3 mr-1" /> Kindled
+                  </Button>
+                )}
+                {record.status === 'Kindled' && (
+                  <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => updateStatus(record.id, 'Weaned')}>
+                    <Home className="h-3 w-3 mr-1" /> Wean
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-                  <div className="space-y-2 relative">
-                    <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('father')}</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={formData.father_name ?? ''} 
-                      onFocus={() => showInstantSuggestions('father', formData.father_name)}
-                      onChange={(e) => { setFormData({...formData, father_name: e.target.value}); showInstantSuggestions('father', e.target.value); }} 
-                      className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50" 
-                    />
-                    {suggestions.type === 'father' && suggestions.list.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
-                        {suggestions.list.map(r => (
-                          <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'father')} className="w-full px-4 py-3 text-left hover:bg-white/5 flex items-center justify-between transition-colors">
-                            <div className="flex items-center gap-3">
-                              <Rabbit size={14} className="text-emerald-400" />
-                              <span className="text-sm font-bold">{r.name || r.rabbit_id}</span>
-                            </div>
-                            <ChevronRight size={14} className="text-white/20" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
+      {/* Litters History */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <Baby className="h-6 w-6 text-primary" />
+          Recent Litters
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {litters.map((litter) => (
+            <Card key={litter.id} className="bg-muted/20">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold">{getRabbitName(litter.doeId)}'s Litter</span>
+                  <Badge variant="outline">{litter.aliveKits} Kits</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">Born: {format(new Date(litter.birthDate), 'MMM d, yyyy')}</p>
+                <div className="mt-3 flex gap-2">
+                  <div className="flex-1 text-center p-2 bg-green-50 rounded-lg border border-green-100">
+                    <p className="text-[10px] text-green-600 font-bold uppercase">Alive</p>
+                    <p className="text-lg font-black text-green-700">{litter.aliveKits}</p>
+                  </div>
+                  <div className="flex-1 text-center p-2 bg-red-50 rounded-lg border border-red-100">
+                    <p className="text-[10px] text-red-600 font-bold uppercase">Dead</p>
+                    <p className="text-lg font-black text-red-700">{litter.deadKits}</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('matingDate')}</label>
-                    <input type="date" required value={formData.mating_date ?? ''} onChange={(e) => setFormData({...formData, mating_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('expectedBirth')}</label>
-                    <input type="date" readOnly value={formData.expected_birth_date ?? ''} className="w-full h-14 px-6 bg-white/10 border border-white/10 rounded-2xl font-black text-emerald-400" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('notes')}</label>
-                  <textarea value={formData.notes ?? ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none min-h-[100px]" />
-                </div>
-                
-                <button type="submit" className="auron-button w-full h-16 text-lg mt-4">{t('recordMating')}</button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Record Litter Modal */}
+      <Dialog open={isLitterModalOpen} onOpenChange={setIsLitterModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Litter Details</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleRecordLitter} className="space-y-4 pt-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Total Kits</Label>
+                <Input 
+                  type="number" 
+                  value={litterData.totalKits} 
+                  onChange={(e) => setLitterData({...litterData, totalKits: parseInt(e.target.value)})} 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Alive</Label>
+                <Input 
+                  type="number" 
+                  value={litterData.aliveKits} 
+                  onChange={(e) => setLitterData({...litterData, aliveKits: parseInt(e.target.value)})} 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Dead</Label>
+                <Input 
+                  type="number" 
+                  value={litterData.deadKits} 
+                  onChange={(e) => setLitterData({...litterData, deadKits: parseInt(e.target.value)})} 
+                  required 
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea 
+                value={litterData.notes} 
+                onChange={(e) => setLitterData({...litterData, notes: e.target.value})} 
+                placeholder="Any notes about the birth?"
+              />
+            </div>
+            <Button type="submit" className="w-full">Save Litter Record</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

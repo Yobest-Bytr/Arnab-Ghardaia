@@ -1,140 +1,107 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { LanguageProvider } from "./contexts/LanguageContext";
-import CommandPalette from "./components/CommandPalette";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import Dashboard from "./pages/Dashboard";
-import Inventory from "./pages/Inventory";
-import Breeding from "./pages/Breeding";
-import Reports from "./pages/Reports";
-import Sales from "./pages/Sales";
-import Expenses from "./pages/Expenses";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import PublicRabbits from "./pages/PublicRabbits";
-import Profile from "./pages/Profile";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import Changelog from "./pages/Changelog";
-import NeuralLab from "./pages/NeuralLab";
-import AIInsights from "./pages/AIInsights";
-import Collaborators from "./pages/Collaborators";
-import Tasks from "./pages/Tasks";
-import QrManager from "./pages/QrManager";
-import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import Index from './pages/Index';
+import Inventory from './pages/Inventory';
+import Breeding from './pages/Breeding';
+import NeuralLab from './pages/NeuralLab';
+import { 
+  LayoutDashboard, 
+  Archive, 
+  Zap, 
+  Menu, 
+  X,
+  Rabbit as RabbitIcon,
+  BrainCircuit
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-    </div>
+const App = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const navLinks = [
+    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/inventory', icon: Archive, label: 'Inventory' },
+    { to: '/breeding', icon: Zap, label: 'Breeding' },
+    { to: '/neural-lab', icon: BrainCircuit, label: 'Neural Lab' },
+  ];
+
+  return (
+    <Router>
+      <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+        {/* Mobile Header */}
+        <header className="md:hidden flex items-center justify-between p-4 bg-white border-b sticky top-0 z-50">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary rounded-xl text-white">
+              <RabbitIcon className="h-5 w-5" />
+            </div>
+            <span className="font-black text-xl tracking-tight">Hop Farm</span>
+          </div>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2">
+            {isSidebarOpen ? <X /> : <Menu />}
+          </button>
+        </header>
+
+        {/* Sidebar */}
+        <aside className={cn(
+          "fixed inset-y-0 left-0 z-40 w-64 bg-white border-r transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          <div className="h-full flex flex-col p-6">
+            <div className="hidden md:flex items-center gap-3 mb-10">
+              <div className="p-2.5 bg-primary rounded-2xl text-white shadow-lg shadow-primary/20">
+                <RabbitIcon className="h-6 w-6" />
+              </div>
+              <span className="font-black text-2xl tracking-tight text-primary">Hop Farm</span>
+            </div>
+
+            <nav className="flex-1 space-y-2">
+              {navLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all",
+                    isActive 
+                      ? "bg-primary text-white shadow-md shadow-primary/20" 
+                      : "text-muted-foreground hover:bg-slate-100 hover:text-primary"
+                  )}
+                >
+                  <link.icon className="h-5 w-5" />
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
+
+            <div className="mt-auto pt-6 border-t">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Status</p>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm font-bold">System Online</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/breeding" element={<Breeding />} />
+            <Route path="/neural-lab" element={<NeuralLab />} />
+          </Routes>
+        </main>
+      </div>
+      <Toaster />
+      <SonnerToaster position="top-right" />
+    </Router>
   );
-  if (!user) return <Navigate to="/login" />;
-  return <>{children}</>;
 };
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <AuthProvider>
-        <LanguageProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner position="top-center" expand={true} richColors />
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <CommandPalette />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/shop" element={<PublicRabbits />} />
-                <Route path="/changelog" element={<Changelog />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/terms" element={<TermsOfService />} />
-                
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/qr-manager" element={
-                  <ProtectedRoute>
-                    <QrManager />
-                  </ProtectedRoute>
-                } />
-                <Route path="/neural-lab" element={
-                  <ProtectedRoute>
-                    <NeuralLab />
-                  </ProtectedRoute>
-                } />
-                <Route path="/insights" element={
-                  <ProtectedRoute>
-                    <AIInsights />
-                  </ProtectedRoute>
-                } />
-                <Route path="/collaborators" element={
-                  <ProtectedRoute>
-                    <Collaborators />
-                  </ProtectedRoute>
-                } />
-                <Route path="/tasks" element={
-                  <ProtectedRoute>
-                    <Tasks />
-                  </ProtectedRoute>
-                } />
-                <Route path="/inventory" element={
-                  <ProtectedRoute>
-                    <Inventory />
-                  </ProtectedRoute>
-                } />
-                <Route path="/breeding" element={
-                  <ProtectedRoute>
-                    <Breeding />
-                  </ProtectedRoute>
-                } />
-                <Route path="/sales" element={
-                  <ProtectedRoute>
-                    <Sales />
-                  </ProtectedRoute>
-                } />
-                <Route path="/expenses" element={
-                  <ProtectedRoute>
-                    <Expenses />
-                  </ProtectedRoute>
-                } />
-                <Route path="/reports" element={
-                  <ProtectedRoute>
-                    <Reports />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </LanguageProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
 
 export default App;
