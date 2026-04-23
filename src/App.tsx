@@ -219,18 +219,16 @@ const AppContent = () => {
 const App = () => {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
-            <LanguageProvider>
-              <ThemeProviderWrapper>
-                <Router>
-                  <AppContent />
-                  <Toaster />
-                  <SonnerToaster position="top-right" />
-                </Router>
-              </ThemeProviderWrapper>
-            </LanguageProvider>
-          </AuthProvider>
-        </ThemeProvider>
+      <AuthProvider>
+        <LanguageProvider>
+          <Router>
+            <AppContent />
+            <Toaster />
+            <SonnerToaster position="top-right" />
+          </Router>
+        </LanguageProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 
