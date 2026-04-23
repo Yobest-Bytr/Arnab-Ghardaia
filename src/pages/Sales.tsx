@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +8,8 @@ import {
   ShoppingBag, Plus, Calendar, User, Tag, 
   DollarSign, TrendingUp, PieChart as PieIcon, 
   ArrowUpRight, X, Loader2, Trash2, Rabbit,
-  CheckCircle2, Wallet, Wand2, Sparkles, ChevronRight, MessageSquare, BrainCircuit
+  CheckCircle2, Wallet, Wand2, Sparkles, ChevronRight, MessageSquare, BrainCircuit,
+  Beef, Leaf, Package, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -33,7 +33,7 @@ const Sales = () => {
     customer_name: '',
     price: '',
     sale_date: new Date().toISOString().split('T')[0],
-    category: 'Adult',
+    category: 'Natural', // Natural, Meat, Breeding, Other
     notes: ''
   });
 
@@ -92,7 +92,7 @@ const Sales = () => {
       if (list.length === 0 && val === '') list = customers;
     } else if (field === 'rabbit_id') {
       list = inventory.filter(r => 
-        val === '' || r.name?.toLowerCase().includes(val.toLowerCase()) || r.rabbit_id?.toLowerCase().includes(val.toLowerCase())
+        val === '' || r.name?.toLowerCase().includes(val.toLowerCase()) || r.tagId?.toLowerCase().includes(val.toLowerCase())
       );
     }
     
@@ -104,8 +104,8 @@ const Sales = () => {
       setFormData(prev => ({ 
         ...prev, 
         rabbit_id: val.id, 
-        price: val.price_dzd?.toString() || prev.price,
-        category: val.cage_type === 'Young' ? 'Young' : 'Adult'
+        price: val.price?.toString() || prev.price,
+        category: 'Natural'
       }));
     } else {
       setFormData(prev => ({ ...prev, [field]: val }));
@@ -152,7 +152,7 @@ const Sales = () => {
       }
 
       setIsModalOpen(false);
-      setFormData({ rabbit_id: '', customer_name: '', price: '', sale_date: new Date().toISOString().split('T')[0], category: 'Adult', notes: '' });
+      setFormData({ rabbit_id: '', customer_name: '', price: '', sale_date: new Date().toISOString().split('T')[0], category: 'Natural', notes: '' });
       await fetchData();
       showSuccess(t('recordSale'));
     } catch (err) {
@@ -162,9 +162,10 @@ const Sales = () => {
 
   const stats = useMemo(() => {
     const total = sales.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0);
-    const categories: Record<string, number> = { 'Young': 0, 'Meat': 0, 'Adult': 0 };
+    const categories: Record<string, number> = { 'Natural': 0, 'Meat': 0, 'Breeding': 0, 'Other': 0 };
     sales.forEach(s => {
       if (categories[s.category] !== undefined) categories[s.category]++;
+      else categories['Other']++;
     });
     
     const bestSelling = Object.entries(categories).reduce((a, b) => a[1] > b[1] ? a : b)[0];
@@ -173,11 +174,20 @@ const Sales = () => {
   }, [sales]);
 
   const chartData = Object.entries(stats.categories).map(([name, value]) => ({
-    name: name === 'Young' ? t('kit') : name === 'Meat' ? t('meatRabbit') : t('largeRabbit'),
+    name,
     value
   }));
 
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b'];
+  const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b'];
+
+  const getCategoryIcon = (cat: string) => {
+    switch(cat) {
+      case 'Meat': return <Beef className="h-4 w-4" />;
+      case 'Natural': return <Leaf className="h-4 w-4" />;
+      case 'Breeding': return <Zap className="h-4 w-4" />;
+      default: return <Package className="h-4 w-4" />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
@@ -187,11 +197,14 @@ const Sales = () => {
       <main className="pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto relative z-10">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter">{t('sales')}</h1>
-            <p className="text-white/40 font-medium mt-1">Track revenue and analyze market demand.</p>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter flex items-center gap-4">
+              <ShoppingBag className="h-12 w-12 text-emerald-500" />
+              {t('sales')}
+            </h1>
+            <p className="text-white/40 font-medium mt-2 text-lg">Track revenue and analyze market demand with neural precision.</p>
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="auron-button flex items-center gap-2 h-14 px-8">
-            <Plus size={20} /> {t('recordSale')}
+          <button onClick={() => setIsModalOpen(true)} className="auron-button flex items-center gap-3 h-16 px-10 text-lg">
+            <Plus size={24} /> {t('recordSale')}
           </button>
         </header>
 
@@ -199,92 +212,108 @@ const Sales = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-12 p-8 rounded-[3rem] bg-indigo-600 text-white relative overflow-hidden shadow-2xl shadow-indigo-500/20"
+          className="mb-12 p-10 rounded-[3.5rem] bg-indigo-600 text-white relative overflow-hidden shadow-2xl shadow-indigo-500/20 border border-white/10"
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-            <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center shrink-0">
-              <BrainCircuit size={40} className="text-white" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -mr-48 -mt-48" />
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+            <div className="w-24 h-24 rounded-[2rem] bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+              <BrainCircuit size={48} className="text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-2xl font-black mb-2 flex items-center gap-2">
-                Neural Breed Advisor
-                <Sparkles size={20} className="text-indigo-300" />
+              <h3 className="text-3xl font-black mb-3 flex items-center gap-3">
+                Neural Market Advisor
+                <Sparkles size={24} className="text-indigo-300 animate-pulse" />
               </h3>
-              <p className="text-indigo-100 font-medium leading-relaxed">
+              <p className="text-indigo-50 text-lg font-medium leading-relaxed">
                 {isAskingAi ? "Analyzing market trends and inventory..." : aiAdvice}
               </p>
             </div>
-            <button onClick={getBreedAdvice} className="px-8 h-14 rounded-2xl bg-white text-indigo-600 font-black text-sm hover:scale-105 transition-transform shrink-0">
+            <button onClick={getBreedAdvice} className="px-10 h-16 rounded-2xl bg-white text-indigo-600 font-black text-sm hover:scale-105 transition-all shadow-xl shrink-0">
               Refresh Advice
             </button>
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="pill-nav p-8 bg-emerald-600 text-white border-none shadow-xl shadow-emerald-500/20">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Wallet size={20} />
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div className="pill-nav p-10 bg-emerald-600 text-white border-none shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+              <Wallet size={80} />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{t('totalSales')}</p>
-            <h3 className="text-3xl font-black">{stats.total.toLocaleString()} DA</h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-2">{t('totalSales')}</p>
+            <h3 className="text-5xl font-black tracking-tighter">{stats.total.toLocaleString()} DA</h3>
+            <div className="mt-6 flex items-center gap-2 text-emerald-200 text-xs font-bold">
+              <TrendingUp size={14} />
+              <span>+12% from last month</span>
+            </div>
           </div>
 
-          <div className="pill-nav p-8 bg-white/5 border-white/10">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                <TrendingUp size={20} />
+          <div className="pill-nav p-10 bg-white/5 border-white/10 hover:bg-white/10 transition-all">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <TrendingUp size={28} />
               </div>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/20">{t('bestSelling')}</p>
-            <h3 className="text-3xl font-black">
-              {stats.bestSelling === 'Young' ? t('kit') : stats.bestSelling === 'Meat' ? t('meatRabbit') : t('largeRabbit')}
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">{t('bestSelling')}</p>
+            <h3 className="text-3xl font-black tracking-tight">
+              {stats.bestSelling}
             </h3>
           </div>
 
-          <div className="pill-nav p-8 bg-white/5 border-white/10">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400">
-                <Tag size={20} />
+          <div className="pill-nav p-10 bg-white/5 border-white/10 hover:bg-white/10 transition-all">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400">
+                <Tag size={28} />
               </div>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Transactions</p>
-            <h3 className="text-3xl font-black">{sales.length}</h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">Transactions</p>
+            <h3 className="text-3xl font-black tracking-tight">{sales.length}</h3>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 pill-nav p-0 overflow-hidden bg-white/5 border-white/10">
-            <div className="p-6 border-b border-white/5 flex items-center justify-between">
-              <h3 className="text-xl font-black">Recent Transactions</h3>
+        <div className="grid lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2 pill-nav p-0 overflow-hidden bg-white/5 border-white/10 shadow-xl">
+            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+              <h3 className="text-2xl font-black tracking-tight">Recent Transactions</h3>
+              <div className="flex gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+                  <input placeholder="Search sales..." className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold outline-none focus:border-emerald-500/50" />
+                </div>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left rtl:text-right">
                 <thead className="bg-white/5">
                   <tr>
-                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Customer</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Category</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Price</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Date</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-white/20 uppercase tracking-widest">Customer</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-white/20 uppercase tracking-widest">Category</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-white/20 uppercase tracking-widest">Price</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-white/20 uppercase tracking-widest">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {sales.map((sale, i) => (
-                    <tr key={i} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-bold">{sale.customer_name || 'Guest'}</p>
+                    <tr key={i} className="hover:bg-white/5 transition-colors group">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 font-black text-xs">
+                            {sale.customer_name?.charAt(0) || 'G'}
+                          </div>
+                          <p className="text-sm font-bold group-hover:text-emerald-400 transition-colors">{sale.customer_name || 'Guest'}</p>
+                        </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-medium text-white/40">
-                          {sale.category === 'Young' ? t('kit') : sale.category === 'Meat' ? t('meatRabbit') : t('largeRabbit')}
-                        </span>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 w-fit">
+                          <span className="text-white/40">{getCategoryIcon(sale.category)}</span>
+                          <span className="text-xs font-black uppercase tracking-widest text-white/60">
+                            {sale.category}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-black text-emerald-400">{sale.price} DA</span>
+                      <td className="px-8 py-6">
+                        <span className="text-lg font-black text-emerald-400">{sale.price.toLocaleString()} DA</span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold text-white/20">{sale.sale_date}</td>
+                      <td className="px-8 py-6 text-xs font-bold text-white/20">{sale.sale_date}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -292,29 +321,32 @@ const Sales = () => {
             </div>
           </div>
 
-          <div className="pill-nav p-8 bg-white/5 border-white/10">
-            <h3 className="text-xl font-black mb-8 flex items-center gap-2">
-              <PieIcon className="text-blue-400" size={20} />
+          <div className="pill-nav p-10 bg-white/5 border-white/10 shadow-xl">
+            <h3 className="text-2xl font-black mb-10 flex items-center gap-3">
+              <PieIcon className="text-blue-400" size={24} />
               {t('revenueByCategory')}
             </h3>
-            <div className="h-64 w-full">
+            <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  <Pie data={chartData} cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value">
+                    {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="none" />)}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#020408', border: '1px solid #ffffff10', borderRadius: '1rem' }} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid #ffffff10', borderRadius: '1.5rem', padding: '1rem' }}
+                    itemStyle={{ fontWeight: 'black', fontSize: '12px' }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="space-y-3 mt-6">
+            <div className="space-y-4 mt-10">
               {chartData.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span className="text-xs font-bold text-white/60">{item.name}</span>
+                <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="text-sm font-black text-white/60 uppercase tracking-widest">{item.name}</span>
                   </div>
-                  <span className="text-xs font-black">{item.value}</span>
+                  <span className="text-lg font-black">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -324,87 +356,126 @@ const Sales = () => {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4 bg-black/80 backdrop-blur-xl">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="max-w-lg w-full bg-[#020408] border border-white/10 p-10 rounded-[3rem] shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-              <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-white/40 hover:text-white transition-all"><X size={24} /></button>
-              <h2 className="text-3xl font-black mb-8 tracking-tight">{t('recordSale')}</h2>
-              <form onSubmit={handleRecordSale} className="space-y-6">
-                <div className="space-y-2 relative">
-                  <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('customerName')}</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formData.customer_name ?? ''} 
-                    onFocus={() => showInstantSuggestions('customer_name', formData.customer_name)}
-                    onChange={(e) => { setFormData({...formData, customer_name: e.target.value}); showInstantSuggestions('customer_name', e.target.value); }} 
-                    className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none focus:border-indigo-500/50" 
-                  />
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4 bg-black/90 backdrop-blur-2xl">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.9, y: 20 }} 
+              className="max-w-2xl w-full bg-[#0a0a0a] border border-white/10 p-12 rounded-[4rem] shadow-[0_0_100px_rgba(16,185,129,0.1)] relative max-h-[90vh] overflow-y-auto custom-scrollbar"
+            >
+              <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 p-3 rounded-2xl bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all"><X size={28} /></button>
+              <h2 className="text-4xl font-black mb-10 tracking-tighter flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                  <Plus size={28} />
+                </div>
+                {t('recordSale')}
+              </h2>
+              <form onSubmit={handleRecordSale} className="space-y-8">
+                <div className="space-y-3 relative">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">{t('customerName')}</label>
+                  <div className="relative">
+                    <User className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20" size={20} />
+                    <input 
+                      type="text" 
+                      required 
+                      value={formData.customer_name ?? ''} 
+                      onFocus={() => showInstantSuggestions('customer_name', formData.customer_name)}
+                      onChange={(e) => { setFormData({...formData, customer_name: e.target.value}); showInstantSuggestions('customer_name', e.target.value); }} 
+                      className="w-full h-16 pl-16 pr-6 bg-white/5 border border-white/10 rounded-[1.5rem] font-bold outline-none focus:border-emerald-500/50 focus:bg-white/[0.08] transition-all" 
+                    />
+                  </div>
                   {suggestions.field === 'customer_name' && suggestions.list.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-3 bg-[#111] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl">
                       {suggestions.list.map(c => (
-                        <button key={c} type="button" onClick={() => selectSuggestion(c, 'customer_name')} className="w-full px-4 py-3 text-left hover:bg-white/5 text-sm font-bold transition-colors flex items-center justify-between">
-                          {c} <ChevronRight size={14} className="text-white/20" />
+                        <button key={c} type="button" onClick={() => selectSuggestion(c, 'customer_name')} className="w-full px-6 py-4 text-left hover:bg-white/5 text-sm font-bold transition-colors flex items-center justify-between">
+                          {c} <ChevronRight size={16} className="text-white/20" />
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
                 
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('rabbitType')}</label>
-                    <select value={formData.category ?? 'Adult'} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none appearance-none">
-                      <option value="Young" className="bg-[#020408]">{t('kit')}</option>
-                      <option value="Meat" className="bg-[#020408]">{t('meatRabbit')}</option>
-                      <option value="Adult" className="bg-[#020408]">{t('largeRabbit')}</option>
-                    </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Product Type</label>
+                    <div className="relative">
+                      <Package className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20" size={20} />
+                      <select value={formData.category ?? 'Natural'} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full h-16 pl-16 pr-6 bg-white/5 border border-white/10 rounded-[1.5rem] font-bold outline-none appearance-none focus:border-emerald-500/50">
+                        <option value="Natural" className="bg-[#0a0a0a]">Natural Rabbit</option>
+                        <option value="Meat" className="bg-[#0a0a0a]">Meat / Slaughter</option>
+                        <option value="Breeding" className="bg-[#0a0a0a]">Breeding Stock</option>
+                        <option value="Other" className="bg-[#0a0a0a]">Other Product</option>
+                      </select>
+                      <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" size={20} />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('salePrice')} (DA)</label>
-                    <input type="number" required value={formData.price ?? ''} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">{t('salePrice')} (DA)</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20" size={20} />
+                      <input type="number" required value={formData.price ?? ''} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full h-16 pl-16 pr-6 bg-white/5 border border-white/10 rounded-[1.5rem] font-bold outline-none focus:border-emerald-500/50" />
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">{t('saleDate')}</label>
-                  <input type="date" required value={formData.sale_date ?? ''} onChange={(e) => setFormData({...formData, sale_date: e.target.value})} className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" />
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">{t('saleDate')}</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20" size={20} />
+                    <input type="date" required value={formData.sale_date ?? ''} onChange={(e) => setFormData({...formData, sale_date: e.target.value})} className="w-full h-16 pl-16 pr-6 bg-white/5 border border-white/10 rounded-[1.5rem] font-bold outline-none focus:border-emerald-500/50" />
+                  </div>
                 </div>
 
-                <div className="space-y-2 relative">
-                  <label className="text-xs font-black text-white/30 uppercase tracking-widest ml-2">Select Rabbit (Optional)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Search inventory..."
-                    onFocus={() => showInstantSuggestions('rabbit_id', '')}
-                    onChange={(e) => showInstantSuggestions('rabbit_id', e.target.value)}
-                    className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none" 
-                  />
+                <div className="space-y-3 relative">
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Select Rabbit (Optional)</label>
+                  <div className="relative">
+                    <Rabbit className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20" size={20} />
+                    <input 
+                      type="text" 
+                      placeholder="Search inventory by name or tag..."
+                      onFocus={() => showInstantSuggestions('rabbit_id', '')}
+                      onChange={(e) => showInstantSuggestions('rabbit_id', e.target.value)}
+                      className="w-full h-16 pl-16 pr-6 bg-white/5 border border-white/10 rounded-[1.5rem] font-bold outline-none focus:border-emerald-500/50" 
+                    />
+                  </div>
                   {suggestions.field === 'rabbit_id' && suggestions.list.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-3 bg-[#111] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl">
                       {suggestions.list.map(r => (
-                        <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'rabbit_id')} className="w-full px-4 py-3 text-left hover:bg-white/5 text-sm font-bold transition-colors flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Rabbit size={14} className="text-emerald-400" />
-                            <span>{r.name || r.rabbit_id}</span>
+                        <button key={r.id} type="button" onClick={() => selectSuggestion(r, 'rabbit_id')} className="w-full px-6 py-4 text-left hover:bg-white/5 text-sm font-bold transition-colors flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                              <Rabbit size={20} />
+                            </div>
+                            <div>
+                              <p>{r.name || 'Unnamed'}</p>
+                              <p className="text-[10px] text-white/20 uppercase tracking-widest">{r.tagId}</p>
+                            </div>
                           </div>
-                          <ChevronRight size={14} className="text-white/20" />
+                          <ChevronRight size={16} className="text-white/20" />
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between ml-2">
-                    <label className="text-xs font-black text-white/30 uppercase tracking-widest">{t('notes')}</label>
-                    <button type="button" onClick={handleNeuralSuggest} disabled={isGenerating} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors">
-                      {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Neural Suggest
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">{t('notes')}</label>
+                    <button type="button" onClick={handleNeuralSuggest} disabled={isGenerating} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-all">
+                      {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Neural Suggest
                     </button>
                   </div>
-                  <textarea value={formData.notes ?? ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl font-bold outline-none min-h-[100px]" />
+                  <textarea 
+                    value={formData.notes ?? ''} 
+                    onChange={(e) => setFormData({...formData, notes: e.target.value})} 
+                    className="w-full p-8 bg-white/5 border border-white/10 rounded-[2rem] font-bold outline-none min-h-[150px] focus:border-emerald-500/50 transition-all" 
+                    placeholder="Add transaction details or use Neural Suggest..."
+                  />
                 </div>
 
-                <button type="submit" className="auron-button w-full h-16 text-lg mt-4">{t('recordSale')}</button>
+                <button type="submit" className="auron-button w-full h-20 text-xl font-black mt-6 shadow-2xl shadow-emerald-500/20">
+                  {t('recordSale')}
+                </button>
               </form>
             </motion.div>
           </div>

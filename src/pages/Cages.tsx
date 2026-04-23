@@ -14,12 +14,16 @@ import {
   Users, 
   CheckCircle2, 
   AlertCircle,
-  MapPin
+  MapPin,
+  LayoutGrid,
+  Info,
+  ArrowRight
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 const Cages = () => {
   const [cages, setCages] = useState<Cage[]>([]);
@@ -93,11 +97,14 @@ const Cages = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-8 space-y-8 pb-24">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto p-4 md:p-8 space-y-10 pb-24 max-w-7xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-primary">Cage Management</h1>
-          <p className="text-muted-foreground">Organize your farm layout and housing.</p>
+          <h1 className="text-4xl font-black text-primary tracking-tight flex items-center gap-4">
+            <LayoutGrid className="h-10 w-10" />
+            Cage Management
+          </h1>
+          <p className="text-muted-foreground font-medium mt-1">Organize your farm layout and housing nodes with precision.</p>
         </div>
         <Dialog open={isAddModalOpen} onOpenChange={(open) => {
           setIsAddModalOpen(open);
@@ -107,36 +114,37 @@ const Cages = () => {
           }
         }}>
           <DialogTrigger asChild>
-            <Button className="rounded-full gap-2">
-              <Plus className="h-4 w-4" />
+            <Button className="rounded-2xl h-14 px-8 gap-2 shadow-lg shadow-primary/20 font-black text-lg w-full md:w-auto">
+              <Plus className="h-6 w-6" />
               Add Cage
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-8">
             <DialogHeader>
-              <DialogTitle>{editingCage ? 'Edit Cage' : 'Add New Cage'}</DialogTitle>
+              <DialogTitle className="text-2xl font-black">{editingCage ? 'Edit Cage' : 'Add New Cage'}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSaveCage} className="space-y-4 pt-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSaveCage} className="space-y-6 pt-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Cage Number</Label>
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Cage Number</Label>
                   <Input 
                     value={formData.number} 
                     onChange={(e) => setFormData({...formData, number: e.target.value})} 
                     placeholder="e.g. C-101"
+                    className="h-12 rounded-xl border-2"
                     required 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Type</Label>
                   <Select 
                     value={formData.type} 
                     onValueChange={(v: any) => setFormData({...formData, type: v})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl border-2">
                       <SelectValue placeholder="Select Type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="Single">Single</SelectItem>
                       <SelectItem value="Breeding">Breeding</SelectItem>
                       <SelectItem value="Grow-out">Grow-out</SelectItem>
@@ -145,34 +153,36 @@ const Cages = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Location</Label>
+                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Location</Label>
                 <Input 
                   value={formData.location} 
                   onChange={(e) => setFormData({...formData, location: e.target.value})} 
                   placeholder="e.g. Section A, Row 1"
+                  className="h-12 rounded-xl border-2"
                   required 
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Capacity</Label>
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Capacity</Label>
                   <Input 
                     type="number"
                     value={formData.capacity} 
                     onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})} 
+                    className="h-12 rounded-xl border-2"
                     required 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Status</Label>
                   <Select 
                     value={formData.status} 
                     onValueChange={(v: any) => setFormData({...formData, status: v})}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-xl border-2">
                       <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="Empty">Empty</SelectItem>
                       <SelectItem value="Occupied">Occupied</SelectItem>
                       <SelectItem value="Maintenance">Maintenance</SelectItem>
@@ -180,91 +190,113 @@ const Cages = () => {
                   </Select>
                 </div>
               </div>
-              <Button type="submit" className="w-full">{editingCage ? 'Update Cage' : 'Save Cage'}</Button>
+              <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg shadow-lg shadow-primary/20">
+                {editingCage ? 'Update Cage' : 'Save Cage'}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {cages.map((cage) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        {cages.map((cage, i) => {
           const occupants = getOccupants(cage.id);
           return (
-            <Card key={cage.id} className="overflow-hidden border-2 hover:border-primary/50 transition-all shadow-sm">
-              <CardHeader className="pb-2 bg-muted/30">
-                <div className="flex justify-between items-start">
-                  <div className="p-2 bg-white rounded-xl shadow-sm">
-                    <Box className="h-5 w-5 text-primary" />
+            <motion.div key={cage.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <Card className="overflow-hidden border-2 rounded-[2.5rem] hover:border-primary/50 transition-all shadow-sm hover:shadow-xl bg-white dark:bg-slate-900 group">
+                <CardHeader className="pb-4 bg-slate-50 dark:bg-slate-800/50 p-6 border-b">
+                  <div className="flex justify-between items-start">
+                    <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm transition-transform group-hover:scale-110">
+                      <Box className="h-8 w-8 text-primary" />
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                      <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl" onClick={() => {
+                        setEditingCage(cage);
+                        setFormData(cage);
+                        setIsAddModalOpen(true);
+                      }}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive hover:text-white" onClick={() => deleteCage(cage.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                      setEditingCage(cage);
-                      setFormData(cage);
-                      setIsAddModalOpen(true);
-                    }}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteCage(cage.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="mt-6">
+                    <CardTitle className="text-2xl font-black tracking-tight">{cage.number}</CardTitle>
+                    <Badge variant="outline" className="mt-2 font-black uppercase tracking-widest text-[10px] rounded-lg px-2 py-0.5">{cage.type}</Badge>
                   </div>
-                </div>
-                <div className="mt-4">
-                  <CardTitle className="text-xl font-bold">{cage.number}</CardTitle>
-                  <Badge variant="outline" className="mt-1">{cage.type}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{cage.location}</span>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                    <span>Occupancy</span>
-                    <span>{occupants.length} / {cage.capacity}</span>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-center gap-3 text-sm font-bold text-muted-foreground">
+                    <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                      <MapPin className="h-4 w-4 text-primary" />
+                    </div>
+                    <span>{cage.location}</span>
                   </div>
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className={cn(
-                        "h-full transition-all",
-                        occupants.length >= cage.capacity ? "bg-red-500" : "bg-primary"
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                      <span>Occupancy</span>
+                      <span className={cn(occupants.length >= cage.capacity ? "text-red-500" : "text-primary")}>
+                        {occupants.length} / {cage.capacity}
+                      </span>
+                    </div>
+                    <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border shadow-inner">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min((occupants.length / cage.capacity) * 100, 100)}%` }}
+                        className={cn(
+                          "h-full transition-all",
+                          occupants.length >= cage.capacity ? "bg-red-500" : "bg-primary"
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <Users className="h-4 w-4" /> Current Occupants
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {occupants.length === 0 ? (
+                        <span className="text-xs italic text-muted-foreground font-medium p-2 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-dashed w-full text-center">Empty Node</span>
+                      ) : (
+                        occupants.map(r => (
+                          <Badge key={r.id} variant="secondary" className="text-[10px] font-black uppercase tracking-widest rounded-lg px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition-colors cursor-default">
+                            {r.name}
+                          </Badge>
+                        ))
                       )}
-                      style={{ width: `${Math.min((occupants.length / cage.capacity) * 100, 100)}%` }}
-                    />
+                    </div>
                   </div>
-                </div>
 
-                <div className="pt-2">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase mb-2">Current Occupants</p>
-                  <div className="flex flex-wrap gap-1">
-                    {occupants.length === 0 ? (
-                      <span className="text-xs italic text-muted-foreground">Empty</span>
-                    ) : (
-                      occupants.map(r => (
-                        <Badge key={r.id} variant="secondary" className="text-[10px]">
-                          {r.name}
-                        </Badge>
-                      ))
-                    )}
+                  <div className="pt-4 border-t flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {cage.status === 'Occupied' ? (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{cage.status}</span>
+                        </div>
+                      ) : cage.status === 'Maintenance' ? (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 dark:bg-amber-900/20">
+                          <AlertCircle className="h-4 w-4" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{cage.status}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 text-slate-400 dark:bg-slate-800">
+                          <div className="h-3 w-3 rounded-full border-2 border-slate-300" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{cage.status}</span>
+                        </div>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary">
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-
-                <div className="pt-2 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    {cage.status === 'Occupied' ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    ) : cage.status === 'Maintenance' ? (
-                      <AlertCircle className="h-4 w-4 text-orange-500" />
-                    ) : (
-                      <div className="h-4 w-4 rounded-full border-2 border-slate-300" />
-                    )}
-                    <span className="text-xs font-bold">{cage.status}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </div>

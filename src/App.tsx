@@ -62,6 +62,27 @@ const AppContent = () => {
   const { user, logout } = useAuth();
   const { t, isRTL } = useLanguage();
 
+  useEffect(() => {
+    const syncTheme = async () => {
+      if (user) {
+        const settings = await storage.getSettings();
+        if (settings.theme && settings.theme !== theme) {
+          setTheme(settings.theme);
+        }
+      }
+    };
+    syncTheme();
+  }, [user, theme, setTheme]);
+
+  useEffect(() => {
+    const saveTheme = async () => {
+      if (theme && user) {
+        await storage.saveSettings({ theme: theme as 'light' | 'dark' | 'system' });
+      }
+    };
+    saveTheme();
+  }, [theme, user]);
+
   const navLinks = [
     { to: '/', icon: LayoutDashboard, label: t('dashboard') },
     { to: '/inventory', icon: Archive, label: t('inventory') },
@@ -198,16 +219,18 @@ const AppContent = () => {
 const App = () => {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AuthProvider>
-        <LanguageProvider>
-          <Router>
-            <AppContent />
-            <Toaster />
-            <SonnerToaster position="top-right" />
-          </Router>
-        </LanguageProvider>
-      </AuthProvider>
-    </ThemeProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <ThemeProviderWrapper>
+                <Router>
+                  <AppContent />
+                  <Toaster />
+                  <SonnerToaster position="top-right" />
+                </Router>
+              </ThemeProviderWrapper>
+            </LanguageProvider>
+          </AuthProvider>
+        </ThemeProvider>
   );
 };
 

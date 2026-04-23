@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { storage } from '@/lib/storage';
+import { useAuth } from './AuthContext';
 
 type Language = 'en' | 'ar' | 'fr';
 
@@ -136,7 +138,7 @@ const translations: Translations = {
   splitFailed: { en: "Split failed.", ar: "فشل الفصل.", fr: "Échec de la séparation." },
   rabbitRemoved: { en: "Rabbit removed.", ar: "تمت إزالة الأرنب.", fr: "Lapin supprimé." },
   splitExceedsKits: { en: "Total split exceeds alive kits.", ar: "إجمالي الفصل يتجاوز المواليد الأحياء.", fr: "Le total dépasse les lapereaux vivants." },
-  neuralIdFound: { en: "Neural ID Found: ", ar: "تم العثور على المعرف العصبي: ", fr: "ID Neural trouvé: " },
+  neuralIdFound: { en: "Neural ID Found: ", ar: "تم العور على المعرف العصبي: ", fr: "ID Neural trouvé: " },
   neuralIdNotFound: { en: "Neural ID not recognized in local database.", ar: "المعرف العصبي غير معترف به في قاعدة البيانات المحلية.", fr: "ID Neural non reconnu dans la base de données locale." },
   sonOf: { en: "Son of", ar: "ابن", fr: "Fils de" },
   daughterOf: { en: "Daughter of", ar: "ابنة", fr: "Fille de" },
@@ -185,7 +187,7 @@ const translations: Translations = {
   engineOnline: { en: "Engine Online", ar: "المحرك متصل", fr: "Moteur en ligne" },
   nodesLinked: { en: "Nodes Linked", ar: "عقد مرتبطة", fr: "Nœuds liés" },
   secureUplink: { en: "Secure Uplink", ar: "رابط آمن", fr: "Lien sécurisé" },
-  ghardaiaNode: { en: "Ghardaia Node", ar: "عقدة غرداية", fr: "Nœود Ghardaia" },
+  ghardaiaNode: { en: "Ghardaia Node", ar: "عقدة غرداية", fr: "نود Ghardaia" },
   healthy: { en: "Healthy", ar: "سليم", fr: "Sain" },
   neuralCommandActive: { en: "Neural Command Active", ar: "القيادة العصبية نشطة", fr: "Commande Neurale Active" },
   theNexus: { en: "The Nexus.", ar: "الرابط.", fr: "Le Nexus." },
@@ -194,7 +196,7 @@ const translations: Translations = {
   neuralHealthScore: { en: "Neural Health Score", ar: "درجة الصحة العصبية", fr: "Score de Santé Neurale" },
   occupied: { en: "Occupied", ar: "مشغول", fr: "Occupé" },
   empty: { en: "Empty", ar: "فارغ", fr: "Vide" },
-  proTip: { en: "Pro Tip", ar: "نصيحة احترافية", fr: "Conseيل Pro" },
+  proTip: { en: "Pro Tip", ar: "نصيحة احترافية", fr: "Conseil Pro" },
   proTipDesc: { en: "Regularly update rabbit weights to get more accurate growth velocity insights in your reports.", ar: "قم بتحديث أوزان الأرانب بانتظام للحصول على رؤى أكثر دقة لسرعة النمو في تقاريرك.", fr: "Mettez régulièrement à jour le poids des lapins pour obtenir des analyses de croissance plus précises." },
   last6Months: { en: "Last 6 Months", ar: "آخر 6 أشهر", fr: "6 derniers mois" },
   netProfit: { en: "Net Profit", ar: "صافي الربح", fr: "Bénéfice net" },
@@ -211,19 +213,19 @@ const translations: Translations = {
   heroSubtitle: { en: "The ultimate management platform for modern breeders in Ghardaia.", ar: "المنصة النهائية للإدارة للمربين العصريين في غرداية.", fr: "La plateforme de gestion ultime pour les éleveurs modernes à Ghardaia." },
   goDashboard: { en: "Go to Dashboard", ar: "اذهب إلى لوحة التحكم", fr: "Aller au tableau de bord" },
   viewRabbits: { en: "View Rabbits", ar: "عرض الأرانب", fr: "Voir les lapins" },
-  happyCustomers: { en: "Happy Customers", ar: "زبون سعيد", fr: "Clients satisfاits" },
+  happyCustomers: { en: "Happy Customers", ar: "زبون سعيد", fr: "Clients satisfaits" },
   healthyRate: { en: "Healthy Rate", ar: "معدل الصحة", fr: "Taux de santé" },
   totalRabbits: { en: "Total Rabbits", ar: "إجمالي الأرانب", fr: "Total des lapins" },
   males: { en: "Males", ar: "ذكور", fr: "Mâles" },
   females: { en: "Females", ar: "إناث", fr: "Femelles" },
   newBorns: { en: "New Borns", ar: "مواليد جدد", fr: "Nouveaux nés" },
   featuresTitle: { en: "Everything you need to scale", ar: "كل ما تحتاجه للتوسع", fr: "Tout ce dont vous avez besoin pour évoluer" },
-  featuresSubtitle: { en: "Powerful tools designed specifically for rabbit farm management.", ar: "أدوات قوية مصممة خصصاً لإدارة مزارع الأرانب.", fr: "Des outils puissants conçus spécifiquement pour la gestion des fermes de lapins." },
+  featuresSubtitle: { en: "Powerful tools designed specifically for rabbit farm management.", ar: "أدوات قوية مصممة خصيصاً لإدارة مزارع الأرانب.", fr: "Des outils puissants conçus spécifiquement pour la gestion des fermes de lapins." },
   feature1Title: { en: "Real-time Analytics", ar: "تحليلات فورية", fr: "Analyses en temps réel" },
   feature1Desc: { en: "Track growth, health, and production metrics instantly.", ar: "تتبع مقاييس النمو والصحة والإنتاج فوراً.", fr: "Suivez instantanément les indicateurs de croissance, de santé et de production." },
   feature2Title: { en: "Breeding Management", ar: "إدارة التزاوج", fr: "Gestion de l'élevage" },
   feature2Desc: { en: "Never miss a mating cycle or birth date again.", ar: "لا تفوت دورة تزاوج أو تاريخ ولادة مرة أخرى.", fr: "Ne manquez plus jamais un cycle de saillie ou une date de naissance." },
-  feature3Title: { en: "Inventory Control", ar: "التحكم في المخزون", fr: "Contرول de l'inventaire" },
+  feature3Title: { en: "Inventory Control", ar: "التحكم في المخزون", fr: "Contrôle de l'inventaire" },
   feature3Desc: { en: "Manage cages, feed, and medical supplies in one place.", ar: "إدارة الأقفاص والعلف والمستلزمات الطبية في مكان واحد.", fr: "Gérez les cages, l'alimentation et les fournitures médicales en un seul endroit." },
   ctaTitle: { en: "Ready to modernize your farm?", ar: "جاهز لتحديث مزرعتك؟", fr: "Prêt à moderniser votre ferme ?" },
   ctaSubtitle: { en: "Join hundreds of breeders using Arnab Ghardaia today.", ar: "انضم إلى مئات المربين الذين يستخدمون أرنب غرداية اليوم.", fr: "Rejoignez des centaines d'éleveurs utilisant Arnab Ghardaia aujourd'hui." },
@@ -248,8 +250,22 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [language, setLanguage] = useState<Language>(() => (localStorage.getItem('app_lang') as Language) || 'en');
   
+  // Sync language with user settings if available
+  useEffect(() => {
+    const syncLang = async () => {
+      if (user) {
+        const settings = await storage.getSettings();
+        if (settings.language && settings.language !== language) {
+          setLanguage(settings.language as Language);
+        }
+      }
+    };
+    syncLang();
+  }, [user]);
+
   const t = (key: string) => {
     const translation = translations[key]?.[language];
     if (!translation) {
@@ -265,7 +281,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
     localStorage.setItem('app_lang', language);
-  }, [language, isRTL]);
+    
+    // Update storage if user is logged in
+    if (user) {
+      storage.getSettings().then(settings => {
+        if (settings.language !== language) {
+          storage.saveSettings({ ...settings, language });
+        }
+      });
+    }
+  }, [language, isRTL, user]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t, isRTL }}>

@@ -17,11 +17,15 @@ import {
   Baby,
   Activity,
   Box,
-  Edit2
+  Edit2,
+  Zap,
+  ShieldCheck,
+  Clock,
+  LayoutDashboard
 } from 'lucide-react';
 import { FlowBoard } from '@/components/FlowBoard';
 import { QRScanner } from '@/components/QrScanner';
-import { format, addDays, isBefore, isAfter } from 'date-fns';
+import { format, addDays, isBefore, isAfter, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -29,9 +33,12 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { motion } from 'framer-motion';
 
 const Index = () => {
   const { user } = useAuth();
+  const { t, isRTL } = useLanguage();
   const [rabbits, setRabbits] = useState<Rabbit[]>([]);
   const [breedingRecords, setBreedingRecords] = useState<BreedingRecord[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -158,121 +165,102 @@ const Index = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-8 space-y-8 pb-24">
+    <div className="container mx-auto p-4 md:p-8 space-y-10 pb-24 max-w-7xl">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-4xl font-black tracking-tight text-primary">Welcome, {user?.user_metadata?.display_name || user?.name || 'Breeder'}!</h1>
-          <p className="text-muted-foreground">Here's what's happening on your farm today.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowScanner(true)} variant="outline" className="rounded-full gap-2">
-            <QrCode className="h-4 w-4" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-primary flex items-center gap-4">
+            <LayoutDashboard className="h-10 w-10" />
+            {t('welcomeBack').split(' ')[0]}, {user?.user_metadata?.display_name || user?.name || 'Breeder'}!
+          </h1>
+          <p className="text-muted-foreground text-lg font-medium mt-1">{t('welcomeBack')}</p>
+        </motion.div>
+        <div className="flex gap-3 w-full md:w-auto">
+          <Button onClick={() => setShowScanner(true)} variant="outline" className="rounded-2xl h-14 px-6 gap-2 border-2 font-bold flex-1 md:flex-none">
+            <QrCode className="h-5 w-5" />
             Scan
           </Button>
-          <Button onClick={() => navigate('/inventory')} className="rounded-full gap-2">
-            <Plus className="h-4 w-4" />
-            Add Rabbit
+          <Button onClick={() => navigate('/inventory')} className="rounded-2xl h-14 px-8 gap-2 shadow-lg shadow-primary/20 font-bold flex-1 md:flex-none">
+            <Plus className="h-5 w-5" />
+            {t('addRabbit')}
           </Button>
         </div>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white border-2 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-green-100 rounded-xl text-green-600">
-                <Activity className="h-5 w-5" />
-              </div>
-              <Badge variant="secondary" className="bg-green-200 text-green-800">Active</Badge>
-            </div>
-            <div className="mt-4">
-              <div className="text-3xl font-bold">{totalRabbits}</div>
-              <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Total Stock</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-2 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-pink-100 rounded-xl text-pink-600">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-3xl font-bold">{activeDoes}</div>
-              <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Active Does</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-2 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-3xl font-bold">{activeBucks}</div>
-              <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Active Bucks</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border-2 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
-                <Box className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-3xl font-bold">{cages.filter(c => c.status === 'Empty').length}</div>
-              <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Empty Cages</div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: t('totalRabbits'), val: totalRabbits, icon: Activity, color: 'bg-emerald-50 text-emerald-600', badge: 'Active' },
+          { label: t('females'), val: activeDoes, icon: TrendingUp, color: 'bg-pink-50 text-pink-600', badge: 'Does' },
+          { label: t('males'), val: activeBucks, icon: TrendingUp, color: 'bg-blue-50 text-blue-600', badge: 'Bucks' },
+          { label: t('empty'), val: cages.filter(c => c.status === 'Empty').length, icon: Box, color: 'bg-orange-50 text-orange-600', badge: 'Cages' },
+        ].map((stat, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+            <Card className="border-2 rounded-[2rem] shadow-sm hover:shadow-md transition-all overflow-hidden group">
+              <CardContent className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className={cn("p-4 rounded-2xl transition-transform group-hover:scale-110", stat.color)}>
+                    <stat.icon className="h-6 w-6" />
+                  </div>
+                  <Badge variant="secondary" className="rounded-lg px-3 py-1 font-black uppercase tracking-widest text-[10px]">{stat.badge}</Badge>
+                </div>
+                <div>
+                  <div className="text-4xl font-black tracking-tighter">{stat.val}</div>
+                  <div className="text-xs text-muted-foreground font-black uppercase tracking-[0.2em] mt-1">{stat.label}</div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
 
       {/* Smart Insights "Think" Section */}
-      <Card className="border-2 border-primary/20 bg-primary/5 overflow-hidden shadow-lg">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <BrainCircuit className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Smart Insights</CardTitle>
+      <Card className="border-2 border-primary/20 bg-primary/[0.02] rounded-[2.5rem] overflow-hidden shadow-xl">
+        <CardHeader className="pb-4 p-8 bg-white/50 dark:bg-slate-900/50 border-b">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <BrainCircuit className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-black tracking-tight">{t('neuralCommandActive')}</CardTitle>
+              <CardDescription className="font-medium">AI-powered suggestions for your farm optimization.</CardDescription>
+            </div>
           </div>
-          <CardDescription>AI-powered suggestions for your farm</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+        <CardContent className="p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {insights.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">Everything looks good! No urgent actions needed.</p>
+              <p className="text-sm text-muted-foreground italic p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed text-center col-span-2">
+                Everything looks good! No urgent actions needed.
+              </p>
             ) : (
               insights.map((insight, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow">
-                  {insight.priority === 'Critical' ? (
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
-                  ) : insight.type === 'action' ? (
-                    <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5" />
-                  ) : (
-                    <Calendar className="h-5 w-5 text-green-500 mt-0.5" />
-                  )}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-bold text-sm">{insight.title}</h4>
-                      <Badge variant={insight.priority === 'Critical' ? 'destructive' : 'outline'} className="text-[10px]">
+                <motion.div 
+                  key={idx} 
+                  whileHover={{ y: -2 }}
+                  className="flex items-start gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl border-2 shadow-sm hover:shadow-md transition-all"
+                >
+                  <div className={cn(
+                    "p-3 rounded-xl shrink-0",
+                    insight.priority === 'Critical' ? "bg-red-50 text-red-500" : 
+                    insight.type === 'action' ? "bg-blue-50 text-blue-500" : "bg-green-50 text-green-500"
+                  )}>
+                    {insight.priority === 'Critical' ? <AlertTriangle className="h-5 w-5" /> : 
+                     insight.type === 'action' ? <CheckCircle2 className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="font-black text-sm truncate">{insight.title}</h4>
+                      <Badge variant={insight.priority === 'Critical' ? 'destructive' : 'outline'} className="text-[9px] font-black uppercase tracking-widest px-2">
                         {insight.priority}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{insight.description}</p>
+                    <p className="text-xs text-muted-foreground font-medium leading-relaxed">{insight.description}</p>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <ArrowRight className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary">
+                    <ArrowRight className="h-5 w-5" />
                   </Button>
-                </div>
+                </motion.div>
               ))
             )}
           </div>
@@ -280,73 +268,91 @@ const Index = () => {
       </Card>
 
       {/* Breeding Flow Board */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            Breeding Flow
+          <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
+            <TrendingUp className="h-8 w-8 text-primary" />
+            {t('breeding')} Flow
           </h2>
-          <Button variant="link" onClick={() => navigate('/breeding')}>View All Records</Button>
+          <Button variant="ghost" onClick={() => navigate('/breeding')} className="font-black text-primary hover:bg-primary/10 rounded-xl">
+            View All Records <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </div>
         <FlowBoard records={breedingRecords} rabbits={rabbits} />
       </div>
 
       {/* Tasks & Litters Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-primary" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="space-y-6">
+          <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
+            <Calendar className="h-8 w-8 text-primary" />
             Upcoming Tasks
           </h2>
-          <Card className="border-2">
+          <Card className="border-2 rounded-[2.5rem] shadow-sm overflow-hidden">
             <CardContent className="p-0">
-              <div className="divide-y">
+              <div className="divide-y-2">
                 {tasks.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    <p>No pending tasks. You're all caught up!</p>
+                  <div className="p-12 text-center text-muted-foreground">
+                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p className="font-bold">No pending tasks. You're all caught up!</p>
                   </div>
                 ) : (
-                  tasks.map((task) => (
-                    <div key={task.id} className="p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors">
+                  tasks.slice(0, 5).map((task) => (
+                    <div key={task.id} className="p-6 flex items-center gap-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
                       <div className={cn(
-                        "h-10 w-10 rounded-full flex items-center justify-center",
-                        task.priority === 'High' ? "bg-red-100 text-red-600" :
-                        task.priority === 'Medium' ? "bg-orange-100 text-orange-600" :
-                        "bg-blue-100 text-blue-600"
+                        "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110",
+                        task.priority === 'High' ? "bg-red-50 text-red-600" :
+                        task.priority === 'Medium' ? "bg-orange-50 text-orange-600" :
+                        "bg-blue-50 text-blue-600"
                       )}>
-                        <CheckCircle2 className="h-5 w-5" />
+                        <CheckCircle2 className="h-6 w-6" />
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-sm">{task.title}</h4>
-                        <p className="text-xs text-muted-foreground">{task.dueDate}</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-black text-sm truncate">{task.title}</h4>
+                        <p className="text-xs text-muted-foreground font-bold flex items-center gap-1 mt-0.5">
+                          <Clock className="h-3 w-3" /> {task.dueDate}
+                        </p>
                       </div>
-                      <Badge variant="outline">{task.category}</Badge>
+                      <Badge variant="outline" className="rounded-lg font-black uppercase tracking-widest text-[9px] px-2 py-1">{task.category}</Badge>
                     </div>
                   ))
                 )}
               </div>
+              {tasks.length > 5 && (
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 text-center border-t-2">
+                  <Button variant="link" onClick={() => navigate('/tasks')} className="font-black text-xs uppercase tracking-widest">View All Tasks</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Baby className="h-6 w-6 text-primary" />
-            Recent Litters
+        <div className="space-y-6">
+          <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
+            <Baby className="h-8 w-8 text-primary" />
+            {t('litters')}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {litters.slice(0, 4).map((litter) => (
-              <Card key={litter.id} className="bg-white shadow-sm border-2 hover:border-primary/30 transition-colors group relative">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-sm">{rabbits.find(r => r.id === litter.doeId)?.name || 'Unknown'}'s Litter</span>
-                    <Badge className="bg-green-100 text-green-700 border-green-200">{litter.aliveKits} Kits</Badge>
+              <Card key={litter.id} className="bg-white dark:bg-slate-900 shadow-sm border-2 rounded-[2rem] hover:border-primary/30 transition-all group relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-primary/5 rounded-xl">
+                      <Baby className="h-6 w-6 text-primary" />
+                    </div>
+                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 rounded-lg font-black">{litter.aliveKits} Kits</Badge>
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Born: {litter.birthDate}</p>
+                  <div>
+                    <span className="font-black text-lg block truncate">{rabbits.find(r => r.id === litter.doeId)?.name || 'Unknown'}'s Litter</span>
+                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" /> Born: {litter.birthDate}
+                    </p>
+                  </div>
                   <Button 
-                    variant="ghost" 
+                    variant="secondary" 
                     size="icon" 
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                    className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 h-10 w-10 rounded-xl shadow-lg"
                     onClick={() => setEditingLitter(litter)}
                   >
                     <Edit2 className="h-4 w-4" />
@@ -354,63 +360,69 @@ const Index = () => {
                 </CardContent>
               </Card>
             ))}
+            {litters.length === 0 && (
+              <div className="col-span-2 p-12 text-center bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-dashed">
+                <Baby className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p className="text-muted-foreground font-bold">No litters recorded yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Edit Litter Dialog */}
       <Dialog open={!!editingLitter} onOpenChange={(open) => !open && setEditingLitter(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-[2.5rem] p-8 sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit Litter Details</DialogTitle>
+            <DialogTitle className="text-2xl font-black">{t('editLitter')}</DialogTitle>
           </DialogHeader>
           {editingLitter && (
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-6">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="totalKits" className="text-right">Total Kits</Label>
+                <Label htmlFor="totalKits" className="text-right font-bold">Total Kits</Label>
                 <Input 
                   id="totalKits" 
                   type="number" 
                   value={editingLitter.totalKits} 
                   onChange={(e) => setEditingLitter({...editingLitter, totalKits: parseInt(e.target.value)})}
-                  className="col-span-3" 
+                  className="col-span-3 h-12 rounded-xl border-2" 
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="aliveKits" className="text-right">Alive Kits</Label>
+                <Label htmlFor="aliveKits" className="text-right font-bold">Alive Kits</Label>
                 <Input 
                   id="aliveKits" 
                   type="number" 
                   value={editingLitter.aliveKits} 
                   onChange={(e) => setEditingLitter({...editingLitter, aliveKits: parseInt(e.target.value)})}
-                  className="col-span-3" 
+                  className="col-span-3 h-12 rounded-xl border-2" 
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="deadKits" className="text-right">Dead Kits</Label>
+                <Label htmlFor="deadKits" className="text-right font-bold">Dead Kits</Label>
                 <Input 
                   id="deadKits" 
                   type="number" 
                   value={editingLitter.deadKits} 
                   onChange={(e) => setEditingLitter({...editingLitter, deadKits: parseInt(e.target.value)})}
-                  className="col-span-3" 
+                  className="col-span-3 h-12 rounded-xl border-2" 
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="birthDate" className="text-right">Birth Date</Label>
+                <Label htmlFor="birthDate" className="text-right font-bold">Birth Date</Label>
                 <Input 
                   id="birthDate" 
                   type="date" 
                   value={editingLitter.birthDate} 
                   onChange={(e) => setEditingLitter({...editingLitter, birthDate: e.target.value})}
-                  className="col-span-3" 
+                  className="col-span-3 h-12 rounded-xl border-2" 
                 />
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingLitter(null)}>Cancel</Button>
-            <Button onClick={handleSaveLitter}>Save Changes</Button>
+          <DialogFooter className="gap-3">
+            <Button variant="outline" onClick={() => setEditingLitter(null)} className="h-12 rounded-xl font-bold px-6">Cancel</Button>
+            <Button onClick={handleSaveLitter} className="h-12 rounded-xl font-black px-8 shadow-lg shadow-primary/20">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
