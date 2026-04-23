@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  User, Shield, Settings, Sparkles, Loader2, LogOut, 
-  Check, Palette, Bell, ShieldCheck, Mail, Key, Cpu, Zap, Eye, EyeOff, Globe, ExternalLink 
+  User, Shield, Settings, Sparkles, Loader2, LogOut,
+  Check, Palette, Bell, ShieldCheck, Mail, Key, Cpu, Zap, Eye, EyeOff, Globe, ExternalLink, BrainCircuit
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
@@ -23,14 +23,18 @@ const Profile = () => {
     openai: false,
     anthropic: false,
     deepseek: false,
-    google: false
+    google: false,
+    grok: false,
+    gemini: false
   });
   
   const [aiKeys, setAiKeys] = useState({
     openai: '',
     anthropic: '',
     deepseek: '',
-    google: ''
+    google: '',
+    grok: '',
+    gemini: ''
   });
 
   useEffect(() => {
@@ -89,7 +93,9 @@ const Profile = () => {
     openai: 'https://platform.openai.com/api-keys',
     anthropic: 'https://console.anthropic.com/settings/keys',
     deepseek: 'https://platform.deepseek.com/api_keys',
-    google: 'https://aistudio.google.com/app/apikey'
+    google: 'https://aistudio.google.com/app/apikey',
+    grok: 'https://x.ai/api',
+    gemini: 'https://aistudio.google.com/app/apikey'
   };
 
   return (
@@ -187,6 +193,8 @@ const Profile = () => {
                         { id: 'anthropic', name: 'Anthropic API Key', icon: Zap },
                         { id: 'deepseek', name: 'DeepSeek API Key', icon: Sparkles },
                         { id: 'google', name: 'Google Gemini API Key', icon: Globe },
+                        { id: 'grok', name: 'xAI Grok API Key', icon: BrainCircuit },
+                        { id: 'gemini', name: 'Google Gemini Pro API Key', icon: Sparkles },
                       ].map((k) => (
                         <div key={k.id} className="space-y-3">
                           <div className="flex items-center justify-between px-2">

@@ -39,29 +39,29 @@ const Cages = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const savedCages = storage.getCages();
+  const loadData = async () => {
+    const savedCages = await storage.getCages();
     if (savedCages.length === 0) {
       const demoCages: Cage[] = [
         { id: 'c1', number: 'C-01', type: 'Single', location: 'Section A', status: 'Occupied', capacity: 1 },
         { id: 'c2', number: 'C-02', type: 'Breeding', location: 'Section A', status: 'Empty', capacity: 2 },
         { id: 'c3', number: 'G-01', type: 'Grow-out', location: 'Section B', status: 'Occupied', capacity: 10 },
       ];
-      storage.saveCages(demoCages);
+      await storage.saveCages(demoCages);
       setCages(demoCages);
     } else {
       setCages(savedCages);
     }
-    setRabbits(storage.getRabbits());
+    setRabbits(await storage.getRabbits());
   };
 
-  const handleSaveCage = (e: React.FormEvent) => {
+  const handleSaveCage = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cagesList = storage.getCages();
+    const cagesList = await storage.getCages();
     
     if (editingCage) {
       const updatedList = cagesList.map(c => c.id === editingCage.id ? { ...editingCage, ...formData } as Cage : c);
-      storage.saveCages(updatedList);
+      await storage.saveCages(updatedList);
       toast.success('Cage updated successfully');
     } else {
       const newCage: Cage = {
@@ -69,20 +69,20 @@ const Cages = () => {
         ...formData as Cage,
       };
       const updatedList = [...cagesList, newCage];
-      storage.saveCages(updatedList);
+      await storage.saveCages(updatedList);
       toast.success('Cage added successfully');
     }
 
-    loadData();
+    await loadData();
     setIsAddModalOpen(false);
     setEditingCage(null);
     setFormData({ number: '', type: 'Single', location: '', status: 'Empty', capacity: 1 });
   };
 
-  const deleteCage = (id: string) => {
+  const deleteCage = async (id: string) => {
     if (confirm('Are you sure you want to delete this cage?')) {
       const updatedList = cages.filter(c => c.id !== id);
-      storage.saveCages(updatedList);
+      await storage.saveCages(updatedList);
       setCages(updatedList);
       toast.error('Cage deleted');
     }

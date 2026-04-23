@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Input } from '@/components/ui/input';
 import { Sparkles, Loader2, Mail, ShieldCheck, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { motion } from 'framer-motion';
@@ -45,7 +44,7 @@ const Login = () => {
 
   const handleBypass = () => {
     showSuccess('Demo Bypass Active. Entering Dashboard...');
-    enterDemoMode(email || 'demo@yobest.ai');
+    enterDemoMode();
     setTimeout(() => navigate('/dashboard'), 1000);
   };
 

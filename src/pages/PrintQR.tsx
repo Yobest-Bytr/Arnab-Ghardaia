@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { QRCodeSVG } from 'qrcode.react';
 import { Printer, Download, CheckSquare, Square, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 const PrintQR = () => {
   const [rabbits, setRabbits] = useState<Rabbit[]>([]);
@@ -14,7 +15,11 @@ const PrintQR = () => {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    setRabbits(storage.getRabbits());
+    const fetchRabbits = async () => {
+      const data = await storage.getRabbits();
+      setRabbits(data);
+    };
+    fetchRabbits();
   }, []);
 
   const toggleSelect = (id: string) => {
@@ -116,5 +121,4 @@ const PrintQR = () => {
   );
 };
 
-import { cn } from '@/lib/utils';
 export default PrintQR;

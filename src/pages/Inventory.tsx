@@ -63,18 +63,18 @@ const Inventory = () => {
     }
   }, []);
 
-  const loadData = () => {
-    setRabbits(storage.getRabbits());
-    setCages(storage.getCages());
+  const loadData = async () => {
+    setRabbits(await storage.getRabbits());
+    setCages(await storage.getCages());
   };
 
-  const handleSaveRabbit = (e: React.FormEvent) => {
+  const handleSaveRabbit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const rabbitsList = storage.getRabbits();
+    const rabbitsList = await storage.getRabbits();
     
     if (editingRabbit) {
       const updatedList = rabbitsList.map(r => r.id === editingRabbit.id ? { ...editingRabbit, ...formData } as Rabbit : r);
-      storage.saveRabbits(updatedList);
+      await storage.saveRabbits(updatedList);
       toast.success('Rabbit updated successfully');
     } else {
       const newRabbit: Rabbit = {
@@ -83,11 +83,11 @@ const Inventory = () => {
         weightHistory: [{ date: format(new Date(), 'yyyy-MM-dd'), weight: formData.weight || 0 }]
       };
       const updatedList = [newRabbit, ...rabbitsList];
-      storage.saveRabbits(updatedList);
+      await storage.saveRabbits(updatedList);
       toast.success('Rabbit added successfully');
     }
 
-    loadData();
+    await loadData();
     setIsAddModalOpen(false);
     setEditingRabbit(null);
     setFormData({
@@ -103,7 +103,7 @@ const Inventory = () => {
     });
   };
 
-  const handleUpdateWeight = (e: React.FormEvent) => {
+  const handleUpdateWeight = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRabbitForWeight) return;
 
@@ -119,17 +119,17 @@ const Inventory = () => {
       return r;
     });
 
-    storage.saveRabbits(updatedList);
+    await storage.saveRabbits(updatedList);
     setRabbits(updatedList);
     setIsWeightModalOpen(false);
     setSelectedRabbitForWeight(null);
     toast.success('Weight updated successfully');
   };
 
-  const deleteRabbit = (id: string) => {
+  const deleteRabbit = async (id: string) => {
     if (confirm('Are you sure you want to delete this rabbit?')) {
       const updatedList = rabbits.filter(r => r.id !== id);
-      storage.saveRabbits(updatedList);
+      await storage.saveRabbits(updatedList);
       setRabbits(updatedList);
       toast.error('Rabbit deleted');
     }

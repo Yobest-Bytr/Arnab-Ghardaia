@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import Index from './pages/Index';
 import Inventory from './pages/Inventory';
@@ -10,7 +10,18 @@ import Cages from './pages/Cages';
 import Statistics from './pages/Statistics';
 import PrintQR from './pages/PrintQR';
 import Settings from './pages/Settings';
+import Expenses from './pages/Expenses';
+import Reports from './pages/Reports';
+import Sales from './pages/Sales';
+import Tasks from './pages/Tasks';
+import Profile from './pages/Profile';
+import Dashboard from './pages/Dashboard';
+import Insights from './pages/Insights';
+import PublicRabbits from './pages/PublicRabbits';
+import QrManager from './pages/QrManager';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { ThemeProvider } from 'next-themes';
 import { 
   LayoutDashboard, 
   Archive, 
@@ -23,11 +34,19 @@ import {
   BarChart3,
   QrCode,
   Settings as SettingsIcon,
-  LogOut
+  LogOut,
+  Wallet,
+  FileText,
+  ShoppingBag,
+  ListTodo,
+  User,
+  TrendingUp,
+  Printer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
+import { ThemeToggle } from './components/ThemeToggle';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
@@ -41,15 +60,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AppContent = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { t, isRTL } = useLanguage();
 
   const navLinks = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/inventory', icon: Archive, label: 'Inventory' },
-    { to: '/breeding', icon: Zap, label: 'Breeding' },
+    { to: '/', icon: LayoutDashboard, label: t('dashboard') },
+    { to: '/inventory', icon: Archive, label: t('inventory') },
+    { to: '/breeding', icon: Zap, label: t('breeding') },
     { to: '/cages', icon: Box, label: 'Cages' },
     { to: '/statistics', icon: BarChart3, label: 'Statistics' },
     { to: '/neural-lab', icon: BrainCircuit, label: 'Neural Lab' },
     { to: '/print-qr', icon: QrCode, label: 'Print QR' },
+    { to: '/expenses', icon: Wallet, label: t('expenses') },
+    { to: '/sales', icon: ShoppingBag, label: t('sales') },
+    { to: '/reports', icon: FileText, label: t('reports') },
+    { to: '/tasks', icon: ListTodo, label: 'Tasks' },
+    { to: '/qr-manager', icon: Printer, label: t('qrStudio') },
     { to: '/settings', icon: SettingsIcon, label: 'Settings' },
   ];
 
@@ -63,31 +88,38 @@ const AppContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className={cn("min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row", isRTL && "rtl")}>
       {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-white border-b sticky top-0 z-50">
+      <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-slate-900 border-b dark:border-slate-800 sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-primary rounded-xl text-white">
             <RabbitIcon className="h-5 w-5" />
           </div>
-          <span className="font-black text-xl tracking-tight">Hop Farm</span>
+          <span className="font-black text-xl tracking-tight dark:text-white">{t('appName')}</span>
         </div>
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2">
-          {isSidebarOpen ? <X /> : <Menu />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 dark:text-white">
+            {isSidebarOpen ? <X /> : <Menu />}
+          </button>
+        </div>
       </header>
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-white border-r transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r dark:border-slate-800 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+        isRTL && "left-auto right-0"
       )}>
         <div className="h-full flex flex-col p-6">
-          <div className="hidden md:flex items-center gap-3 mb-10">
-            <div className="p-2.5 bg-primary rounded-2xl text-white shadow-lg shadow-primary/20">
-              <RabbitIcon className="h-6 w-6" />
+          <div className="hidden md:flex items-center justify-between mb-10">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-primary rounded-2xl text-white shadow-lg shadow-primary/20">
+                <RabbitIcon className="h-6 w-6" />
+              </div>
+              <span className="font-black text-2xl tracking-tight text-primary">{t('appName')}</span>
             </div>
-            <span className="font-black text-2xl tracking-tight text-primary">Hop Farm</span>
+            <ThemeToggle />
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-2">
@@ -100,7 +132,7 @@ const AppContent = () => {
                   "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all",
                   isActive 
                     ? "bg-primary text-white shadow-md shadow-primary/20" 
-                    : "text-muted-foreground hover:bg-slate-100 hover:text-primary"
+                    : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary"
                 )}
               >
                 <link.icon className="h-5 w-5" />
@@ -109,32 +141,35 @@ const AppContent = () => {
             ))}
           </nav>
 
-          <div className="mt-auto pt-6 border-t space-y-4">
-            <div className="flex items-center gap-3 px-4">
-              <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">
-                {user.name?.[0].toUpperCase()}
+          <div className="mt-auto pt-6 border-t dark:border-slate-800 space-y-4">
+            <NavLink 
+              to="/profile"
+              className={({ isActive }) => cn(
+                "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all",
+                isActive ? "bg-slate-100 dark:bg-slate-800 text-primary" : "text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800"
+              )}
+            >
+              <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300">
+                {user.name?.[0].toUpperCase() || user.email?.[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">{user.name}</p>
+                <p className="text-sm font-bold truncate dark:text-white">{user.name || user.email?.split('@')[0]}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
               </div>
-              <button onClick={logout} className="p-2 text-muted-foreground hover:text-destructive transition-colors">
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Status</p>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm font-bold">System Online</span>
-              </div>
-            </div>
+            </NavLink>
+            <button 
+              onClick={logout} 
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-muted-foreground hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-600 transition-all"
+            >
+              <LogOut className="h-5 w-5" />
+              {t('logout')}
+            </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto dark:bg-slate-950">
         <Routes>
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
@@ -144,6 +179,15 @@ const AppContent = () => {
           <Route path="/neural-lab" element={<ProtectedRoute><NeuralLab /></ProtectedRoute>} />
           <Route path="/print-qr" element={<ProtectedRoute><PrintQR /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
+          <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+          <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+          <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
+          <Route path="/shop" element={<PublicRabbits />} />
+          <Route path="/qr-manager" element={<ProtectedRoute><QrManager /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
@@ -153,13 +197,17 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-        <Toaster />
-        <SonnerToaster position="top-right" />
-      </Router>
-    </AuthProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AuthProvider>
+        <LanguageProvider>
+          <Router>
+            <AppContent />
+            <Toaster />
+            <SonnerToaster position="top-right" />
+          </Router>
+        </LanguageProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

@@ -5,7 +5,7 @@ import {
   Loader2, Activity, Database, ArrowRight, Info, Clock, X, Terminal, Shield, Globe,
   Settings as SettingsIcon
 } from 'lucide-react';
-import { storage, Rabbit, BreedingRecord, Litter, Cage } from '@/lib/storage';
+import { storage, Rabbit, BreedingRecord, Litter, Cage, UserSettings } from '@/lib/storage';
 import { QRScanner } from '@/components/QrScanner';
 import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ const NeuralLab = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
   const [farmData, setFarmData] = useState<{
     rabbits: Rabbit[], 
     breeding: BreedingRecord[], 
@@ -31,21 +32,27 @@ const NeuralLab = () => {
   });
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const settings = storage.getSettings();
 
   useEffect(() => {
-    const rabbits = storage.getRabbits();
-    const breeding = storage.getBreedingRecords();
-    const litters = storage.getLitters();
-    const cages = storage.getCages();
-    setFarmData({ rabbits, breeding, litters, cages });
+    const fetchData = async () => {
+      const rabbits = await storage.getRabbits();
+      const breeding = await storage.getBreedingRecords();
+      const litters = await storage.getLitters();
+      const cages = await storage.getCages();
+      const userSettings = await storage.getSettings();
+      
+      setFarmData({ rabbits, breeding, litters, cages });
+      setSettings(userSettings);
 
-    setMessages([{
-      id: 'welcome',
-      role: 'assistant',
-      content: `Neural Link Established. I am your AI Farm Assistant. I have analyzed your farm data (${rabbits.length} rabbits, ${breeding.length} breeding records, ${cages.length} cages) and I'm ready to help you optimize your rabbitry. How can I assist you today?`,
-      timestamp: new Date().toISOString(),
-    }]);
+      setMessages([{
+        id: 'welcome',
+        role: 'assistant',
+        content: `Neural Link Established. I am your AI Farm Assistant. I have analyzed your farm data (${rabbits.length} rabbits, ${breeding.length} breeding records, ${cages.length} cages) and I'm ready to help you optimize your rabbitry. How can I assist you today?`,
+        timestamp: new Date().toISOString(),
+      }]);
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -80,14 +87,20 @@ const NeuralLab = () => {
         response = `Your farm is currently operating with ${activeDoes} active does and ${activeBucks} active bucks. You have ${farmData.cages.filter(c => c.status === 'Empty').length} empty cages available for expansion.`;
       } else if (currentInput.includes('breeding') || currentInput.includes('litter')) {
         const pendingPalpations = farmData.breeding.filter(r => r.status === 'Mated').length;
-        response = `I've detected ${pendingPalpations} pending palpations. Based on your historical survival rate of ${((farmData.litters.reduce((s, l) => s + l.aliveKits, 0) / farmData.litters.reduce((s, l) => s + l.totalKits, 0)) * 100 || 0).toFixed(1)}%, I project a stock increase of approximately ${Math.round(pendingPalpations * 6 * 0.8)} kits in the next 30 days.`;
+        const totalKits = farmData.litters.reduce((s, l) => s + (l.totalKits || 0), 0);
+        const aliveKits = farmData.litters.reduce((s, l) => s + (l.aliveKits || 0), 0);
+        const survivalRate = totalKits > 0 ? (aliveKits / totalKits) * 100 : 0;
+        
+        response = `I've detected ${pendingPalpations} pending palpations. Based on your historical survival rate of ${survivalRate.toFixed(1)}%, I project a stock increase of approximately ${Math.round(pendingPalpations * 6 * 0.8)} kits in the next 30 days.`;
       } else if (currentInput.includes('weight') || currentInput.includes('growth')) {
         const avgWeight = farmData.rabbits.length > 0 
           ? (farmData.rabbits.reduce((s, r) => s + r.weight, 0) / farmData.rabbits.length).toFixed(2) 
           : 0;
         response = `The average weight across your stock is ${avgWeight} kg. I recommend checking the feed conversion ratio for rabbits in Section B, as their growth curve is slightly below the breed standard.`;
       } else if (currentInput.includes('cage') || currentInput.includes('space')) {
-        const occupancy = ((farmData.cages.filter(c => c.status === 'Occupied').length / farmData.cages.length) * 100 || 0).toFixed(1);
+        const occupancy = farmData.cages.length > 0 
+          ? ((farmData.cages.filter(c => c.status === 'Occupied').length / farmData.cages.length) * 100).toFixed(1)
+          : 0;
         response = `Your current cage occupancy is at ${occupancy}%. You have ${farmData.cages.filter(c => c.status === 'Maintenance').length} cages under maintenance. I suggest prioritizing the repair of G-01 to accommodate the upcoming weaning batch.`;
       } else {
         response = "I'm monitoring the farm's vital signs. Everything looks optimal for the current season. I can help you with breeding projections, weight analysis, or cage management. What would you like to focus on?";
@@ -98,6 +111,7 @@ const NeuralLab = () => {
         role: 'assistant',
         content: response,
         timestamp: new Date().toISOString(),
+        model: settings?.aiProvider ? settings.aiProvider.toUpperCase() : 'Neural Link'
       };
       setMessages(prev => [...prev, aiMsg]);
       setIsGenerating(false);
@@ -128,7 +142,7 @@ const NeuralLab = () => {
             <h1 className="text-2xl font-black tracking-tight">Neural Lab</h1>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">AI Engine Online</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">AI Engine Online ({settings?.aiProvider || 'Neural Link'})</span>
             </div>
           </div>
         </div>
@@ -193,7 +207,7 @@ const NeuralLab = () => {
           <input 
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={settings.aiKey ? "Ask anything about your farm..." : "Enter AI Key in Settings to enable full power..."}
+            placeholder={settings?.aiKey ? "Ask anything about your farm..." : "Enter AI Key in Settings to enable full power..."}
             className="w-full pl-6 pr-16 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
           />
           <Button 

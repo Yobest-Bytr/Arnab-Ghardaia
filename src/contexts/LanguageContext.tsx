@@ -130,7 +130,7 @@ const translations: Translations = {
   alignNeuralTag: { en: "Align Neural ID Tag to Initialize", ar: "قم بمحاذاة بطاقة الهوية العصبية للبدء", fr: "Alignez l'étiquette ID Neurale pour initialiser" },
 
   // Messages & Toasts
-  operationFailed: { en: "Operation failed.", ar: "فشلت العملية.", fr: "L'opération a échوé." },
+  operationFailed: { en: "Operation failed.", ar: "فشلت العملية.", fr: "L'opération a échoué." },
   weightUpdated: { en: "Weight updated.", ar: "تم تحديث الوزن.", fr: "Poids mis à jour." },
   updateFailed: { en: "Update failed.", ar: "فشل التحديث.", fr: "Échec de la mise à jour." },
   splitFailed: { en: "Split failed.", ar: "فشل الفصل.", fr: "Échec de la séparation." },
@@ -223,7 +223,7 @@ const translations: Translations = {
   feature1Desc: { en: "Track growth, health, and production metrics instantly.", ar: "تتبع مقاييس النمو والصحة والإنتاج فوراً.", fr: "Suivez instantanément les indicateurs de croissance, de santé et de production." },
   feature2Title: { en: "Breeding Management", ar: "إدارة التزاوج", fr: "Gestion de l'élevage" },
   feature2Desc: { en: "Never miss a mating cycle or birth date again.", ar: "لا تفوت دورة تزاوج أو تاريخ ولادة مرة أخرى.", fr: "Ne manquez plus jamais un cycle de saillie ou une date de naissance." },
-  feature3Title: { en: "Inventory Control", ar: "التحكم في المخزون", fr: "التحكم في المخزون", fr: "Contrôle de l'inventaire" },
+  feature3Title: { en: "Inventory Control", ar: "التحكم في المخزون", fr: "Contرول de l'inventaire" },
   feature3Desc: { en: "Manage cages, feed, and medical supplies in one place.", ar: "إدارة الأقفاص والعلف والمستلزمات الطبية في مكان واحد.", fr: "Gérez les cages, l'alimentation et les fournitures médicales en un seul endroit." },
   ctaTitle: { en: "Ready to modernize your farm?", ar: "جاهز لتحديث مزرعتك؟", fr: "Prêt à moderniser votre ferme ?" },
   ctaSubtitle: { en: "Join hundreds of breeders using Arnab Ghardaia today.", ar: "انضم إلى مئات المربين الذين يستخدمون أرنب غرداية اليوم.", fr: "Rejoignez des centaines d'éleveurs utilisant Arnab Ghardaia aujourd'hui." },

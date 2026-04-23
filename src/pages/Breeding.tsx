@@ -17,7 +17,8 @@ import {
   Trash2, 
   ChevronRight,
   AlertCircle,
-  X
+  X,
+  Edit2
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -30,7 +31,9 @@ const Breeding = () => {
   const [litters, setLitters] = useState<Litter[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLitterModalOpen, setIsLitterModalOpen] = useState(false);
+  const [isEditLitterModalOpen, setIsEditLitterModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BreedingRecord | null>(null);
+  const [selectedLitter, setSelectedLitter] = useState<Litter | null>(null);
 
   const [formData, setFormData] = useState({
     buckId: '',
@@ -50,13 +53,13 @@ const Breeding = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    setRecords(storage.getBreedingRecords());
-    setRabbits(storage.getRabbits());
-    setLitters(storage.getLitters());
+  const loadData = async () => {
+    setRecords(await storage.getBreedingRecords());
+    setRabbits(await storage.getRabbits());
+    setLitters(await storage.getLitters());
   };
 
-  const handleAddBreeding = (e: React.FormEvent) => {
+  const handleAddBreeding = async (e: React.FormEvent) => {
     e.preventDefault();
     const newRecord: BreedingRecord = {
       id: crypto.randomUUID(),
@@ -67,14 +70,14 @@ const Breeding = () => {
     };
 
     const updatedRecords = [newRecord, ...records];
-    storage.saveBreedingRecords(updatedRecords);
+    await storage.saveBreedingRecords(updatedRecords);
     setRecords(updatedRecords);
     setIsAddModalOpen(false);
     setFormData({ buckId: '', doeId: '', date: format(new Date(), 'yyyy-MM-dd'), notes: '' });
     toast.success('Breeding record added successfully');
   };
 
-  const updateStatus = (id: string, status: BreedingRecord['status']) => {
+  const updateStatus = async (id: string, status: BreedingRecord['status']) => {
     const updatedRecords = records.map(r => {
       if (r.id === id) {
         if (status === 'Kindled') {
@@ -85,12 +88,12 @@ const Breeding = () => {
       }
       return r;
     });
-    storage.saveBreedingRecords(updatedRecords);
+    await storage.saveBreedingRecords(updatedRecords);
     setRecords(updatedRecords);
     toast.info(`Status updated to ${status}`);
   };
 
-  const handleRecordLitter = (e: React.FormEvent) => {
+  const handleRecordLitter = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRecord) return;
 
@@ -103,18 +106,42 @@ const Breeding = () => {
     };
 
     const updatedLitters = [newLitter, ...litters];
-    storage.saveLitters(updatedLitters);
+    await storage.saveLitters(updatedLitters);
     setLitters(updatedLitters);
     setIsLitterModalOpen(false);
     setLitterData({ totalKits: 0, aliveKits: 0, deadKits: 0, notes: '' });
     toast.success('Litter recorded successfully');
   };
 
-  const deleteRecord = (id: string) => {
+  const handleEditLitter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLitter) return;
+
+    const updatedLitters = litters.map(l => 
+      l.id === selectedLitter.id ? { ...l, ...litterData } : l
+    );
+    await storage.saveLitters(updatedLitters);
+    setLitters(updatedLitters);
+    setIsEditLitterModalOpen(false);
+    setSelectedLitter(null);
+    setLitterData({ totalKits: 0, aliveKits: 0, deadKits: 0, notes: '' });
+    toast.success('Litter updated successfully');
+  };
+
+  const deleteRecord = async (id: string) => {
     const updatedRecords = records.filter(r => r.id !== id);
-    storage.saveBreedingRecords(updatedRecords);
+    await storage.saveBreedingRecords(updatedRecords);
     setRecords(updatedRecords);
     toast.error('Record deleted');
+  };
+
+  const deleteLitter = async (id: string) => {
+    if (confirm('Are you sure you want to delete this litter?')) {
+      const updatedLitters = litters.filter(l => l.id !== id);
+      await storage.saveLitters(updatedLitters);
+      setLitters(updatedLitters);
+      toast.error('Litter deleted');
+    }
   };
 
   const getRabbitName = (id: string) => rabbits.find(r => r.id === id)?.name || 'Unknown';
@@ -264,13 +291,30 @@ const Breeding = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {litters.map((litter) => (
-            <Card key={litter.id} className="bg-muted/20">
+            <Card key={litter.id} className="bg-muted/20 group relative">
+              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                  setSelectedLitter(litter);
+                  setLitterData({
+                    totalKits: litter.totalKits || 0,
+                    aliveKits: litter.aliveKits || 0,
+                    deadKits: litter.deadKits || 0,
+                    notes: litter.notes || ''
+                  });
+                  setIsEditLitterModalOpen(true);
+                }}>
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteLitter(litter.id)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
               <CardContent className="p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-bold">{getRabbitName(litter.doeId)}'s Litter</span>
+                  <span className="font-bold">{getRabbitName(litter.doeId || '')}'s Litter</span>
                   <Badge variant="outline">{litter.aliveKits} Kits</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">Born: {format(new Date(litter.birthDate), 'MMM d, yyyy')}</p>
+                <p className="text-xs text-muted-foreground">Born: {litter.birthDate ? format(new Date(litter.birthDate), 'MMM d, yyyy') : 'N/A'}</p>
                 <div className="mt-3 flex gap-2">
                   <div className="flex-1 text-center p-2 bg-green-50 rounded-lg border border-green-100">
                     <p className="text-[10px] text-green-600 font-bold uppercase">Alive</p>
@@ -332,6 +376,55 @@ const Breeding = () => {
               />
             </div>
             <Button type="submit" className="w-full">Save Litter Record</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Litter Modal */}
+      <Dialog open={isEditLitterModalOpen} onOpenChange={setIsEditLitterModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Litter Details</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditLitter} className="space-y-4 pt-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Total Kits</Label>
+                <Input 
+                  type="number" 
+                  value={litterData.totalKits} 
+                  onChange={(e) => setLitterData({...litterData, totalKits: parseInt(e.target.value)})} 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Alive</Label>
+                <Input 
+                  type="number" 
+                  value={litterData.aliveKits} 
+                  onChange={(e) => setLitterData({...litterData, aliveKits: parseInt(e.target.value)})} 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Dead</Label>
+                <Input 
+                  type="number" 
+                  value={litterData.deadKits} 
+                  onChange={(e) => setLitterData({...litterData, deadKits: parseInt(e.target.value)})} 
+                  required 
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea 
+                value={litterData.notes} 
+                onChange={(e) => setLitterData({...litterData, notes: e.target.value})} 
+                placeholder="Any notes about the birth?"
+              />
+            </div>
+            <Button type="submit" className="w-full">Update Litter Record</Button>
           </form>
         </DialogContent>
       </Dialog>

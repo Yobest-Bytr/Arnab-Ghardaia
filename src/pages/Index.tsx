@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { storage, Rabbit, BreedingRecord, Task, Cage } from '@/lib/storage';
+import { storage, Rabbit, BreedingRecord, Task, Cage, Litter } from '@/lib/storage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Baby,
   Activity,
-  Box
+  Box,
+  Edit2
 } from 'lucide-react';
 import { FlowBoard } from '@/components/FlowBoard';
 import { QRScanner } from '@/components/QrScanner';
@@ -24,6 +25,10 @@ import { format, addDays, isBefore, isAfter } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const Index = () => {
   const { user } = useAuth();
@@ -31,37 +36,44 @@ const Index = () => {
   const [breedingRecords, setBreedingRecords] = useState<BreedingRecord[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [cages, setCages] = useState<Cage[]>([]);
+  const [litters, setLitters] = useState<Litter[]>([]);
   const [showScanner, setShowScanner] = useState(false);
+  const [editingLitter, setEditingLitter] = useState<Litter | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const initialRabbits = storage.getRabbits();
-    if (initialRabbits.length === 0) {
-      const demoRabbits: Rabbit[] = [
-        { id: '1', tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, weightHistory: [{date: '2023-05-10', weight: 4.2}], status: 'Active', cageId: 'c1' },
-        { id: '2', tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, weightHistory: [{date: '2023-06-15', weight: 5.5}], status: 'Active', cageId: 'c2' },
-        { id: '3', tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, weightHistory: [{date: '2023-08-20', weight: 3.8}], status: 'Active', cageId: 'c3' },
-      ];
-      storage.saveRabbits(demoRabbits);
-      setRabbits(demoRabbits);
-    } else {
-      setRabbits(initialRabbits);
-    }
+    const fetchData = async () => {
+      const fetchedRabbits = await storage.getRabbits();
+      if (fetchedRabbits.length === 0) {
+        const demoRabbits: Rabbit[] = [
+          { id: '1', tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, weightHistory: [{date: '2023-05-10', weight: 4.2}], status: 'Active', cageId: 'c1' },
+          { id: '2', tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, weightHistory: [{date: '2023-06-15', weight: 5.5}], status: 'Active', cageId: 'c2' },
+          { id: '3', tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, weightHistory: [{date: '2023-08-20', weight: 3.8}], status: 'Active', cageId: 'c3' },
+        ];
+        await storage.saveRabbits(demoRabbits);
+        setRabbits(demoRabbits);
+      } else {
+        setRabbits(fetchedRabbits);
+      }
 
-    const initialBreeding = storage.getBreedingRecords();
-    if (initialBreeding.length === 0) {
-      const demoBreeding: BreedingRecord[] = [
-        { id: 'b1', buckId: '2', doeId: '1', date: format(addDays(new Date(), -15), 'yyyy-MM-dd'), status: 'Mated' },
-        { id: 'b2', buckId: '2', doeId: '3', date: format(addDays(new Date(), -35), 'yyyy-MM-dd'), status: 'Kindled' },
-      ];
-      storage.saveBreedingRecords(demoBreeding);
-      setBreedingRecords(demoBreeding);
-    } else {
-      setBreedingRecords(initialBreeding);
-    }
+      const fetchedBreeding = await storage.getBreedingRecords();
+      if (fetchedBreeding.length === 0) {
+        const demoBreeding: BreedingRecord[] = [
+          { id: 'b1', buckId: '2', doeId: '1', date: format(addDays(new Date(), -15), 'yyyy-MM-dd'), status: 'Mated' },
+          { id: 'b2', buckId: '2', doeId: '3', date: format(addDays(new Date(), -35), 'yyyy-MM-dd'), status: 'Kindled' },
+        ];
+        await storage.saveBreedingRecords(demoBreeding);
+        setBreedingRecords(demoBreeding);
+      } else {
+        setBreedingRecords(fetchedBreeding);
+      }
 
-    setTasks(storage.getTasks());
-    setCages(storage.getCages());
+      setTasks(await storage.getTasks());
+      setCages(await storage.getCages());
+      setLitters(await storage.getLitters());
+    };
+
+    fetchData();
   }, []);
 
   const activeDoes = rabbits.filter(r => r.gender === 'Doe' && r.status === 'Active').length;
@@ -106,7 +118,7 @@ const Index = () => {
       }
     });
 
-    storage.getLitters().forEach(litter => {
+    litters.forEach(litter => {
       const weaningDate = addDays(new Date(litter.birthDate), 30);
       if (isBefore(weaningDate, addDays(today, 2)) && !litter.weaningDate) {
         insights.push({
@@ -132,12 +144,25 @@ const Index = () => {
 
   const insights = getInsights();
 
+  const handleSaveLitter = async () => {
+    if (!editingLitter) return;
+    try {
+      const updatedLitters = litters.map(l => l.id === editingLitter.id ? editingLitter : l);
+      await storage.saveLitters(updatedLitters);
+      setLitters(updatedLitters);
+      setEditingLitter(null);
+      toast.success("Litter updated successfully");
+    } catch (error) {
+      toast.error("Failed to update litter");
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8 pb-24">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-primary">Welcome, {user?.name}!</h1>
+          <h1 className="text-4xl font-black tracking-tight text-primary">Welcome, {user?.user_metadata?.display_name || user?.name || 'Breeder'}!</h1>
           <p className="text-muted-foreground">Here's what's happening on your farm today.</p>
         </div>
         <div className="flex gap-2">
@@ -310,20 +335,85 @@ const Index = () => {
             Recent Litters
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {storage.getLitters().slice(0, 4).map((litter) => (
-              <Card key={litter.id} className="bg-white shadow-sm border-2 hover:border-primary/30 transition-colors">
+            {litters.slice(0, 4).map((litter) => (
+              <Card key={litter.id} className="bg-white shadow-sm border-2 hover:border-primary/30 transition-colors group relative">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-sm">{rabbits.find(r => r.id === litter.doeId)?.name}'s Litter</span>
+                    <span className="font-bold text-sm">{rabbits.find(r => r.id === litter.doeId)?.name || 'Unknown'}'s Litter</span>
                     <Badge className="bg-green-100 text-green-700 border-green-200">{litter.aliveKits} Kits</Badge>
                   </div>
                   <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Born: {litter.birthDate}</p>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                    onClick={() => setEditingLitter(litter)}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Edit Litter Dialog */}
+      <Dialog open={!!editingLitter} onOpenChange={(open) => !open && setEditingLitter(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Litter Details</DialogTitle>
+          </DialogHeader>
+          {editingLitter && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="totalKits" className="text-right">Total Kits</Label>
+                <Input 
+                  id="totalKits" 
+                  type="number" 
+                  value={editingLitter.totalKits} 
+                  onChange={(e) => setEditingLitter({...editingLitter, totalKits: parseInt(e.target.value)})}
+                  className="col-span-3" 
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="aliveKits" className="text-right">Alive Kits</Label>
+                <Input 
+                  id="aliveKits" 
+                  type="number" 
+                  value={editingLitter.aliveKits} 
+                  onChange={(e) => setEditingLitter({...editingLitter, aliveKits: parseInt(e.target.value)})}
+                  className="col-span-3" 
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="deadKits" className="text-right">Dead Kits</Label>
+                <Input 
+                  id="deadKits" 
+                  type="number" 
+                  value={editingLitter.deadKits} 
+                  onChange={(e) => setEditingLitter({...editingLitter, deadKits: parseInt(e.target.value)})}
+                  className="col-span-3" 
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="birthDate" className="text-right">Birth Date</Label>
+                <Input 
+                  id="birthDate" 
+                  type="date" 
+                  value={editingLitter.birthDate} 
+                  onChange={(e) => setEditingLitter({...editingLitter, birthDate: e.target.value})}
+                  className="col-span-3" 
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingLitter(null)}>Cancel</Button>
+            <Button onClick={handleSaveLitter}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* QR Scanner Modal */}
       {showScanner && (
@@ -333,5 +423,4 @@ const Index = () => {
   );
 };
 
-import { toast } from 'sonner';
 export default Index;

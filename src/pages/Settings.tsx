@@ -18,19 +18,32 @@ import {
   Database
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from 'next-themes';
 
 const Settings = () => {
-  const [settings, setSettings] = useState<UserSettings>(storage.getSettings());
+  const [settings, setSettings] = useState<UserSettings>({
+    theme: 'light',
+    language: 'en',
+    farmName: 'My Hop Farm',
+    aiProvider: 'openai'
+  });
+  const { setLanguage } = useLanguage();
+  const { setTheme } = useTheme();
 
-  const handleSave = () => {
-    storage.saveSettings(settings);
+  useEffect(() => {
+    const loadSettings = async () => {
+      const saved = await storage.getSettings();
+      setSettings(saved);
+    };
+    loadSettings();
+  }, []);
+
+  const handleSave = async () => {
+    await storage.saveSettings(settings);
+    setLanguage(settings.language);
+    setTheme(settings.theme);
     toast.success('Settings saved successfully');
-    // Apply theme if needed
-    if (settings.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   };
 
   return (
@@ -113,18 +126,37 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>OpenAI / Anthropic API Key</Label>
+                <Label>AI Model Provider</Label>
+                <Select 
+                  value={settings.aiProvider || 'openai'} 
+                  onValueChange={(v: any) => setSettings({...settings, aiProvider: v})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="openai">OpenAI (GPT-4o)</SelectItem>
+                    <SelectItem value="anthropic">Anthropic (Claude 3.5)</SelectItem>
+                    <SelectItem value="google">Google (Gemini 1.5)</SelectItem>
+                    <SelectItem value="gemini">Google Gemini Pro</SelectItem>
+                    <SelectItem value="grok">xAI (Grok-1)</SelectItem>
+                    <SelectItem value="mistral">Mistral AI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>API Key</Label>
                 <Input 
                   type="password"
                   value={settings.aiKey || ''} 
                   onChange={(e) => setSettings({...settings, aiKey: e.target.value})}
-                  placeholder="sk-..."
+                  placeholder="Enter your API key..."
                 />
                 <p className="text-[10px] text-muted-foreground italic">
                   Your key is stored locally in your browser and never sent to our servers.
                 </p>
               </div>
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border">
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border dark:border-slate-700">
                 <div className="space-y-0.5">
                   <Label>Advanced Analysis</Label>
                   <p className="text-xs text-muted-foreground">Enable deep neural processing for farm data.</p>
@@ -147,12 +179,12 @@ const Settings = () => {
                 <span className="font-bold">4.1.0-flow</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Storage Used</span>
-                <span className="font-bold">124 KB</span>
+                <span className="text-muted-foreground">Storage Mode</span>
+                <span className="font-bold text-emerald-600">Supabase Cloud</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Last Backup</span>
-                <span className="font-bold">2 hours ago</span>
+                <span className="text-muted-foreground">Last Sync</span>
+                <span className="font-bold">Just now</span>
               </div>
               <Button variant="outline" className="w-full text-xs h-8 rounded-lg gap-2">
                 <Database className="h-3 w-3" />

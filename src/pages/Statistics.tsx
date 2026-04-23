@@ -33,9 +33,12 @@ const Statistics = () => {
   const [litters, setLitters] = useState<Litter[]>([]);
 
   useEffect(() => {
-    setRabbits(storage.getRabbits());
-    setBreeding(storage.getBreedingRecords());
-    setLitters(storage.getLitters());
+    const fetchData = async () => {
+      setRabbits(await storage.getRabbits());
+      setBreeding(await storage.getBreedingRecords());
+      setLitters(await storage.getLitters());
+    };
+    fetchData();
   }, []);
 
   // Data processing for charts
@@ -57,10 +60,11 @@ const Statistics = () => {
     total: l.totalKits
   }));
 
-  const totalKits = litters.reduce((sum, l) => sum + l.aliveKits, 0);
+  const totalKits = litters.reduce((sum, l) => sum + (l.aliveKits || 0), 0);
   const avgLitterSize = litters.length > 0 ? (totalKits / litters.length).toFixed(1) : 0;
-  const survivalRate = litters.reduce((sum, l) => sum + l.totalKits, 0) > 0 
-    ? ((totalKits / litters.reduce((sum, l) => sum + l.totalKits, 0)) * 100).toFixed(1) 
+  const totalKitsBorn = litters.reduce((sum, l) => sum + (l.totalKits || 0), 0);
+  const survivalRate = totalKitsBorn > 0 
+    ? ((totalKits / totalKitsBorn) * 100).toFixed(1) 
     : 0;
 
   return (
