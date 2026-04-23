@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import Index from './pages/Index';
@@ -21,7 +20,8 @@ import PublicRabbits from './pages/PublicRabbits';
 import QrManager from './pages/QrManager';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { ThemeProvider } from 'next-themes';
+import { ThemeProvider, useTheme } from 'next-themes';
+import { storage } from '@/lib/storage';
 import { 
   LayoutDashboard, 
   Archive, 
@@ -61,27 +61,7 @@ const AppContent = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const { t, isRTL } = useLanguage();
-
-  useEffect(() => {
-    const syncTheme = async () => {
-      if (user) {
-        const settings = await storage.getSettings();
-        if (settings.theme && settings.theme !== theme) {
-          setTheme(settings.theme);
-        }
-      }
-    };
-    syncTheme();
-  }, [user, theme, setTheme]);
-
-  useEffect(() => {
-    const saveTheme = async () => {
-      if (theme && user) {
-        await storage.saveSettings({ theme: theme as 'light' | 'dark' | 'system' });
-      }
-    };
-    saveTheme();
-  }, [theme, user]);
+  const { theme, setTheme } = useTheme();
 
   const navLinks = [
     { to: '/', icon: LayoutDashboard, label: t('dashboard') },
