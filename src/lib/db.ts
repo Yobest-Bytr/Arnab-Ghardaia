@@ -86,6 +86,18 @@ export interface UserSettings {
   farmName: string;
 }
 
+const cleanUUID = (id: any) => {
+  if (!id || id === '' || id === 'undefined' || id === 'null') return null;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (typeof id === 'string' && uuidRegex.test(id)) return id;
+  return null;
+};
+
+const cleanDate = (date: any) => {
+  if (!date || date === '' || date === 'undefined' || date === 'null') return null;
+  return date;
+};
+
 export const storage = {
   get: async (table: string, userId: string) => {
     const { data, error } = await supabase
@@ -100,24 +112,22 @@ export const storage = {
   },
 
   insert: async (table: string, userId: string, item: any) => {
-    // Clean item to only include valid columns for the table
-    const cleanedItem = { ...item, user_id: userId };
-    
-    // Special handling for known tables to avoid 400 errors
     if (table === 'rabbits') {
       const mapped = {
         user_id: userId,
-        name: item.name,
+        name: item.name || 'Unnamed',
         breed: item.breed || 'Unknown',
-        gender: item.gender,
-        birth_date: item.birthDate || item.birth_date,
-        weight: item.weight,
-        status: item.status,
-        notes: item.notes,
-        rabbit_id: item.tagId || item.rabbit_id,
+        gender: item.gender || 'Doe',
+        birth_date: cleanDate(item.birthDate || item.birth_date),
+        weight: parseFloat(item.weight) || 0,
+        status: item.status || 'Active',
+        notes: item.notes || '',
+        rabbit_id: item.tagId || item.rabbit_id || '',
         weight_history: item.weightHistory || item.weight_history || [],
         cage_number: item.cage_number || item.cageId || null,
-        health_status: item.health_status || 'Healthy'
+        health_status: item.health_status || 'Healthy',
+        father_id: cleanUUID(item.father_id),
+        mother_id: cleanUUID(item.mother_id)
       };
       const { data, error } = await supabase.from('rabbits').insert([mapped]).select();
       if (error) {
@@ -130,16 +140,13 @@ export const storage = {
     if (table === 'mating_history') {
       const mapped = {
         user_id: userId,
-        female_id: (item.doeId || item.female_id) || null,
-        male_id: (item.buckId || item.male_id) || null,
-        mating_date: item.date || item.mating_date,
+        female_id: cleanUUID(item.doeId || item.female_id),
+        male_id: cleanUUID(item.buckId || item.male_id),
+        mating_date: cleanDate(item.date || item.mating_date) || new Date().toISOString().split('T')[0],
         status: item.status || 'Pending',
-        notes: item.notes,
-        expected_birth_date: item.expectedKindlingDate || item.expected_birth_date || null
+        notes: item.notes || '',
+        expected_birth_date: cleanDate(item.expectedKindlingDate || item.expected_birth_date)
       };
-      if (mapped.female_id === '') mapped.female_id = null;
-      if (mapped.male_id === '') mapped.male_id = null;
-
       const { data, error } = await supabase.from('mating_history').insert([mapped]).select();
       if (error) {
         console.error('Error inserting mating_history:', error);
@@ -151,13 +158,13 @@ export const storage = {
     if (table === 'sales') {
       const mapped = {
         user_id: userId,
-        rabbit_id: (item.rabbit_id && item.rabbit_id !== '') ? item.rabbit_id : null,
-        sale_date: item.sale_date || new Date().toISOString().split('T')[0],
+        rabbit_id: cleanUUID(item.rabbit_id),
+        sale_date: cleanDate(item.sale_date) || new Date().toISOString().split('T')[0],
         price: parseFloat(item.price) || 0,
-        customer_name: item.customer_name,
+        customer_name: item.customer_name || 'Guest',
         customer_phone: item.customer_phone || null,
         category: item.category || 'Natural',
-        notes: item.notes
+        notes: item.notes || ''
       };
       const { data, error } = await supabase.from('sales').insert([mapped]).select();
       if (error) {
@@ -170,10 +177,10 @@ export const storage = {
     if (table === 'expenses') {
       const mapped = {
         user_id: userId,
-        category: item.category,
+        category: item.category || 'Other',
         amount: parseFloat(item.amount) || 0,
-        date: item.date || new Date().toISOString().split('T')[0],
-        notes: item.notes
+        date: cleanDate(item.date) || new Date().toISOString().split('T')[0],
+        notes: item.notes || ''
       };
       const { data, error } = await supabase.from('expenses').insert([mapped]).select();
       if (error) {
@@ -186,19 +193,16 @@ export const storage = {
     if (table === 'litters') {
       const mapped = {
         user_id: userId,
-        mother_id: (item.doeId || item.mother_id) || null,
-        father_id: (item.buckId || item.father_id) || null,
-        mating_date: item.mating_date || null,
-        actual_birth_date: item.birthDate || item.actual_birth_date || null,
-        kit_count: item.totalKits || item.kit_count || 0,
-        alive_kits: item.aliveKits || item.alive_kits || 0,
-        dead_kits: item.deadKits || item.dead_kits || 0,
-        notes: item.notes,
+        mother_id: cleanUUID(item.doeId || item.mother_id),
+        father_id: cleanUUID(item.buckId || item.father_id),
+        mating_date: cleanDate(item.mating_date),
+        actual_birth_date: cleanDate(item.birthDate || item.actual_birth_date),
+        kit_count: parseInt(item.totalKits || item.kit_count) || 0,
+        alive_kits: parseInt(item.aliveKits || item.alive_kits) || 0,
+        dead_kits: parseInt(item.deadKits || item.dead_kits) || 0,
+        notes: item.notes || '',
         status: item.status || 'Pregnant'
       };
-      if (mapped.mother_id === '') mapped.mother_id = null;
-      if (mapped.father_id === '') mapped.father_id = null;
-
       const { data, error } = await supabase.from('litters').insert([mapped]).select();
       if (error) {
         console.error('Error inserting litter:', error);
@@ -210,11 +214,11 @@ export const storage = {
     if (table === 'tasks') {
       const mapped = {
         user_id: userId,
-        title: item.title,
-        category: item.category,
-        priority: item.priority,
-        due_date: item.due_date || item.dueDate || new Date().toISOString().split('T')[0],
-        notes: item.notes,
+        title: item.title || 'Untitled Task',
+        category: item.category || 'Other',
+        priority: item.priority || 'Medium',
+        due_date: cleanDate(item.due_date || item.dueDate) || new Date().toISOString().split('T')[0],
+        notes: item.notes || '',
         completed: item.completed || false
       };
       const { data, error } = await supabase.from('tasks').insert([mapped]).select();
@@ -225,19 +229,18 @@ export const storage = {
       return data?.[0];
     }
 
-    const { data, error } = await supabase.from(table).insert([cleanedItem]).select();
+    const { data, error } = await supabase.from(table).insert([{ ...item, user_id: userId }]).select();
     if (error) throw error;
     return data?.[0];
   },
 
   update: async (table: string, userId: string, id: string, updates: any) => {
-    // Clean updates
     const cleanedUpdates = { ...updates };
     delete cleanedUpdates.id;
     delete cleanedUpdates.user_id;
 
     if (table === 'rabbits') {
-      if (updates.birthDate) cleanedUpdates.birth_date = updates.birthDate;
+      if (updates.birthDate) cleanedUpdates.birth_date = cleanDate(updates.birthDate);
       if (updates.tagId) cleanedUpdates.rabbit_id = updates.tagId;
       if (updates.weightHistory) cleanedUpdates.weight_history = updates.weightHistory;
       if (updates.cageId) cleanedUpdates.cage_number = updates.cageId;
@@ -248,7 +251,7 @@ export const storage = {
     }
 
     if (table === 'tasks') {
-      if (updates.dueDate) cleanedUpdates.due_date = updates.dueDate;
+      if (updates.dueDate) cleanedUpdates.due_date = cleanDate(updates.dueDate);
       delete cleanedUpdates.dueDate;
     }
 
@@ -295,7 +298,7 @@ export const storage = {
         name: rabbit.name,
         breed: rabbit.breed || 'Unknown',
         gender: rabbit.gender,
-        birth_date: rabbit.birthDate,
+        birth_date: cleanDate(rabbit.birthDate),
         weight: rabbit.weight,
         status: rabbit.status,
         notes: rabbit.notes,
@@ -333,12 +336,12 @@ export const storage = {
       const isNew = !record.id || record.id.length < 10;
       const mapped = {
         user_id: user.id,
-        male_id: record.buckId,
-        female_id: record.doeId,
-        mating_date: record.date,
+        male_id: cleanUUID(record.buckId),
+        female_id: cleanUUID(record.doeId),
+        mating_date: cleanDate(record.date),
         status: record.status,
         notes: record.notes,
-        expected_birth_date: record.expectedKindlingDate
+        expected_birth_date: cleanDate(record.expectedKindlingDate)
       };
 
       if (isNew) {
@@ -370,11 +373,11 @@ export const storage = {
       const isNew = !litter.id || litter.id.length < 10;
       const mapped = {
         user_id: user.id,
-        actual_birth_date: litter.birthDate,
+        actual_birth_date: cleanDate(litter.birthDate),
         kit_count: litter.totalKits,
         alive_kits: litter.aliveKits,
         dead_kits: litter.deadKits,
-        mother_id: litter.doeId || litter.mother_id,
+        mother_id: cleanUUID(litter.doeId || litter.mother_id),
         notes: litter.notes
       };
 
@@ -405,7 +408,7 @@ export const storage = {
       const mapped = {
         user_id: user.id,
         title: task.title,
-        due_date: task.dueDate,
+        due_date: cleanDate(task.dueDate),
         completed: task.completed,
         priority: task.priority,
         category: task.category
@@ -477,8 +480,11 @@ export const storage = {
   },
 
   processSyncQueue: async () => {
-    // Placeholder for sync logic if needed
     return true;
+  },
+
+  clearSyncQueue: () => {
+    localStorage.removeItem('arnab_sync_queue');
   },
 
   getAuth: () => {

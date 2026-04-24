@@ -233,83 +233,86 @@ const Breeding = () => {
                   <div key={i} className="h-32 w-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-[2rem]" />
                 ))}
               </div>
-            ) : records.map((record, i) => {
-              const doe = rabbits.find(r => r.id === record.doeId);
-              const buck = rabbits.find(r => r.id === record.buckId);
-              const expectedKindling = format(addDays(parseISO(record.date), 31), 'MMM dd, yyyy');
-              const isOverdue = isAfter(new Date(), addDays(parseISO(record.date), 32)) && record.status !== 'Kindled';
+            ) : (
+              records.map((record, i) => {
+                const doe = rabbits.find(r => r.id === record.doeId);
+                const buck = rabbits.find(r => r.id === record.buckId);
+                const expectedKindling = format(addDays(parseISO(record.date), 31), 'MMM dd, yyyy');
+                const isOverdue = isAfter(new Date(), addDays(parseISO(record.date), 32)) && record.status !== 'Kindled';
 
-              return (
-                <motion.div key={record.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className="overflow-hidden border-2 rounded-[2rem] hover:border-primary/30 transition-all shadow-sm hover:shadow-md bg-white dark:bg-slate-900 group">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-6">
-                          <div className="flex -space-x-4">
-                            <div className="h-14 w-14 rounded-2xl bg-pink-50 dark:bg-pink-900/20 border-4 border-white dark:border-slate-900 flex items-center justify-center text-pink-600 shadow-sm">
-                              <Heart className="h-6 w-6" />
+                return (
+                  <motion.div key={record.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
+                    <Card className="overflow-hidden border-2 rounded-[2rem] hover:border-primary/30 transition-all shadow-sm hover:shadow-md bg-white dark:bg-slate-900 group">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                          <div className="flex items-center gap-6">
+                            <div className="flex -space-x-4">
+                              <div className="h-14 w-14 rounded-2xl bg-pink-50 dark:bg-pink-900/20 border-4 border-white dark:border-slate-900 flex items-center justify-center text-pink-600 shadow-sm">
+                                <Heart className="h-6 w-6" />
+                              </div>
+                              <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border-4 border-white dark:border-slate-900 flex items-center justify-center text-blue-600 shadow-sm">
+                                <Zap className="h-6 w-6" />
+                              </div>
                             </div>
-                            <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border-4 border-white dark:border-slate-900 flex items-center justify-center text-blue-600 shadow-sm">
-                              <Zap className="h-6 w-6" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-lg">{doe?.name || 'Unknown'}</span>
+                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-black text-lg">{buck?.name || 'Unknown'}</span>
+                              </div>
+                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 flex items-center gap-1">
+                                <Calendar className="h-3 w-3" /> Mated: {format(parseISO(record.date), 'MMM dd, yyyy')}
+                              </p>
                             </div>
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-black text-lg">{doe?.name || 'Unknown'}</span>
-                              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-black text-lg">{buck?.name || 'Unknown'}</span>
-                            </div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 flex items-center gap-1">
-                              <Calendar className="h-3 w-3" /> Mated: {format(parseISO(record.date), 'MMM dd, yyyy')}
-                            </p>
-                          </div>
-                        </div>
 
-                        <div className="flex flex-wrap items-center gap-4">
-                          <div className="text-right hidden md:block">
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Expected Kindling</p>
-                            <div className="flex items-center gap-2">
-                              <p className={cn("font-black", isOverdue ? "text-red-500" : "text-primary")}>{expectedKindling}</p>
-                              {isOverdue && (
-                                <Badge variant="destructive" className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0">Overdue</Badge>
-                              )}
+                          <div className="flex flex-wrap items-center gap-4">
+                            <div className="text-right hidden md:block">
+                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Expected Kindling</p>
+                              <div className="flex items-center gap-2">
+                                <p className={cn("font-black", isOverdue ? "text-red-500" : "text-primary")}>{expectedKindling}</p>
+                                {isOverdue && (
+                                  <Badge variant="destructive" className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0">Overdue</Badge>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          
-                          <div className="h-10 w-[1px] bg-slate-100 dark:bg-slate-800 hidden md:block" />
-
-                          <div className="flex items-center gap-3">
-                            <Badge className={cn(
-                              "rounded-lg px-3 py-1 font-black uppercase tracking-widest text-[10px]",
-                              record.status === 'Mated' ? "bg-blue-50 text-blue-600" :
-                              record.status === 'Confirmed' ? "bg-emerald-50 text-emerald-600" :
-                              record.status === 'Kindled' ? "bg-purple-50 text-purple-600" :
-                              "bg-red-50 text-red-600"
-                            )}>
-                              {record.status}
-                            </Badge>
                             
-                            <div className="flex gap-1">
-                              {record.status === 'Mated' && (
-                                <Button variant="secondary" size="sm" className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest" onClick={() => updateStatus(record.id, 'Confirmed')}>Confirm</Button>
-                              )}
-                              {record.status === 'Confirmed' && (
-                                <Button variant="secondary" size="sm" className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest bg-emerald-500 text-white hover:bg-emerald-600" onClick={() => {
-                                  setSelectedRecord(record);
-                                  setIsLitterModalOpen(true);
-                                }}>Kindle</Button>
-                              )}
-                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive hover:text-white" onClick={() => deleteRecord(record.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                            <div className="h-10 w-[1px] bg-slate-100 dark:bg-slate-800 hidden md:block" />
+
+                            <div className="flex items-center gap-3">
+                              <Badge className={cn(
+                                "rounded-lg px-3 py-1 font-black uppercase tracking-widest text-[10px]",
+                                record.status === 'Mated' ? "bg-blue-50 text-blue-600" :
+                                record.status === 'Confirmed' ? "bg-emerald-50 text-emerald-600" :
+                                record.status === 'Kindled' ? "bg-purple-50 text-purple-600" :
+                                "bg-red-50 text-red-600"
+                              )}>
+                                {record.status}
+                              </Badge>
+                              
+                              <div className="flex gap-1">
+                                {record.status === 'Mated' && (
+                                  <Button variant="secondary" size="sm" className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest" onClick={() => updateStatus(record.id, 'Confirmed')}>Confirm</Button>
+                                )}
+                                {record.status === 'Confirmed' && (
+                                  <Button variant="secondary" size="sm" className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest bg-emerald-500 text-white hover:bg-emerald-600" onClick={() => {
+                                    setSelectedRecord(record);
+                                    setIsLitterModalOpen(true);
+                                  }}>Kindle</Button>
+                                )}
+                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive hover:text-white" onClick={() => deleteRecord(record.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })
+            )}
             {!isLoading && records.length === 0 && (
               <div className="p-12 text-center bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-dashed">
                 <Heart className="h-12 w-12 mx-auto mb-4 opacity-20" />
@@ -331,43 +334,45 @@ const Breeding = () => {
                   <div key={i} className="h-24 w-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-2xl" />
                 ))}
               </div>
-            ) : litters.slice(0, 5).map((litter, i) => {
-              const doe = rabbits.find(r => r.id === litter.doeId);
-              return (
-                <motion.div key={litter.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className="border-2 rounded-2xl hover:border-primary/20 transition-all shadow-sm bg-white dark:bg-slate-900">
-                    <CardContent className="p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
-                            <Baby className="h-5 w-5" />
+            ) : (
+              litters.slice(0, 5).map((litter, i) => {
+                const doe = rabbits.find(r => r.id === litter.doeId);
+                return (
+                  <motion.div key={litter.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                    <Card className="border-2 rounded-2xl hover:border-primary/20 transition-all shadow-sm bg-white dark:bg-slate-900">
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
+                              <Baby className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-black text-sm">{doe?.name || 'Unknown'}'s Litter</h4>
+                              <p className="text-[10px] font-bold text-muted-foreground">{litter.birthDate}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-black text-sm">{doe?.name || 'Unknown'}'s Litter</h4>
-                            <p className="text-[10px] font-bold text-muted-foreground">{litter.birthDate}</p>
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 rounded-lg font-black">{litter.aliveKits} Kits</Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-center">
+                            <p className="text-[8px] font-black text-muted-foreground uppercase">Total</p>
+                            <p className="font-black text-sm">{litter.totalKits}</p>
+                          </div>
+                          <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-center">
+                            <p className="text-[8px] font-black text-emerald-600 uppercase">Alive</p>
+                            <p className="font-black text-sm text-emerald-600">{litter.aliveKits}</p>
+                          </div>
+                          <div className="p-2 bg-rose-50 dark:bg-rose-900/20 rounded-lg text-center">
+                            <p className="text-[8px] font-black text-rose-600 uppercase">Dead</p>
+                            <p className="font-black text-sm text-rose-600">{litter.deadKits}</p>
                           </div>
                         </div>
-                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 rounded-lg font-black">{litter.aliveKits} Kits</Badge>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-center">
-                          <p className="text-[8px] font-black text-muted-foreground uppercase">Total</p>
-                          <p className="font-black text-sm">{litter.totalKits}</p>
-                        </div>
-                        <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-center">
-                          <p className="text-[8px] font-black text-emerald-600 uppercase">Alive</p>
-                          <p className="font-black text-sm text-emerald-600">{litter.aliveKits}</p>
-                        </div>
-                        <div className="p-2 bg-rose-50 dark:bg-rose-900/20 rounded-lg text-center">
-                          <p className="text-[8px] font-black text-rose-600 uppercase">Dead</p>
-                          <p className="font-black text-sm text-rose-600">{litter.deadKits}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
