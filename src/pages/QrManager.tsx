@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 import Navbar from '@/components/layout/Navbar';
 import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';

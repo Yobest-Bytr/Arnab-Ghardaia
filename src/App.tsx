@@ -21,7 +21,7 @@ import QrManager from './pages/QrManager';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ThemeProvider, useTheme } from 'next-themes';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 import { 
   LayoutDashboard, 
   Archive, 

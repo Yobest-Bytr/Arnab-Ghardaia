@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { storage, Cage, Rabbit } from '@/lib/storage';
+import { storage, Cage, Rabbit } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,12 +24,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Cages = () => {
+  const { user } = useAuth();
   const [cages, setCages] = useState<Cage[]>([]);
   const [rabbits, setRabbits] = useState<Rabbit[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCage, setEditingCage] = useState<Cage | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [formData, setFormData] = useState<Partial<Cage>>({
     number: '',
@@ -40,60 +43,64 @@ const Cages = () => {
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
-    const savedCages = await storage.getCages();
-    if (savedCages.length === 0) {
-      const demoCages: Cage[] = [
-        { id: 'c1', number: 'C-01', type: 'Single', location: 'Section A', status: 'Occupied', capacity: 1 },
-        { id: 'c2', number: 'C-02', type: 'Breeding', location: 'Section A', status: 'Empty', capacity: 2 },
-        { id: 'c3', number: 'G-01', type: 'Grow-out', location: 'Section B', status: 'Occupied', capacity: 10 },
-      ];
-      await storage.saveCages(demoCages);
-      setCages(demoCages);
-    } else {
+    setIsLoading(true);
+    try {
+      const [savedCages, savedRabbits] = await Promise.all([
+        storage.getCages(),
+        storage.getRabbits()
+      ]);
       setCages(savedCages);
+      setRabbits(savedRabbits);
+    } finally {
+      setIsLoading(false);
     }
-    setRabbits(await storage.getRabbits());
   };
 
   const handleSaveCage = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cagesList = await storage.getCages();
+    if (!user) return;
     
-    if (editingCage) {
-      const updatedList = cagesList.map(c => c.id === editingCage.id ? { ...editingCage, ...formData } as Cage : c);
-      await storage.saveCages(updatedList);
-      toast.success('Cage updated successfully');
-    } else {
-      const newCage: Cage = {
-        id: crypto.randomUUID(),
-        ...formData as Cage,
-      };
-      const updatedList = [...cagesList, newCage];
-      await storage.saveCages(updatedList);
-      toast.success('Cage added successfully');
-    }
+    try {
+      if (editingCage) {
+        await storage.update('cages', user.id, editingCage.id, formData);
+        toast.success('Cage updated successfully');
+      } else {
+        await storage.insert('cages', user.id, formData);
+        toast.success('Cage added successfully');
+      }
 
-    await loadData();
-    setIsAddModalOpen(false);
-    setEditingCage(null);
-    setFormData({ number: '', type: 'Single', location: '', status: 'Empty', capacity: 1 });
+      await loadData();
+      setIsAddModalOpen(false);
+      setEditingCage(null);
+      setFormData({ number: '', type: 'Single', location: '', status: 'Empty', capacity: 1 });
+    } catch (error) {
+      toast.error('Failed to save cage');
+    }
   };
 
   const deleteCage = async (id: string) => {
+    if (!user) return;
     if (confirm('Are you sure you want to delete this cage?')) {
-      const updatedList = cages.filter(c => c.id !== id);
-      await storage.saveCages(updatedList);
-      setCages(updatedList);
-      toast.error('Cage deleted');
+      try {
+        await storage.delete('cages', user.id, id);
+        setCages(cages.filter(c => c.id !== id));
+        toast.error('Cage deleted');
+      } catch (error) {
+        toast.error('Failed to delete cage');
+      }
     }
   };
 
   const getOccupants = (cageId: string) => {
-    return rabbits.filter(r => r.cageId === cageId);
+    // In the DB, cageId might be mapped to cage_number or stored as cageId
+    // For now, we'll check both
+    return rabbits.filter(r => r.cageId === cageId || r.cage_number === cageId);
   };
 
   return (
@@ -199,7 +206,11 @@ const Cages = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {cages.map((cage, i) => {
+        {isLoading ? (
+          [1, 2, 3, 4].map(i => (
+            <div key={i} className="h-64 w-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-[2.5rem]" />
+          ))
+        ) : cages.map((cage, i) => {
           const occupants = getOccupants(cage.id);
           return (
             <motion.div key={cage.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>

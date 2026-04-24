@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BreedingRecord, Rabbit } from '@/lib/storage';
+import { BreedingRecord, Rabbit } from '@/lib/db';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { Calendar, Heart, Baby, Home, CheckCircle2, AlertCircle } from 'lucide-react';
 

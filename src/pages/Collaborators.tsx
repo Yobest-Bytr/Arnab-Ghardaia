@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Users, UserPlus, Shield, Mail, 

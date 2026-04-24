@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 import { useAuth } from './AuthContext';
 
 type Language = 'en' | 'ar' | 'fr';

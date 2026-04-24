@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { storage, Rabbit, BreedingRecord, Litter } from '@/lib/storage';
+import { storage, Rabbit, BreedingRecord, Litter } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
   BarChart3, 

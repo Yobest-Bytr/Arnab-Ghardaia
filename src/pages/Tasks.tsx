@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 import Navbar from '@/components/layout/Navbar';
 import { 
   CheckCircle2, Circle, Clock, Plus, Trash2, 

@@ -10,7 +10,7 @@ import {
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccess, showError } from '@/utils/toast';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';

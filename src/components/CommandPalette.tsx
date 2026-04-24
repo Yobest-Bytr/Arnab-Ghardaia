@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Rabbit, LayoutDashboard, ShoppingBag, Info, Phone, X, Command, Heart, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

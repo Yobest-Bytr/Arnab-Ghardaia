@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { storage, BreedingRecord, Rabbit, Litter } from '@/lib/storage';
+import { storage, BreedingRecord, Rabbit, Litter } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,14 +29,17 @@ import { toast } from 'sonner';
 import { format, addDays, isAfter, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Breeding = () => {
+  const { user } = useAuth();
   const [records, setRecords] = useState<BreedingRecord[]>([]);
   const [rabbits, setRabbits] = useState<Rabbit[]>([]);
   const [litters, setLitters] = useState<Litter[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLitterModalOpen, setIsLitterModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BreedingRecord | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [formData, setFormData] = useState<Partial<BreedingRecord>>({
     buckId: '',
@@ -53,67 +56,88 @@ const Breeding = () => {
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
-    setRecords(await storage.getBreedingRecords());
-    setRabbits(await storage.getRabbits());
-    setLitters(await storage.getLitters());
+    setIsLoading(true);
+    try {
+      const [recordsData, rabbitsData, littersData] = await Promise.all([
+        storage.getBreedingRecords(),
+        storage.getRabbits(),
+        storage.getLitters()
+      ]);
+      setRecords(recordsData);
+      setRabbits(rabbitsData);
+      setLitters(littersData);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveRecord = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newRecord: BreedingRecord = {
-      id: crypto.randomUUID(),
-      ...formData as BreedingRecord,
-    };
-    const updatedList = [newRecord, ...records];
-    await storage.saveBreedingRecords(updatedList);
-    toast.success('Breeding record added');
-    await loadData();
-    setIsAddModalOpen(false);
-    setFormData({ buckId: '', doeId: '', date: format(new Date(), 'yyyy-MM-dd'), status: 'Mated' });
+    if (!user) return;
+
+    try {
+      await storage.insert('mating_history', user.id, formData);
+      toast.success('Breeding record added');
+      await loadData();
+      setIsAddModalOpen(false);
+      setFormData({ buckId: '', doeId: '', date: format(new Date(), 'yyyy-MM-dd'), status: 'Mated' });
+    } catch (error) {
+      console.error('Error adding breeding record:', error);
+      toast.error('Failed to add breeding record');
+    }
   };
 
   const handleSaveLitter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRecord) return;
+    if (!selectedRecord || !user) return;
 
-    const newLitter: Litter = {
-      id: crypto.randomUUID(),
-      doeId: selectedRecord.doeId,
-      breedingId: selectedRecord.id,
-      ...litterData as Litter,
-    };
+    try {
+      const newLitter = {
+        doeId: selectedRecord.doeId,
+        breedingId: selectedRecord.id,
+        ...litterData,
+      };
 
-    const updatedLitters = [...litters, newLitter];
-    await storage.saveLitters(updatedLitters);
+      await storage.insert('litters', user.id, newLitter);
+      await storage.update('mating_history', user.id, selectedRecord.id, { status: 'Kindled' });
 
-    const updatedRecords = records.map(r => 
-      r.id === selectedRecord.id ? { ...r, status: 'Kindled' as const } : r
-    );
-    await storage.saveBreedingRecords(updatedRecords);
-
-    toast.success('Litter recorded successfully');
-    await loadData();
-    setIsLitterModalOpen(false);
-    setSelectedRecord(null);
+      toast.success('Litter recorded successfully');
+      await loadData();
+      setIsLitterModalOpen(false);
+      setSelectedRecord(null);
+    } catch (error) {
+      console.error('Error recording litter:', error);
+      toast.error('Failed to record litter');
+    }
   };
 
   const updateStatus = async (id: string, status: BreedingRecord['status']) => {
-    const updatedList = records.map(r => r.id === id ? { ...r, status } : r);
-    await storage.saveBreedingRecords(updatedList);
-    setRecords(updatedList);
-    toast.success(`Status updated to ${status}`);
+    if (!user) return;
+    try {
+      await storage.update('mating_history', user.id, id, { status });
+      setRecords(records.map(r => r.id === id ? { ...r, status } : r));
+      toast.success(`Status updated to ${status}`);
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
   };
 
   const deleteRecord = async (id: string) => {
+    if (!user) return;
     if (confirm('Are you sure you want to delete this record?')) {
-      const updatedList = records.filter(r => r.id !== id);
-      await storage.saveBreedingRecords(updatedList);
-      setRecords(updatedList);
-      toast.error('Record deleted');
+      try {
+        await storage.delete('mating_history', user.id, id);
+        setRecords(records.filter(r => r.id !== id));
+        toast.error('Record deleted');
+      } catch (error) {
+        toast.error('Failed to delete record');
+      }
     }
   };
 
@@ -203,7 +227,13 @@ const Breeding = () => {
           </div>
           
           <div className="space-y-4">
-            {records.map((record, i) => {
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-32 w-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-[2rem]" />
+                ))}
+              </div>
+            ) : records.map((record, i) => {
               const doe = rabbits.find(r => r.id === record.doeId);
               const buck = rabbits.find(r => r.id === record.buckId);
               const expectedKindling = format(addDays(parseISO(record.date), 31), 'MMM dd, yyyy');
@@ -238,7 +268,12 @@ const Breeding = () => {
                         <div className="flex flex-wrap items-center gap-4">
                           <div className="text-right hidden md:block">
                             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Expected Kindling</p>
-                            <p className={cn("font-black", isOverdue ? "text-red-500" : "text-primary")}>{expectedKindling}</p>
+                            <div className="flex items-center gap-2">
+                              <p className={cn("font-black", isOverdue ? "text-red-500" : "text-primary")}>{expectedKindling}</p>
+                              {isOverdue && (
+                                <Badge variant="destructive" className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0">Overdue</Badge>
+                              )}
+                            </div>
                           </div>
                           
                           <div className="h-10 w-[1px] bg-slate-100 dark:bg-slate-800 hidden md:block" />
@@ -274,9 +309,8 @@ const Breeding = () => {
                     </CardContent>
                   </Card>
                 </motion.div>
-              );
-            })}
-            {records.length === 0 && (
+              ))}
+            {!isLoading && records.length === 0 && (
               <div className="p-12 text-center bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-dashed">
                 <Heart className="h-12 w-12 mx-auto mb-4 opacity-20" />
                 <p className="text-muted-foreground font-bold">No breeding records found.</p>
@@ -291,7 +325,13 @@ const Breeding = () => {
             Recent Litters
           </h2>
           <div className="space-y-4">
-            {litters.slice(0, 5).map((litter, i) => {
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-24 w-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-2xl" />
+                ))}
+              </div>
+            ) : litters.slice(0, 5).map((litter, i) => {
               const doe = rabbits.find(r => r.id === litter.doeId);
               return (
                 <motion.div key={litter.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>

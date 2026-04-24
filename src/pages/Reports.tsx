@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   BarChart3, TrendingUp, Download, 
@@ -10,7 +10,7 @@ import {
   FileText, Loader2, Rabbit, ShieldCheck, Printer,
   ChevronRight, Info, Wallet, Filter, Activity,
   ArrowDownRight, Target, Layers, Heart, TrendingDown, RefreshCw, ShoppingBag,
-  Baby, User, Clock, Search, X
+  Baby, User, Clock, Search, X, FileSpreadsheet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -46,16 +46,21 @@ const Reports = () => {
   }, [user]);
 
   const fetchData = async () => {
-    const [rabbitData, salesData, expenseData, litterData] = await Promise.all([
-      storage.get('rabbits', user?.id || ''),
-      storage.get('sales', user?.id || ''),
-      storage.get('expenses', user?.id || ''),
-      storage.get('litters', user?.id || '')
-    ]);
-    setRabbits(rabbitData);
-    setSales(salesData);
-    setExpenses(expenseData);
-    setLitters(litterData);
+    setLoading(true);
+    try {
+      const [rabbitData, salesData, expenseData, litterData] = await Promise.all([
+        storage.getRabbits(),
+        storage.get('sales', user?.id || ''),
+        storage.get('expenses', user?.id || ''),
+        storage.get('litters', user?.id || '')
+      ]);
+      setRabbits(rabbitData);
+      setSales(salesData);
+      setExpenses(expenseData);
+      setLitters(litterData);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleForceSync = async () => {
@@ -91,7 +96,7 @@ const Reports = () => {
         const interval = { start, end };
         filteredSales = filteredSales.filter(s => isWithinInterval(parseISO(s.sale_date), interval));
         filteredExpenses = filteredExpenses.filter(e => isWithinInterval(parseISO(e.date), interval));
-        filteredLitters = filteredLitters.filter(l => isWithinInterval(parseISO(l.birthDate), interval));
+        filteredLitters = filteredLitters.filter(l => isWithinInterval(parseISO(l.birthDate || l.actual_birth_date), interval));
       }
     }
 
@@ -103,7 +108,7 @@ const Reports = () => {
     // Age Group Filter
     if (filterAgeGroup !== 'All') {
       filteredRabbits = filteredRabbits.filter(r => {
-        const age = differenceInMonths(new Date(), parseISO(r.birthDate));
+        const age = differenceInMonths(new Date(), parseISO(r.birthDate || r.birth_date));
         return filterAgeGroup === 'Young' ? age < 6 : age >= 6;
       });
     }
@@ -132,8 +137,8 @@ const Reports = () => {
   }, [filteredData]);
 
   const breedingSuccess = useMemo(() => {
-    const totalKits = filteredData.litters.reduce((acc, l) => acc + (l.totalKits || 0), 0);
-    const aliveKits = filteredData.litters.reduce((acc, l) => acc + (l.aliveKits || 0), 0);
+    const totalKits = filteredData.litters.reduce((acc, l) => acc + (l.totalKits || l.kit_count || 0), 0);
+    const aliveKits = filteredData.litters.reduce((acc, l) => acc + (l.aliveKits || l.alive_kits || 0), 0);
     return totalKits > 0 ? Math.round((aliveKits / totalKits) * 100) : 0;
   }, [filteredData]);
 
@@ -158,6 +163,31 @@ const Reports = () => {
     });
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Type', 'Category/Breed', 'Amount/Count', 'Date'];
+    const rows = [
+      ...filteredData.sales.map(s => ['Sale', s.category, s.price, s.sale_date]),
+      ...filteredData.expenses.map(e => ['Expense', e.category, e.amount, e.date]),
+      ...filteredData.rabbits.map(r => ['Rabbit', r.breed, r.weight, r.birthDate || r.birth_date])
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Arnab_Report_${new Date().getTime()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showSuccess("CSV Exported successfully.");
+  };
+
   return (
     <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
       <div className="absolute inset-0 auron-radial pointer-events-none opacity-50" />
@@ -179,6 +209,9 @@ const Reports = () => {
           <div className="flex flex-wrap gap-4">
             <button onClick={handleForceSync} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-xl">
               <RefreshCw size={24} className={cn(isSyncing && "animate-spin")} />
+            </button>
+            <button onClick={handleExportCSV} className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-blue-400 hover:bg-blue-500 hover:text-white transition-all shadow-xl">
+              <FileSpreadsheet size={24} />
             </button>
             <button onClick={handleExportPDF} disabled={loading} className="auron-button h-14 px-8 flex items-center gap-3 text-sm">
               {loading ? <Loader2 className="animate-spin" size={20} /> : <Printer size={20} />}
@@ -283,7 +316,7 @@ const Reports = () => {
                 { label: 'Total Sales', val: `${financialStats.revenue.toLocaleString()} DA`, icon: ShoppingBag, color: 'text-indigo-400' },
                 { label: 'Total Expenses', val: `${financialStats.expenses.toLocaleString()} DA`, icon: Wallet, color: 'text-rose-400' },
                 { label: 'Litter Count', val: filteredData.litters.length, icon: Baby, color: 'text-pink-400' },
-                { label: 'Avg. Age (Months)', val: filteredData.rabbits.length > 0 ? Math.round(filteredData.rabbits.reduce((acc, r) => acc + differenceInMonths(new Date(), parseISO(r.birthDate)), 0) / filteredData.rabbits.length) : 0, icon: Clock, color: 'text-blue-400' },
+                { label: 'Avg. Age (Months)', val: filteredData.rabbits.length > 0 ? Math.round(filteredData.rabbits.reduce((acc, r) => acc + differenceInMonths(new Date(), parseISO(r.birthDate || r.birth_date)), 0) / filteredData.rabbits.length) : 0, icon: Clock, color: 'text-blue-400' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center justify-between p-6 bg-white/[0.03] rounded-2xl border border-white/5 hover:bg-white/5 transition-all">
                   <div className="flex items-center gap-4">

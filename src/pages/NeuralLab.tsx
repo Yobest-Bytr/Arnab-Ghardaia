@@ -5,7 +5,7 @@ import {
   Loader2, Activity, Database, ArrowRight, Info, Clock, X, Terminal, Shield, Globe,
   Settings as SettingsIcon
 } from 'lucide-react';
-import { storage, Rabbit, BreedingRecord, Litter, Cage, UserSettings } from '@/lib/storage';
+import { storage, Rabbit, BreedingRecord, Litter, Cage, UserSettings } from '@/lib/db';
 import { QRScanner } from '@/components/QrScanner';
 import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';

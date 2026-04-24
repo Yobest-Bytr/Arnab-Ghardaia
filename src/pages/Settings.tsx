@@ -1,17 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { storage, UserSettings } from '@/lib/storage';
+import { storage, UserSettings } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { 
-  Settings as SettingsIcon, 
-  Globe, 
-  Palette, 
-  BrainCircuit, 
+import {
+  Settings as SettingsIcon,
+  Globe,
+  Palette,
+  BrainCircuit,
   Save,
   Bell,
   Shield,
@@ -21,8 +21,10 @@ import {
   Layout,
   Moon,
   Sun,
-  Monitor
+  Monitor,
+  Heart
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from 'next-themes';

@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { storage, Rabbit, Cage } from '@/lib/storage';
+import { storage, Rabbit, Cage } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Plus, 
-  Search, 
-  QrCode, 
-  Trash2, 
-  Edit2, 
+import {
+  Plus,
+  Search,
+  QrCode,
+  Trash2,
+  Edit2,
   Filter,
   Download,
   X,
@@ -25,7 +25,8 @@ import {
   Baby,
   User,
   Clock,
-  Activity
+  Activity,
+  TrendingUp as TrendingUpIcon
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -34,9 +35,12 @@ import { QRCodeSVG } from 'qrcode.react';
 import { format, differenceInMonths, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Inventory = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [rabbits, setRabbits] = useState<Rabbit[]>([]);
   const [cages, setCages] = useState<Cage[]>([]);
   const [search, setSearch] = useState('');
@@ -45,6 +49,7 @@ const Inventory = () => {
   const [editingRabbit, setEditingRabbit] = useState<Rabbit | null>(null);
   const [selectedRabbitForQr, setSelectedRabbitForQr] = useState<Rabbit | null>(null);
   const [selectedRabbitForWeight, setSelectedRabbitForWeight] = useState<Rabbit | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Filters
   const [filterGender, setFilterGender] = useState<string>('All');
@@ -79,79 +84,93 @@ const Inventory = () => {
   }, []);
 
   const loadData = async () => {
-    setRabbits(await storage.getRabbits());
-    setCages(await storage.getCages());
+    setIsLoading(true);
+    try {
+      const [rabbitsData, cagesData] = await Promise.all([
+        storage.getRabbits(),
+        storage.getCages()
+      ]);
+      setRabbits(rabbitsData);
+      setCages(cagesData);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveRabbit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const rabbitsList = await storage.getRabbits();
+    if (!user) return;
     
     const finalBreed = isCustomBreed ? customBreed : formData.breed;
     const finalData = { ...formData, breed: finalBreed };
 
-    if (editingRabbit) {
-      const updatedList = rabbitsList.map(r => r.id === editingRabbit.id ? { ...editingRabbit, ...finalData } as Rabbit : r);
-      await storage.saveRabbits(updatedList);
-      toast.success('Rabbit updated successfully');
-    } else {
-      const newRabbit: Rabbit = {
-        id: crypto.randomUUID(),
-        ...finalData as Rabbit,
-        weightHistory: [{ date: format(new Date(), 'yyyy-MM-dd'), weight: formData.weight || 0 }]
-      };
-      const updatedList = [newRabbit, ...rabbitsList];
-      await storage.saveRabbits(updatedList);
-      toast.success('Rabbit added successfully');
-    }
+    try {
+      if (editingRabbit) {
+        await storage.update('rabbits', user.id, editingRabbit.id, finalData);
+        toast.success('Rabbit updated successfully');
+      } else {
+        const newRabbitData = {
+          ...finalData,
+          weightHistory: [{ date: format(new Date(), 'yyyy-MM-dd'), weight: formData.weight || 0 }]
+        };
+        await storage.insert('rabbits', user.id, newRabbitData);
+        toast.success('Rabbit added successfully');
+      }
 
-    await loadData();
-    setIsAddModalOpen(false);
-    setEditingRabbit(null);
-    setIsCustomBreed(false);
-    setCustomBreed('');
-    setFormData({
-      tagId: '',
-      name: '',
-      breed: 'New Zealand White',
-      gender: 'Doe',
-      birthDate: format(new Date(), 'yyyy-MM-dd'),
-      weight: 0,
-      status: 'Active',
-      cageId: '',
-      notes: ''
-    });
+      await loadData();
+      setIsAddModalOpen(false);
+      setEditingRabbit(null);
+      setIsCustomBreed(false);
+      setCustomBreed('');
+      setFormData({
+        tagId: '',
+        name: '',
+        breed: 'New Zealand White',
+        gender: 'Doe',
+        birthDate: format(new Date(), 'yyyy-MM-dd'),
+        weight: 0,
+        status: 'Active',
+        cageId: '',
+        notes: ''
+      });
+    } catch (error) {
+      console.error('Error saving rabbit:', error);
+      toast.error('Failed to save rabbit');
+    }
   };
 
   const handleUpdateWeight = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRabbitForWeight) return;
+    if (!selectedRabbitForWeight || !user) return;
 
-    const updatedList = rabbits.map(r => {
-      if (r.id === selectedRabbitForWeight.id) {
-        const history = r.weightHistory || [];
-        return {
-          ...r,
-          weight: newWeight,
-          weightHistory: [...history, { date: format(new Date(), 'yyyy-MM-dd'), weight: newWeight }]
-        };
-      }
-      return r;
-    });
+    try {
+      const history = selectedRabbitForWeight.weightHistory || [];
+      const updatedHistory = [...history, { date: format(new Date(), 'yyyy-MM-dd'), weight: newWeight }];
+      
+      await storage.update('rabbits', user.id, selectedRabbitForWeight.id, {
+        weight: newWeight,
+        weightHistory: updatedHistory
+      });
 
-    await storage.saveRabbits(updatedList);
-    setRabbits(updatedList);
-    setIsWeightModalOpen(false);
-    setSelectedRabbitForWeight(null);
-    toast.success('Weight updated successfully');
+      await loadData();
+      setIsWeightModalOpen(false);
+      setSelectedRabbitForWeight(null);
+      toast.success('Weight updated successfully');
+    } catch (error) {
+      toast.error('Failed to update weight');
+    }
   };
 
   const deleteRabbit = async (id: string) => {
+    if (!user) return;
     if (confirm('Are you sure you want to delete this rabbit?')) {
-      const updatedList = rabbits.filter(r => r.id !== id);
-      await storage.saveRabbits(updatedList);
-      setRabbits(updatedList);
-      toast.error('Rabbit deleted');
+      try {
+        await storage.delete('rabbits', user.id, id);
+        setRabbits(rabbits.filter(r => r.id !== id));
+        toast.error('Rabbit deleted');
+      } catch (error) {
+        toast.error('Failed to delete rabbit');
+      }
     }
   };
 
@@ -565,17 +584,41 @@ const Inventory = () => {
               <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg shadow-lg shadow-primary/20">Update Weight</Button>
               
               {selectedRabbitForWeight.weightHistory && selectedRabbitForWeight.weightHistory.length > 0 && (
-                <div className="mt-6">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <History className="h-4 w-4" /> Weight History
-                  </p>
-                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                    {selectedRabbitForWeight.weightHistory.slice().reverse().map((h, i) => (
-                      <div key={i} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-transparent hover:border-slate-200 transition-all">
-                        <span className="text-xs font-bold text-muted-foreground">{h.date}</span>
-                        <span className="font-black text-primary">{h.weight} kg</span>
-                      </div>
-                    ))}
+                <div className="mt-6 space-y-6">
+                  <div className="h-40 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={selectedRabbitForWeight.weightHistory}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="date" hide />
+                        <YAxis hide domain={['auto', 'auto']} />
+                        <Tooltip
+                          contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                          labelStyle={{ fontWeight: 'bold' }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="weight"
+                          stroke="#10b981"
+                          strokeWidth={3}
+                          dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 6, strokeWidth: 0 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  <div>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <History className="h-4 w-4" /> Weight History
+                    </p>
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                      {selectedRabbitForWeight.weightHistory.slice().reverse().map((h, i) => (
+                        <div key={i} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-transparent hover:border-slate-200 transition-all">
+                          <span className="text-xs font-bold text-muted-foreground">{h.date}</span>
+                          <span className="font-black text-primary">{h.weight} kg</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

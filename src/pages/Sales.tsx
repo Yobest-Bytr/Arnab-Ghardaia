@@ -2,14 +2,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/db';
 import Navbar from '@/components/layout/Navbar';
 import { 
   ShoppingBag, Plus, Calendar, User, Tag, 
   DollarSign, TrendingUp, PieChart as PieIcon, 
   ArrowUpRight, X, Loader2, Trash2, Rabbit,
   CheckCircle2, Wallet, Wand2, Sparkles, ChevronRight, MessageSquare, BrainCircuit,
-  Beef, Leaf, Package, Search
+  Beef, Leaf, Package, Search, Zap, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -139,10 +139,10 @@ const Sales = () => {
     if (!user) return;
 
     try {
-      const saleRecord = { 
-        ...formData, 
+      const saleRecord = {
+        ...formData,
         price: parseFloat(formData.price) || 0,
-        created_at: new Date().toISOString() 
+        created_at: new Date().toISOString()
       };
       
       await storage.insert('sales', user.id, saleRecord);
@@ -156,6 +156,7 @@ const Sales = () => {
       await fetchData();
       showSuccess(t('recordSale'));
     } catch (err) {
+      console.error('Error recording sale:', err);
       showError("Failed to record sale.");
     }
   };
