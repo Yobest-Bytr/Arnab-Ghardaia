@@ -22,6 +22,11 @@ const Tasks = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
+  // Filters
+  const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [filterPriority, setFilterPriority] = useState<string>('All');
+  const [filterStatus, setFilterStatus] = useState<string>('All');
+
   const [formData, setFormData] = useState({
     title: '',
     category: 'Feeding',
@@ -78,6 +83,16 @@ const Tasks = () => {
     return { total, completed, critical, percent: total > 0 ? Math.round((completed / total) * 100) : 0 };
   }, [tasks]);
 
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      const matchesCategory = filterCategory === 'All' || t.category === filterCategory;
+      const matchesPriority = filterPriority === 'All' || t.priority === filterPriority;
+      const matchesStatus = filterStatus === 'All' ||
+                           (filterStatus === 'Completed' ? t.completed : !t.completed);
+      return matchesCategory && matchesPriority && matchesStatus;
+    });
+  }, [tasks, filterCategory, filterPriority, filterStatus]);
+
   return (
     <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
       <div className="absolute inset-0 auron-radial pointer-events-none opacity-50" />
@@ -100,6 +115,48 @@ const Tasks = () => {
           </button>
         </header>
 
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+          <div className="relative">
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold outline-none appearance-none focus:border-indigo-500/50"
+            >
+              <option value="All" className="bg-[#020408]">All Categories</option>
+              {CATEGORIES.map(c => <option key={c} value={c} className="bg-[#020408]">{c}</option>)}
+            </select>
+            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 pointer-events-none rotate-90" />
+          </div>
+          <div className="relative">
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold outline-none appearance-none focus:border-indigo-500/50"
+            >
+              <option value="All" className="bg-[#020408]">All Priorities</option>
+              {PRIORITIES.map(p => <option key={p} value={p} className="bg-[#020408]">{p}</option>)}
+            </select>
+            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 pointer-events-none rotate-90" />
+          </div>
+          <div className="relative">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold outline-none appearance-none focus:border-indigo-500/50"
+            >
+              <option value="All" className="bg-[#020408]">All Status</option>
+              <option value="Pending" className="bg-[#020408]">Pending</option>
+              <option value="Completed" className="bg-[#020408]">Completed</option>
+            </select>
+            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 pointer-events-none rotate-90" />
+          </div>
+          <div className="flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl px-6">
+            <Filter className="h-4 w-4 text-indigo-400 mr-2" />
+            <span className="text-xs font-black uppercase tracking-widest text-white/40">{filteredTasks.length} Results</span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div className="pill-nav p-10 bg-indigo-600 text-white border-none shadow-xl shadow-indigo-500/20">
             <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Efficiency Rating</p>
@@ -119,8 +176,8 @@ const Tasks = () => {
         </div>
 
         <div className="space-y-4">
-          {tasks.sort((a, b) => (a.completed === b.completed) ? 0 : a.completed ? 1 : -1).map((task, i) => (
-            <motion.div 
+          {filteredTasks.sort((a, b) => (a.completed === b.completed) ? 0 : a.completed ? 1 : -1).map((task, i) => (
+            <motion.div
               key={task.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

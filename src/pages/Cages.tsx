@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { storage, Cage, Rabbit } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,9 @@ import {
   MapPin,
   LayoutGrid,
   Info,
-  ArrowRight
+  ArrowRight,
+  Filter,
+  Activity
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,6 +35,10 @@ const Cages = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCage, setEditingCage] = useState<Cage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Filters
+  const [filterType, setFilterType] = useState<string>('All');
+  const [filterStatus, setFilterStatus] = useState<string>('All');
 
   const [formData, setFormData] = useState<Partial<Cage>>({
     number: '',
@@ -55,8 +61,8 @@ const Cages = () => {
         storage.getCages(),
         storage.getRabbits()
       ]);
-      setCages(savedCages);
-      setRabbits(savedRabbits);
+      setCages(savedCages || []);
+      setRabbits(savedRabbits || []);
     } finally {
       setIsLoading(false);
     }
@@ -98,10 +104,16 @@ const Cages = () => {
   };
 
   const getOccupants = (cageId: string) => {
-    // In the DB, cageId might be mapped to cage_number or stored as cageId
-    // For now, we'll check both
     return rabbits.filter(r => r.cageId === cageId || r.cage_number === cageId);
   };
+
+  const filteredCages = useMemo(() => {
+    return cages.filter(c => {
+      const matchesType = filterType === 'All' || c.type === filterType;
+      const matchesStatus = filterStatus === 'All' || c.status === filterStatus;
+      return matchesType && matchesStatus;
+    });
+  }, [cages, filterType, filterStatus]);
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-10 pb-24 max-w-7xl">
@@ -205,12 +217,54 @@ const Cages = () => {
         </Dialog>
       </div>
 
+      {/* Filters */}
+      <Card className="border-2 rounded-[2rem] shadow-sm overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex flex-wrap gap-4">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="h-12 w-[180px] rounded-xl border-2 font-bold">
+                <div className="flex items-center gap-2">
+                  <Box className="h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Filter Type" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="All">All Types</SelectItem>
+                <SelectItem value="Single">Single</SelectItem>
+                <SelectItem value="Breeding">Breeding</SelectItem>
+                <SelectItem value="Grow-out">Grow-out</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="h-12 w-[180px] rounded-xl border-2 font-bold">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Filter Status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="All">All Status</SelectItem>
+                <SelectItem value="Empty">Empty</SelectItem>
+                <SelectItem value="Occupied">Occupied</SelectItem>
+                <SelectItem value="Maintenance">Maintenance</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 border-2 rounded-xl px-6 h-12">
+              <Filter className="h-4 w-4 text-primary mr-2" />
+              <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">{filteredCages.length} Results</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {isLoading ? (
           [1, 2, 3, 4].map(i => (
             <div key={i} className="h-64 w-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-[2.5rem]" />
           ))
-        ) : cages.map((cage, i) => {
+        ) : filteredCages.map((cage, i) => {
           const occupants = getOccupants(cage.id);
           return (
             <motion.div key={cage.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
@@ -311,6 +365,12 @@ const Cages = () => {
           );
         })}
       </div>
+      {filteredCages.length === 0 && !isLoading && (
+        <div className="p-20 text-center bg-slate-50 dark:bg-slate-800/50 rounded-[3rem] border-2 border-dashed">
+          <Box className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
+          <p className="text-muted-foreground font-bold">No cages match your filters.</p>
+        </div>
+      )}
     </div>
   );
 };

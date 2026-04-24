@@ -9,13 +9,14 @@ import {
   DollarSign, TrendingUp, PieChart as PieIcon, 
   ArrowUpRight, X, Loader2, Trash2, Rabbit,
   CheckCircle2, Wallet, Wand2, Sparkles, ChevronRight, MessageSquare, BrainCircuit,
-  Beef, Leaf, Package, Search, Zap, ChevronDown
+  Beef, Leaf, Package, Search, Zap, ChevronDown, Filter, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import { grokChat } from '@/lib/puter';
+import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 const Sales = () => {
   const { user } = useAuth();
@@ -27,6 +28,11 @@ const Sales = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiAdvice, setAiAdvice] = useState<string>('');
   const [isAskingAi, setIsAskingAi] = useState(false);
+
+  // Filters
+  const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [dateRange, setDateRange] = useState<string>('all');
+  const [searchCustomer, setSearchCustomer] = useState<string>('');
 
   const [formData, setFormData] = useState({
     rabbit_id: '',
@@ -161,10 +167,35 @@ const Sales = () => {
     }
   };
 
+  const filteredSales = useMemo(() => {
+    return sales.filter(s => {
+      const matchesCategory = filterCategory === 'All' || s.category === filterCategory;
+      const matchesCustomer = s.customer_name?.toLowerCase().includes(searchCustomer.toLowerCase());
+      
+      let matchesDate = true;
+      if (dateRange !== 'all') {
+        const now = new Date();
+        let start, end;
+        if (dateRange === 'thisMonth') {
+          start = startOfMonth(now);
+          end = endOfMonth(now);
+        } else if (dateRange === 'lastMonth') {
+          start = startOfMonth(subMonths(now, 1));
+          end = endOfMonth(subMonths(now, 1));
+        }
+        if (start && end) {
+          matchesDate = isWithinInterval(parseISO(s.sale_date), { start, end });
+        }
+      }
+
+      return matchesCategory && matchesCustomer && matchesDate;
+    });
+  }, [sales, filterCategory, searchCustomer, dateRange]);
+
   const stats = useMemo(() => {
-    const total = sales.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0);
+    const total = filteredSales.reduce((acc, curr) => acc + (parseFloat(curr.price) || 0), 0);
     const categories: Record<string, number> = { 'Natural': 0, 'Meat': 0, 'Breeding': 0, 'Other': 0 };
-    sales.forEach(s => {
+    filteredSales.forEach(s => {
       if (categories[s.category] !== undefined) categories[s.category]++;
       else categories['Other']++;
     });
@@ -172,7 +203,7 @@ const Sales = () => {
     const bestSelling = Object.entries(categories).reduce((a, b) => a[1] > b[1] ? a : b)[0];
     
     return { total, categories, bestSelling };
-  }, [sales]);
+  }, [filteredSales]);
 
   const chartData = Object.entries(stats.categories).map(([name, value]) => ({
     name,
@@ -235,6 +266,49 @@ const Sales = () => {
           </div>
         </motion.div>
 
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/20" />
+            <input 
+              placeholder="Search customer..." 
+              className="w-full h-14 pl-12 pr-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold outline-none focus:border-emerald-500/50"
+              value={searchCustomer}
+              onChange={(e) => setSearchCustomer(e.target.value)}
+            />
+          </div>
+          <div className="relative">
+            <select 
+              value={filterCategory} 
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold outline-none appearance-none focus:border-emerald-500/50"
+            >
+              <option value="All" className="bg-[#020408]">All Categories</option>
+              <option value="Natural" className="bg-[#020408]">Natural</option>
+              <option value="Meat" className="bg-[#020408]">Meat</option>
+              <option value="Breeding" className="bg-[#020408]">Breeding</option>
+              <option value="Other" className="bg-[#020408]">Other</option>
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select 
+              value={dateRange} 
+              onChange={(e) => setDateRange(e.target.value)}
+              className="w-full h-14 px-6 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold outline-none appearance-none focus:border-emerald-500/50"
+            >
+              <option value="all" className="bg-[#020408]">All Time</option>
+              <option value="thisMonth" className="bg-[#020408]">This Month</option>
+              <option value="lastMonth" className="bg-[#020408]">Last Month</option>
+            </select>
+            <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 pointer-events-none" />
+          </div>
+          <div className="flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl px-6">
+            <Filter className="h-4 w-4 text-emerald-500 mr-2" />
+            <span className="text-xs font-black uppercase tracking-widest text-white/40">{filteredSales.length} Results</span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div className="pill-nav p-10 bg-emerald-600 text-white border-none shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
@@ -242,10 +316,6 @@ const Sales = () => {
             </div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-2">{t('totalSales')}</p>
             <h3 className="text-5xl font-black tracking-tighter">{stats.total.toLocaleString()} DA</h3>
-            <div className="mt-6 flex items-center gap-2 text-emerald-200 text-xs font-bold">
-              <TrendingUp size={14} />
-              <span>+12% from last month</span>
-            </div>
           </div>
 
           <div className="pill-nav p-10 bg-white/5 border-white/10 hover:bg-white/10 transition-all">
@@ -267,7 +337,7 @@ const Sales = () => {
               </div>
             </div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-2">Transactions</p>
-            <h3 className="text-3xl font-black tracking-tight">{sales.length}</h3>
+            <h3 className="text-3xl font-black tracking-tight">{filteredSales.length}</h3>
           </div>
         </div>
 
@@ -275,12 +345,6 @@ const Sales = () => {
           <div className="lg:col-span-2 pill-nav p-0 overflow-hidden bg-white/5 border-white/10 shadow-xl">
             <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
               <h3 className="text-2xl font-black tracking-tight">Recent Transactions</h3>
-              <div className="flex gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
-                  <input placeholder="Search sales..." className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold outline-none focus:border-emerald-500/50" />
-                </div>
-              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left rtl:text-right">
@@ -293,7 +357,7 @@ const Sales = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {sales.map((sale, i) => (
+                  {filteredSales.map((sale, i) => (
                     <tr key={i} className="hover:bg-white/5 transition-colors group">
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-3">
@@ -319,6 +383,12 @@ const Sales = () => {
                   ))}
                 </tbody>
               </table>
+              {filteredSales.length === 0 && (
+                <div className="p-20 text-center">
+                  <ShoppingBag className="h-12 w-12 mx-auto mb-4 text-white/10" />
+                  <p className="text-white/40 font-bold">No transactions match your filters.</p>
+                </div>
+              )}
             </div>
           </div>
 

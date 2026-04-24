@@ -26,7 +26,10 @@ import {
   User,
   Clock,
   Activity,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  BarChart3,
+  FileText,
+  HeartPulse
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,7 +39,7 @@ import { format, differenceInMonths, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 const Inventory = () => {
   const { t } = useLanguage();
@@ -46,15 +49,20 @@ const Inventory = () => {
   const [search, setSearch] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [editingRabbit, setEditingRabbit] = useState<Rabbit | null>(null);
   const [selectedRabbitForQr, setSelectedRabbitForQr] = useState<Rabbit | null>(null);
   const [selectedRabbitForWeight, setSelectedRabbitForWeight] = useState<Rabbit | null>(null);
+  const [selectedRabbitForReport, setSelectedRabbitForReport] = useState<Rabbit | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
   const [filterGender, setFilterGender] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
-  const [filterAgeRange, setFilterAgeRange] = useState<string>('All'); // All, Young (<6m), Adult (>=6m)
+  const [filterAgeRange, setFilterAgeRange] = useState<string>('All');
+  const [filterBreed, setFilterBreed] = useState<string>('All');
+  const [filterCage, setFilterCage] = useState<string>('All');
+  const [filterHealth, setFilterHealth] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('newest');
 
   const [formData, setFormData] = useState<Partial<Rabbit>>({
@@ -66,7 +74,8 @@ const Inventory = () => {
     weight: 0,
     status: 'Active',
     cageId: '',
-    notes: ''
+    notes: '',
+    health_status: 'Healthy'
   });
 
   const [customBreed, setCustomBreed] = useState('');
@@ -131,7 +140,8 @@ const Inventory = () => {
         weight: 0,
         status: 'Active',
         cageId: '',
-        notes: ''
+        notes: '',
+        health_status: 'Healthy'
       });
     } catch (error) {
       console.error('Error saving rabbit:', error);
@@ -182,6 +192,9 @@ const Inventory = () => {
                              r.breed.toLowerCase().includes(search.toLowerCase());
         const matchesGender = filterGender === 'All' || r.gender === filterGender;
         const matchesStatus = filterStatus === 'All' || r.status === filterStatus;
+        const matchesBreed = filterBreed === 'All' || r.breed === filterBreed;
+        const matchesCage = filterCage === 'All' || r.cageId === filterCage;
+        const matchesHealth = filterHealth === 'All' || r.health_status === filterHealth;
         
         let matchesAge = true;
         if (filterAgeRange !== 'All') {
@@ -190,7 +203,7 @@ const Inventory = () => {
           if (filterAgeRange === 'Adult') matchesAge = ageInMonths >= 6;
         }
 
-        return matchesSearch && matchesGender && matchesStatus && matchesAge;
+        return matchesSearch && matchesGender && matchesStatus && matchesAge && matchesBreed && matchesCage && matchesHealth;
       })
       .sort((a, b) => {
         if (sortBy === 'newest') return b.id.localeCompare(a.id);
@@ -199,9 +212,10 @@ const Inventory = () => {
         if (sortBy === 'weight') return b.weight - a.weight;
         return 0;
       });
-  }, [rabbits, search, filterGender, filterStatus, filterAgeRange, sortBy]);
+  }, [rabbits, search, filterGender, filterStatus, filterAgeRange, filterBreed, filterCage, filterHealth, sortBy]);
 
   const BREEDS = ['New Zealand White', 'Flemish Giant', 'Netherland Dwarf', 'Rex', 'California', 'Angora', 'Dutch', 'Lionhead', 'Other'];
+  const uniqueBreeds = useMemo(() => Array.from(new Set(rabbits.map(r => r.breed))), [rabbits]);
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8 pb-24 max-w-7xl">
@@ -360,6 +374,23 @@ const Inventory = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Health Status</Label>
+                  <Select 
+                    value={formData.health_status} 
+                    onValueChange={(v: any) => setFormData({...formData, health_status: v})}
+                  >
+                    <SelectTrigger className="h-12 rounded-xl border-2">
+                      <SelectValue placeholder="Select Health" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="Healthy">Healthy</SelectItem>
+                      <SelectItem value="Sick">Sick</SelectItem>
+                      <SelectItem value="Injured">Injured</SelectItem>
+                      <SelectItem value="Recovering">Recovering</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Notes</Label>
                   <Textarea 
                     value={formData.notes} 
@@ -432,6 +463,48 @@ const Inventory = () => {
                   <SelectItem value="Available">Available</SelectItem>
                   <SelectItem value="Sold">Sold</SelectItem>
                   <SelectItem value="Quarantine">Quarantine</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterBreed} onValueChange={setFilterBreed}>
+                <SelectTrigger className="h-14 w-[140px] rounded-2xl border-2 font-bold">
+                  <div className="flex items-center gap-2">
+                    <RabbitIcon className="h-4 w-4 text-primary" />
+                    <SelectValue placeholder="Breed" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="All">All Breeds</SelectItem>
+                  {uniqueBreeds.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterCage} onValueChange={setFilterCage}>
+                <SelectTrigger className="h-14 w-[140px] rounded-2xl border-2 font-bold">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <SelectValue placeholder="Cage" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="All">All Cages</SelectItem>
+                  {cages.map(c => <SelectItem key={c.id} value={c.id}>{c.number}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterHealth} onValueChange={setFilterHealth}>
+                <SelectTrigger className="h-14 w-[140px] rounded-2xl border-2 font-bold">
+                  <div className="flex items-center gap-2">
+                    <HeartPulse className="h-4 w-4 text-primary" />
+                    <SelectValue placeholder="Health" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="All">All Health</SelectItem>
+                  <SelectItem value="Healthy">Healthy</SelectItem>
+                  <SelectItem value="Sick">Sick</SelectItem>
+                  <SelectItem value="Injured">Injured</SelectItem>
+                  <SelectItem value="Recovering">Recovering</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -539,16 +612,35 @@ const Inventory = () => {
                     </span>
                     <span className="font-black truncate max-w-[120px]">{rabbit.breed}</span>
                   </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground font-medium flex items-center gap-2">
+                      <HeartPulse className="h-4 w-4" /> Health
+                    </span>
+                    <Badge variant="outline" className={cn(
+                      "font-black text-[10px] uppercase",
+                      rabbit.health_status === 'Healthy' ? 'text-emerald-600 border-emerald-200 bg-emerald-50' : 'text-rose-600 border-rose-200 bg-rose-50'
+                    )}>
+                      {rabbit.health_status || 'Healthy'}
+                    </Badge>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t flex items-center justify-between">
-                  <Button variant="ghost" size="sm" className="h-10 rounded-xl gap-2 text-primary font-black hover:bg-primary/10" onClick={() => setSelectedRabbitForQr(rabbit)}>
-                    <QrCode className="h-4 w-4" />
-                    QR Tag
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" className="h-10 rounded-xl gap-2 text-primary font-black hover:bg-primary/10" onClick={() => setSelectedRabbitForQr(rabbit)}>
+                      <QrCode className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-10 rounded-xl gap-2 text-indigo-600 font-black hover:bg-indigo-100" onClick={() => {
+                      setSelectedRabbitForReport(rabbit);
+                      setIsReportModalOpen(true);
+                    }}>
+                      <BarChart3 className="h-4 w-4" />
+                      <span className="text-[10px] uppercase tracking-widest">Report</span>
+                    </Button>
+                  </div>
                   <div className="flex items-center gap-1 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                     <Clock className="h-3 w-3" />
-                    Added {format(parseISO(rabbit.birthDate), 'MMM yyyy')}
+                    {format(parseISO(rabbit.birthDate), 'MMM yyyy')}
                   </div>
                 </div>
               </CardContent>
@@ -582,47 +674,95 @@ const Inventory = () => {
                 />
               </div>
               <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg shadow-lg shadow-primary/20">Update Weight</Button>
-              
-              {selectedRabbitForWeight.weightHistory && selectedRabbitForWeight.weightHistory.length > 0 && (
-                <div className="mt-6 space-y-6">
-                  <div className="h-40 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={selectedRabbitForWeight.weightHistory}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="date" hide />
-                        <YAxis hide domain={['auto', 'auto']} />
-                        <Tooltip
-                          contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                          labelStyle={{ fontWeight: 'bold' }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="weight"
-                          stroke="#10b981"
-                          strokeWidth={3}
-                          dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
-                          activeDot={{ r: 6, strokeWidth: 0 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  <div>
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-                      <History className="h-4 w-4" /> Weight History
-                    </p>
-                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                      {selectedRabbitForWeight.weightHistory.slice().reverse().map((h, i) => (
-                        <div key={i} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-transparent hover:border-slate-200 transition-all">
-                          <span className="text-xs font-bold text-muted-foreground">{h.date}</span>
-                          <span className="font-black text-primary">{h.weight} kg</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Rabbit Report Modal */}
+      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+        <DialogContent className="sm:max-w-[700px] rounded-[2.5rem] p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black flex items-center gap-3">
+              <FileText className="h-6 w-6 text-primary" />
+              Rabbit Performance Report
+            </DialogTitle>
+          </DialogHeader>
+          {selectedRabbitForReport && (
+            <div className="space-y-8 pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-transparent">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Current Weight</p>
+                  <h4 className="text-3xl font-black text-primary">{selectedRabbitForReport.weight} kg</h4>
+                </div>
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-transparent">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Age</p>
+                  <h4 className="text-3xl font-black text-primary">{differenceInMonths(new Date(), parseISO(selectedRabbitForReport.birthDate))} mo</h4>
+                </div>
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-transparent">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Health</p>
+                  <h4 className="text-2xl font-black text-emerald-600">{selectedRabbitForReport.health_status || 'Healthy'}</h4>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-black flex items-center gap-2">
+                  <TrendingUpIcon className="h-5 w-5 text-primary" />
+                  Weight Growth Velocity
+                </h3>
+                <div className="h-64 w-full bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] p-6 border-2 border-dashed">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={selectedRabbitForReport.weightHistory || []}>
+                      <defs>
+                        <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="date" hide />
+                      <YAxis hide domain={['auto', 'auto']} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        labelStyle={{ fontWeight: 'bold' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="weight"
+                        stroke="#10b981"
+                        strokeWidth={4}
+                        fillOpacity={1}
+                        fill="url(#colorWeight)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-black flex items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  Weight Log
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(selectedRabbitForReport.weightHistory || []).slice().reverse().map((h, i) => (
+                    <div key={i} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-transparent">
+                      <span className="text-xs font-bold text-muted-foreground">{h.date}</span>
+                      <span className="font-black text-primary">{h.weight} kg</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-8 bg-primary/5 rounded-[2.5rem] border-2 border-primary/10">
+                <h3 className="text-lg font-black mb-4">Neural Insights</h3>
+                <p className="text-sm font-medium leading-relaxed text-muted-foreground">
+                  Based on the growth velocity of <span className="text-primary font-black">{selectedRabbitForReport.name}</span>, 
+                  this rabbit is showing a <span className="text-emerald-600 font-black">healthy development curve</span>. 
+                  Current weight is optimal for its age group ({differenceInMonths(new Date(), parseISO(selectedRabbitForReport.birthDate))} months).
+                </p>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

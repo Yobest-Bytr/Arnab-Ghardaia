@@ -51,11 +51,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
     
     if (data.user) {
-      // Create profile
-      await supabase.from('profiles').insert([{
+      // Create profile using upsert to be safe
+      await supabase.from('profiles').upsert([{
         id: data.user.id,
         email: email,
-        display_name: name
+        display_name: name,
+        updated_at: new Date().toISOString()
       }]);
     }
   };

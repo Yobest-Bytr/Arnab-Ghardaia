@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { storage, BreedingRecord, Rabbit, Litter } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,12 +21,13 @@ import {
   Search,
   Filter,
   ChevronRight,
-  Clock
+  Clock,
+  User
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { format, addDays, isAfter, parseISO } from 'date-fns';
+import { format, addDays, isAfter, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,6 +41,12 @@ const Breeding = () => {
   const [isLitterModalOpen, setIsLitterModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<BreedingRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Filters
+  const [filterDoe, setFilterDoe] = useState<string>('All');
+  const [filterBuck, setFilterBuck] = useState<string>('All');
+  const [filterStatus, setFilterStatus] = useState<string>('All');
+  const [dateRange, setDateRange] = useState<string>('all');
 
   const [formData, setFormData] = useState<Partial<BreedingRecord>>({
     buckId: '',
@@ -141,6 +148,32 @@ const Breeding = () => {
     }
   };
 
+  const filteredRecords = useMemo(() => {
+    return records.filter(r => {
+      const matchesDoe = filterDoe === 'All' || r.doeId === filterDoe;
+      const matchesBuck = filterBuck === 'All' || r.buckId === filterBuck;
+      const matchesStatus = filterStatus === 'All' || r.status === filterStatus;
+      
+      let matchesDate = true;
+      if (dateRange !== 'all') {
+        const now = new Date();
+        let start, end;
+        if (dateRange === 'thisMonth') {
+          start = startOfMonth(now);
+          end = endOfMonth(now);
+        } else if (dateRange === 'lastMonth') {
+          start = startOfMonth(subMonths(now, 1));
+          end = endOfMonth(subMonths(now, 1));
+        }
+        if (start && end) {
+          matchesDate = isWithinInterval(parseISO(r.date), { start, end });
+        }
+      }
+
+      return matchesDoe && matchesBuck && matchesStatus && matchesDate;
+    });
+  }, [records, filterDoe, filterBuck, filterStatus, dateRange]);
+
   const does = rabbits.filter(r => r.gender === 'Doe' && r.status === 'Active');
   const bucks = rabbits.filter(r => r.gender === 'Buck' && r.status === 'Active');
 
@@ -212,18 +245,76 @@ const Breeding = () => {
         </Dialog>
       </div>
 
+      {/* Filters */}
+      <Card className="border-2 rounded-[2rem] shadow-sm overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex flex-wrap gap-4">
+            <Select value={filterDoe} onValueChange={setFilterDoe}>
+              <SelectTrigger className="h-12 w-[180px] rounded-xl border-2 font-bold">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-pink-500" />
+                  <SelectValue placeholder="Filter Doe" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="All">All Does</SelectItem>
+                {does.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterBuck} onValueChange={setFilterBuck}>
+              <SelectTrigger className="h-12 w-[180px] rounded-xl border-2 font-bold">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-blue-500" />
+                  <SelectValue placeholder="Filter Buck" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="All">All Bucks</SelectItem>
+                {bucks.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="h-12 w-[180px] rounded-xl border-2 font-bold">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="All">All Status</SelectItem>
+                <SelectItem value="Mated">Mated</SelectItem>
+                <SelectItem value="Confirmed">Confirmed</SelectItem>
+                <SelectItem value="Kindled">Kindled</SelectItem>
+                <SelectItem value="Failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="h-12 w-[180px] rounded-xl border-2 font-bold">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Time Period" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="thisMonth">This Month</SelectItem>
+                <SelectItem value="lastMonth">Last Month</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
               <History className="h-6 w-6 text-primary" />
-              Active Records
+              Active Records ({filteredRecords.length})
             </h2>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="rounded-xl h-10 font-bold border-2">
-                <Filter className="h-4 w-4 mr-2" /> Filter
-              </Button>
-            </div>
           </div>
           
           <div className="space-y-4">
@@ -234,7 +325,7 @@ const Breeding = () => {
                 ))}
               </div>
             ) : (
-              records.map((record, i) => {
+              filteredRecords.map((record, i) => {
                 const doe = rabbits.find(r => r.id === record.doeId);
                 const buck = rabbits.find(r => r.id === record.buckId);
                 const expectedKindling = format(addDays(parseISO(record.date), 31), 'MMM dd, yyyy');
@@ -313,10 +404,10 @@ const Breeding = () => {
                 );
               })
             )}
-            {!isLoading && records.length === 0 && (
+            {!isLoading && filteredRecords.length === 0 && (
               <div className="p-12 text-center bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-dashed">
                 <Heart className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                <p className="text-muted-foreground font-bold">No breeding records found.</p>
+                <p className="text-muted-foreground font-bold">No breeding records match your filters.</p>
               </div>
             )}
           </div>

@@ -17,6 +17,7 @@ const QrManager = () => {
   const [rabbits, setRabbits] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState('');
+  const [filterBreed, setFilterBreed] = useState('All');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -54,10 +55,14 @@ const QrManager = () => {
     });
   };
 
-  const filteredRabbits = rabbits.filter(r => 
-    (r.name?.toLowerCase() || '').includes(search.toLowerCase()) || 
-    (r.rabbit_id?.toLowerCase() || '').includes(search.toLowerCase())
-  );
+  const filteredRabbits = rabbits.filter(r => {
+    const matchesSearch = (r.name?.toLowerCase() || '').includes(search.toLowerCase()) ||
+                         (r.rabbit_id?.toLowerCase() || '').includes(search.toLowerCase());
+    const matchesBreed = filterBreed === 'All' || r.breed === filterBreed;
+    return matchesSearch && matchesBreed;
+  });
+
+  const breeds = ['All', ...Array.from(new Set(rabbits.map(r => r.breed)))];
 
   return (
     <div className="min-h-screen bg-[#020408] text-white relative overflow-hidden">
@@ -88,15 +93,27 @@ const QrManager = () => {
           </div>
         </header>
 
-        <div className="mb-10 relative">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20" size={20} />
-          <input 
-            type="text" 
-            placeholder="Search rabbits..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-16 pl-14 pr-6 bg-white/5 border border-white/10 rounded-3xl font-bold outline-none focus:border-indigo-500/50 transition-all"
-          />
+        <div className="flex flex-col md:flex-row gap-4 mb-10">
+          <div className="flex-1 relative">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20" size={20} />
+            <input
+              type="text"
+              placeholder="Search rabbits..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-16 pl-14 pr-6 bg-white/5 border border-white/10 rounded-3xl font-bold outline-none focus:border-indigo-500/50 transition-all"
+            />
+          </div>
+          <div className="relative">
+            <select
+              value={filterBreed}
+              onChange={(e) => setFilterBreed(e.target.value)}
+              className="h-16 px-8 bg-white/5 border border-white/10 rounded-3xl font-bold outline-none appearance-none focus:border-indigo-500/50 min-w-[200px]"
+            >
+              {breeds.map(b => <option key={b} value={b} className="bg-[#020408]">{b}</option>)}
+            </select>
+            <Download className="absolute right-6 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 pointer-events-none rotate-90" />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">

@@ -51,26 +51,38 @@ const Index = () => {
   useEffect(() => {
     const fetchData = async () => {
       const fetchedRabbits = await storage.getRabbits();
-      if (fetchedRabbits.length === 0) {
-        const demoRabbits: Rabbit[] = [
-          { id: '1', tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, weightHistory: [{date: '2023-05-10', weight: 4.2}], status: 'Active', cageId: 'c1' },
-          { id: '2', tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, weightHistory: [{date: '2023-06-15', weight: 5.5}], status: 'Active', cageId: 'c2' },
-          { id: '3', tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, weightHistory: [{date: '2023-08-20', weight: 3.8}], status: 'Active', cageId: 'c3' },
+      if (fetchedRabbits.length === 0 && user) {
+        const demoRabbits = [
+          { tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, weightHistory: [{date: '2023-05-10', weight: 4.2}], status: 'Active', cageId: 'c1' },
+          { tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, weightHistory: [{date: '2023-06-15', weight: 5.5}], status: 'Active', cageId: 'c2' },
+          { tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, weightHistory: [{date: '2023-08-20', weight: 3.8}], status: 'Active', cageId: 'c3' },
         ];
-        await storage.saveRabbits(demoRabbits);
-        setRabbits(demoRabbits);
+        for (const r of demoRabbits) {
+          await storage.insert('rabbits', user.id, r);
+        }
+        const newRabbits = await storage.getRabbits();
+        setRabbits(newRabbits);
       } else {
         setRabbits(fetchedRabbits);
       }
 
       const fetchedBreeding = await storage.getBreedingRecords();
-      if (fetchedBreeding.length === 0) {
-        const demoBreeding: BreedingRecord[] = [
-          { id: 'b1', buckId: '2', doeId: '1', date: format(addDays(new Date(), -15), 'yyyy-MM-dd'), status: 'Mated' },
-          { id: 'b2', buckId: '2', doeId: '3', date: format(addDays(new Date(), -35), 'yyyy-MM-dd'), status: 'Kindled' },
-        ];
-        await storage.saveBreedingRecords(demoBreeding);
-        setBreedingRecords(demoBreeding);
+      if (fetchedBreeding.length === 0 && user) {
+        const currentRabbits = await storage.getRabbits();
+        const buck = currentRabbits.find(r => r.gender === 'Buck');
+        const doe = currentRabbits.find(r => r.gender === 'Doe');
+        
+        if (buck && doe) {
+          const demoBreeding = [
+            { buckId: buck.id, doeId: doe.id, date: format(addDays(new Date(), -15), 'yyyy-MM-dd'), status: 'Mated' },
+            { buckId: buck.id, doeId: doe.id, date: format(addDays(new Date(), -35), 'yyyy-MM-dd'), status: 'Kindled' },
+          ];
+          for (const b of demoBreeding) {
+            await storage.insert('mating_history', user.id, b);
+          }
+          const newBreeding = await storage.getBreedingRecords();
+          setBreedingRecords(newBreeding);
+        }
       } else {
         setBreedingRecords(fetchedBreeding);
       }
@@ -80,8 +92,8 @@ const Index = () => {
       setLitters(await storage.getLitters());
     };
 
-    fetchData();
-  }, []);
+    if (user) fetchData();
+  }, [user]);
 
   const activeDoes = rabbits.filter(r => r.gender === 'Doe' && r.status === 'Active').length;
   const activeBucks = rabbits.filter(r => r.gender === 'Buck' && r.status === 'Active').length;
