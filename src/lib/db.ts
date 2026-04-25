@@ -106,22 +106,32 @@ const cleanDate = (date: any) => {
   }
 };
 
-const mapRabbitToDB = (rabbit: any, userId: string) => ({
-  user_id: userId,
-  name: rabbit.name || 'Unnamed',
-  breed: rabbit.breed || 'Unknown',
-  gender: rabbit.gender || 'Doe',
-  birth_date: cleanDate(rabbit.birthDate || rabbit.birth_date),
-  weight: parseFloat(rabbit.weight) || 0,
-  status: rabbit.status || 'Active',
-  notes: rabbit.notes || '',
-  rabbit_id: rabbit.tagId || rabbit.rabbit_id || '',
-  weight_history: rabbit.weightHistory || rabbit.weight_history || [],
-  cage_number: rabbit.cage_number || rabbit.cageId || null,
-  health_status: rabbit.health_status || 'Healthy',
-  father_id: cleanUUID(rabbit.father_id),
-  mother_id: cleanUUID(rabbit.mother_id)
-});
+const mapRabbitToDB = (rabbit: any, userId: string) => {
+  // Map Buck/Doe to Male/Female for DB constraint (case-insensitive)
+  let gender = rabbit.gender || 'Doe';
+  const normalizedGender = gender.toString().toLowerCase();
+  
+  if (normalizedGender === 'buck' || normalizedGender === 'male') gender = 'Male';
+  else if (normalizedGender === 'doe' || normalizedGender === 'female') gender = 'Female';
+  else gender = 'Female'; // Default to Female if unknown to satisfy constraint
+
+  return {
+    user_id: userId,
+    name: rabbit.name || 'Unnamed',
+    breed: rabbit.breed || 'Unknown',
+    gender: gender,
+    birth_date: cleanDate(rabbit.birthDate || rabbit.birth_date),
+    weight: parseFloat(rabbit.weight) || 0,
+    status: rabbit.status || 'Active',
+    notes: rabbit.notes || '',
+    rabbit_id: rabbit.tagId || rabbit.rabbit_id || '',
+    weight_history: rabbit.weightHistory || rabbit.weight_history || [],
+    cage_number: rabbit.cage_number || rabbit.cageId || null,
+    health_status: rabbit.health_status || 'Healthy',
+    father_id: cleanUUID(rabbit.father_id),
+    mother_id: cleanUUID(rabbit.mother_id)
+  };
+};
 
 const mapMatingToDB = (record: any, userId: string) => ({
   user_id: userId,
@@ -214,6 +224,14 @@ export const storage = {
       if (updates.weightHistory) cleanedUpdates.weight_history = updates.weightHistory;
       if (updates.cageId) cleanedUpdates.cage_number = updates.cageId;
       if (updates.weight) cleanedUpdates.weight = parseFloat(updates.weight);
+      
+      // Map Buck/Doe to Male/Female for DB constraint (case-insensitive)
+      if (updates.gender) {
+        const normalizedGender = updates.gender.toString().toLowerCase();
+        if (normalizedGender === 'buck' || normalizedGender === 'male') cleanedUpdates.gender = 'Male';
+        else if (normalizedGender === 'doe' || normalizedGender === 'female') cleanedUpdates.gender = 'Female';
+      }
+      
       delete cleanedUpdates.birthDate;
       delete cleanedUpdates.tagId;
       delete cleanedUpdates.weightHistory;
@@ -256,12 +274,19 @@ export const storage = {
       console.error("Error fetching rabbits:", error);
       throw error;
     }
-    return (data || []).map(r => ({
-      ...r,
-      tagId: r.rabbit_id || r.tagId || '',
-      birthDate: r.birth_date || r.birthDate,
-      weightHistory: r.weight_history || r.weightHistory || []
-    }));
+    return (data || []).map(r => {
+      let gender = r.gender;
+      if (gender === 'Male') gender = 'Buck';
+      if (gender === 'Female') gender = 'Doe';
+      
+      return {
+        ...r,
+        gender: gender,
+        tagId: r.rabbit_id || r.tagId || '',
+        birthDate: r.birth_date || r.birthDate,
+        weightHistory: r.weight_history || r.weightHistory || []
+      };
+    });
   },
 
   saveRabbits: async (rabbits: Rabbit[]) => {
