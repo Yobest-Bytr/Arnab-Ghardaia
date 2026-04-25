@@ -121,7 +121,7 @@ const NeuralLab = () => {
       NEURAL ACTIONS:
       You can perform actions by including a JSON block at the end of your response.
       Supported actions:
-      1. Add Rabbit: {"action": "add_rabbit", "data": {"name": "...", "breed": "...", "gender": "Buck/Doe", "tagId": "..."}}
+      1. Add Rabbit: {\"action\": \"add_rabbit\", \"data\": {\"name\": \"...\", \"breed\": \"...\", \"gender\": \"Buck/Doe\", \"tagId\": \"...\"}}
       2. Update Rabbit: {"action": "update_rabbit", "data": {"id": "...", "updates": {"weight": 5.2, "status": "Sold"}}}
       3. Record Sale: {"action": "record_sale", "data": {"customer_name": "...", "price": 5000, "rabbit_id": "..."}}
       4. Record Litter: {"action": "record_litter", "data": {"doeId": "...", "totalKits": 8, "aliveKits": 7, "deadKits": 1}}
