@@ -22,7 +22,9 @@ import {
   Moon,
   Sun,
   Monitor,
-  Heart
+  Heart,
+  Baby,
+  User
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { showSuccess, showError } from '@/utils/toast';
@@ -205,6 +207,45 @@ const Settings = () => {
                     <p className="text-xs text-muted-foreground font-medium">Enable deep neural processing for farm data optimization.</p>
                   </div>
                   <Switch defaultChecked className="data-[state=checked]:bg-indigo-500" />
+                </div>
+
+                <div className="pt-8 border-t">
+                  <h3 className="text-lg font-black mb-6 flex items-center gap-2">
+                    <Baby className="h-5 w-5 text-primary" />
+                    Age Thresholds
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Young Age Threshold (Months)</Label>
+                      <div className="relative">
+                        <Baby className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-pink-500" />
+                        <Input
+                          type="number"
+                          value={settings.youngAgeThreshold || 6}
+                          onChange={(e) => setSettings({...settings, youngAgeThreshold: parseInt(e.target.value)})}
+                          className="h-14 pl-12 rounded-2xl border-2 font-bold"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">
+                        Rabbits younger than this will be filtered as "Young".
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Adult Age Threshold (Months)</Label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-500" />
+                        <Input
+                          type="number"
+                          value={settings.adultAgeThreshold || 6}
+                          onChange={(e) => setSettings({...settings, adultAgeThreshold: parseInt(e.target.value)})}
+                          className="h-14 pl-12 rounded-2xl border-2 font-bold"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">
+                        Rabbits older than or equal to this will be filtered as "Adult".
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

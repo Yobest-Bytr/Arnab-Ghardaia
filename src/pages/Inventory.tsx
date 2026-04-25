@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { storage, Rabbit, Cage } from '@/lib/db';
+import { storage, Rabbit, Cage, UserSettings } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +55,7 @@ const Inventory = () => {
   const [selectedRabbitForWeight, setSelectedRabbitForWeight] = useState<Rabbit | null>(null);
   const [selectedRabbitForReport, setSelectedRabbitForReport] = useState<Rabbit | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
 
   // Filters
   const [filterGender, setFilterGender] = useState<string>('All');
@@ -82,6 +83,8 @@ const Inventory = () => {
   const [isCustomBreed, setIsCustomBreed] = useState(false);
 
   const [newWeight, setNewWeight] = useState<number>(0);
+  const [newWeightDate, setNewWeightDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [editingWeightIndex, setEditingWeightIndex] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -95,12 +98,14 @@ const Inventory = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [rabbitsData, cagesData] = await Promise.all([
+      const [rabbitsData, cagesData, settingsData] = await Promise.all([
         storage.getRabbits(),
-        storage.getCages()
+        storage.getCages(),
+        storage.getSettings()
       ]);
       setRabbits(rabbitsData);
       setCages(cagesData);
+      setSettings(settingsData);
     } catch (error) {
       showError(error);
     } finally {
@@ -156,16 +161,30 @@ const Inventory = () => {
 
     try {
       const history = selectedRabbitForWeight.weightHistory || [];
-      const updatedHistory = [...history, { date: format(new Date(), 'yyyy-MM-dd'), weight: newWeight }];
+      let updatedHistory;
+      
+      if (editingWeightIndex !== null) {
+        updatedHistory = [...history];
+        updatedHistory[editingWeightIndex] = { date: newWeightDate, weight: newWeight };
+      } else {
+        updatedHistory = [...history, { date: newWeightDate, weight: newWeight }];
+      }
+      
+      // Sort history by date
+      updatedHistory.sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+      
+      // Use the latest weight for the rabbit's main weight field
+      const latestWeight = updatedHistory[updatedHistory.length - 1].weight;
       
       await storage.update('rabbits', user.id, selectedRabbitForWeight.id, {
-        weight: newWeight,
+        weight: latestWeight,
         weightHistory: updatedHistory
       });
 
       await loadData();
       setIsWeightModalOpen(false);
       setSelectedRabbitForWeight(null);
+      setEditingWeightIndex(null);
       showSuccess('Weight updated successfully');
     } catch (error) {
       showError(error);
@@ -185,10 +204,27 @@ const Inventory = () => {
     }
   };
 
+  const deleteWeightEntry = async (rabbit: Rabbit, index: number) => {
+    if (!user || !confirm('Delete this weight entry?')) return;
+    try {
+      const updatedHistory = rabbit.weightHistory.filter((_, i) => i !== index);
+      const latestWeight = updatedHistory.length > 0 ? updatedHistory[updatedHistory.length - 1].weight : rabbit.weight;
+      
+      await storage.update('rabbits', user.id, rabbit.id, {
+        weight: latestWeight,
+        weightHistory: updatedHistory
+      });
+      await loadData();
+      showSuccess('Entry deleted');
+    } catch (error) {
+      showError(error);
+    }
+  };
+
   const filteredRabbits = useMemo(() => {
     return rabbits
       .filter(r => {
-        const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase()) || 
+        const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase()) ||
                              r.tagId.toLowerCase().includes(search.toLowerCase()) ||
                              r.breed.toLowerCase().includes(search.toLowerCase());
         const matchesGender = filterGender === 'All' || r.gender === filterGender;
@@ -200,8 +236,11 @@ const Inventory = () => {
         let matchesAge = true;
         if (filterAgeRange !== 'All') {
           const ageInMonths = differenceInMonths(new Date(), parseISO(r.birthDate));
-          if (filterAgeRange === 'Young') matchesAge = ageInMonths < 6;
-          if (filterAgeRange === 'Adult') matchesAge = ageInMonths >= 6;
+          const youngThreshold = settings?.youngAgeThreshold || 6;
+          const adultThreshold = settings?.adultAgeThreshold || 6;
+          
+          if (filterAgeRange === 'Young') matchesAge = ageInMonths < youngThreshold;
+          if (filterAgeRange === 'Adult') matchesAge = ageInMonths >= adultThreshold;
         }
 
         return matchesSearch && matchesGender && matchesStatus && matchesAge && matchesBreed && matchesCage && matchesHealth;
@@ -651,30 +690,47 @@ const Inventory = () => {
       </div>
 
       {/* Weight Update Modal */}
-      <Dialog open={isWeightModalOpen} onOpenChange={setIsWeightModalOpen}>
+      <Dialog open={isWeightModalOpen} onOpenChange={(open) => {
+        setIsWeightModalOpen(open);
+        if (!open) {
+          setEditingWeightIndex(null);
+        }
+      }}>
         <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-8">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black">Update Weight</DialogTitle>
+            <DialogTitle className="text-2xl font-black">{editingWeightIndex !== null ? 'Edit Weight' : 'Update Weight'}</DialogTitle>
           </DialogHeader>
           {selectedRabbitForWeight && (
             <form onSubmit={handleUpdateWeight} className="space-y-6 pt-4">
               <div className="text-center p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed">
-                <p className="text-sm text-muted-foreground font-medium">Updating weight for</p>
+                <p className="text-sm text-muted-foreground font-medium">{editingWeightIndex !== null ? 'Editing weight for' : 'Updating weight for'}</p>
                 <h3 className="text-2xl font-black text-primary mt-1">{selectedRabbitForWeight.name}</h3>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">New Weight (kg)</Label>
-                <Input 
-                  type="number" 
+                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Weight (kg)</Label>
+                <Input
+                  type="number"
                   step="0.01"
-                  value={newWeight} 
-                  onChange={(e) => setNewWeight(parseFloat(e.target.value))} 
+                  value={newWeight}
+                  onChange={(e) => setNewWeight(parseFloat(e.target.value))}
                   autoFocus
                   className="h-14 rounded-2xl border-2 text-xl font-black text-center"
-                  required 
+                  required
                 />
               </div>
-              <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg shadow-lg shadow-primary/20">Update Weight</Button>
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Date</Label>
+                <Input
+                  type="date"
+                  value={newWeightDate}
+                  onChange={(e) => setNewWeightDate(e.target.value)}
+                  className="h-14 rounded-2xl border-2 font-bold"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg shadow-lg shadow-primary/20">
+                {editingWeightIndex !== null ? 'Save Changes' : 'Update Weight'}
+              </Button>
             </form>
           )}
         </DialogContent>
@@ -746,12 +802,41 @@ const Inventory = () => {
                   Weight Log
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(selectedRabbitForReport.weightHistory || []).slice().reverse().map((h, i) => (
-                    <div key={i} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-transparent">
-                      <span className="text-xs font-bold text-muted-foreground">{h.date}</span>
-                      <span className="font-black text-primary">{h.weight} kg</span>
-                    </div>
-                  ))}
+                  {(selectedRabbitForReport.weightHistory || []).slice().reverse().map((h, i) => {
+                    const originalIndex = (selectedRabbitForReport.weightHistory || []).length - 1 - i;
+                    return (
+                      <div key={i} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-transparent group/log">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-muted-foreground">{h.date}</span>
+                          <span className="font-black text-primary">{h.weight} kg</span>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover/log:opacity-100 transition-all">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10"
+                            onClick={() => {
+                              setSelectedRabbitForWeight(selectedRabbitForReport);
+                              setNewWeight(h.weight);
+                              setNewWeightDate(h.date);
+                              setEditingWeightIndex(originalIndex);
+                              setIsWeightModalOpen(true);
+                            }}
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
+                            onClick={() => deleteWeightEntry(selectedRabbitForReport, originalIndex)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

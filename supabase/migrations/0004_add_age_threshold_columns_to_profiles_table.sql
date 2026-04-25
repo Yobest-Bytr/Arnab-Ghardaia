@@ -1,0 +1,3 @@
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS young_age_threshold INTEGER DEFAULT 6,
+ADD COLUMN IF NOT EXISTS adult_age_threshold INTEGER DEFAULT 6;

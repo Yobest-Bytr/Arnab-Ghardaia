@@ -86,6 +86,8 @@ export interface UserSettings {
   aiKey?: string;
   aiProvider?: 'openai' | 'anthropic' | 'google' | 'grok' | 'mistral' | 'gemini';
   farmName: string;
+  youngAgeThreshold?: number;
+  adultAgeThreshold?: number;
 }
 
 const cleanUUID = (id: any) => {
@@ -466,7 +468,9 @@ export const storage = {
       language: data.language || 'en',
       aiKey: data.ai_key,
       aiProvider: data.ai_provider || 'openai',
-      farmName: data.display_name || 'My Hop Farm'
+      farmName: data.display_name || 'My Hop Farm',
+      youngAgeThreshold: data.young_age_threshold || 6,
+      adultAgeThreshold: data.adult_age_threshold || 6
     };
   },
 
@@ -486,6 +490,8 @@ export const storage = {
       ai_key: settings.aiKey,
       ai_provider: settings.aiProvider,
       display_name: settings.farmName,
+      young_age_threshold: settings.youngAgeThreshold,
+      adult_age_threshold: settings.adultAgeThreshold,
       updated_at: new Date().toISOString()
     });
     
