@@ -29,7 +29,7 @@ const Signup = () => {
       await new Promise(r => setTimeout(r, 2000));
       navigate('/dashboard');
     } catch (error: any) {
-      showError(error.message || 'Signup failed');
+      showError(error);
     } finally {
       setLoading(false);
     }

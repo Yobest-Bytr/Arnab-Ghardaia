@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,10 +75,10 @@ const Cages = () => {
     try {
       if (editingCage) {
         await storage.update('cages', user.id, editingCage.id, formData);
-        toast.success('Cage updated successfully');
+        showSuccess('Cage updated successfully');
       } else {
         await storage.insert('cages', user.id, formData);
-        toast.success('Cage added successfully');
+        showSuccess('Cage added successfully');
       }
 
       await loadData();
@@ -86,7 +86,7 @@ const Cages = () => {
       setEditingCage(null);
       setFormData({ number: '', type: 'Single', location: '', status: 'Empty', capacity: 1 });
     } catch (error) {
-      toast.error('Failed to save cage');
+      showError(error);
     }
   };
 
@@ -96,9 +96,9 @@ const Cages = () => {
       try {
         await storage.delete('cages', user.id, id);
         setCages(cages.filter(c => c.id !== id));
-        toast.error('Cage deleted');
+        showSuccess('Cage deleted');
       } catch (error) {
-        toast.error('Failed to delete cage');
+        showError(error);
       }
     }
   };

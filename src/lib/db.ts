@@ -252,7 +252,10 @@ export const storage = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase.from('rabbits').select('*').eq('user_id', user.id);
-    if (error) return [];
+    if (error) {
+      console.error("Error fetching rabbits:", error);
+      throw error;
+    }
     return (data || []).map(r => ({
       ...r,
       tagId: r.rabbit_id || r.tagId || '',
@@ -270,9 +273,11 @@ export const storage = {
       const mapped = mapRabbitToDB(rabbit, user.id);
 
       if (isNew) {
-        await supabase.from('rabbits').insert([mapped]);
+        const { error } = await supabase.from('rabbits').insert([mapped]);
+        if (error) throw error;
       } else {
-        await supabase.from('rabbits').update(mapped).eq('id', rabbit.id).eq('user_id', user.id);
+        const { error } = await supabase.from('rabbits').update(mapped).eq('id', rabbit.id).eq('user_id', user.id);
+        if (error) throw error;
       }
     }
   },
@@ -281,7 +286,10 @@ export const storage = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase.from('mating_history').select('*').eq('user_id', user.id);
-    if (error) return [];
+    if (error) {
+      console.error("Error fetching breeding records:", error);
+      throw error;
+    }
     return (data || []).map(r => ({
       ...r,
       buckId: r.male_id || r.buckId,
@@ -299,9 +307,11 @@ export const storage = {
       const mapped = mapMatingToDB(record, user.id);
 
       if (isNew) {
-        await supabase.from('mating_history').insert([mapped]);
+        const { error } = await supabase.from('mating_history').insert([mapped]);
+        if (error) throw error;
       } else {
-        await supabase.from('mating_history').update(mapped).eq('id', record.id).eq('user_id', user.id);
+        const { error } = await supabase.from('mating_history').update(mapped).eq('id', record.id).eq('user_id', user.id);
+        if (error) throw error;
       }
     }
   },
@@ -310,7 +320,10 @@ export const storage = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase.from('litters').select('*').eq('user_id', user.id);
-    if (error) return [];
+    if (error) {
+      console.error("Error fetching litters:", error);
+      throw error;
+    }
     return (data || []).map(l => ({
       ...l,
       birthDate: l.actual_birth_date || l.birthDate || l.mating_date,
@@ -336,9 +349,11 @@ export const storage = {
       };
 
       if (isNew) {
-        await supabase.from('litters').insert([mapped]);
+        const { error } = await supabase.from('litters').insert([mapped]);
+        if (error) throw error;
       } else {
-        await supabase.from('litters').update(mapped).eq('id', litter.id).eq('user_id', user.id);
+        const { error } = await supabase.from('litters').update(mapped).eq('id', litter.id).eq('user_id', user.id);
+        if (error) throw error;
       }
     }
   },
@@ -347,7 +362,10 @@ export const storage = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase.from('tasks').select('*').eq('user_id', user.id);
-    if (error) return [];
+    if (error) {
+      console.error("Error fetching tasks:", error);
+      throw error;
+    }
     return (data || []).map(t => ({
       ...t,
       dueDate: t.due_date || t.dueDate
@@ -369,9 +387,11 @@ export const storage = {
       };
 
       if (isNew) {
-        await supabase.from('tasks').insert([mapped]);
+        const { error } = await supabase.from('tasks').insert([mapped]);
+        if (error) throw error;
       } else {
-        await supabase.from('tasks').update(mapped).eq('id', task.id).eq('user_id', user.id);
+        const { error } = await supabase.from('tasks').update(mapped).eq('id', task.id).eq('user_id', user.id);
+        if (error) throw error;
       }
     }
   },
@@ -380,7 +400,10 @@ export const storage = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase.from('cages').select('*').eq('user_id', user.id);
-    if (error) return [];
+    if (error) {
+      console.error("Error fetching cages:", error);
+      throw error;
+    }
     return data || [];
   },
 
@@ -399,9 +422,11 @@ export const storage = {
       };
 
       if (isNew) {
-        await supabase.from('cages').insert([mapped]);
+        const { error } = await supabase.from('cages').insert([mapped]);
+        if (error) throw error;
       } else {
-        await supabase.from('cages').update(mapped).eq('id', cage.id).eq('user_id', user.id);
+        const { error } = await supabase.from('cages').update(mapped).eq('id', cage.id).eq('user_id', user.id);
+        if (error) throw error;
       }
     }
   },

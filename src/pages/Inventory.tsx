@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/toast';
 import { QRCodeSVG } from 'qrcode.react';
 import { format, differenceInMonths, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -101,6 +101,8 @@ const Inventory = () => {
       ]);
       setRabbits(rabbitsData);
       setCages(cagesData);
+    } catch (error) {
+      showError(error);
     } finally {
       setIsLoading(false);
     }
@@ -116,14 +118,14 @@ const Inventory = () => {
     try {
       if (editingRabbit) {
         await storage.update('rabbits', user.id, editingRabbit.id, finalData);
-        toast.success('Rabbit updated successfully');
+        showSuccess('Rabbit updated successfully');
       } else {
         const newRabbitData = {
           ...finalData,
           weightHistory: [{ date: format(new Date(), 'yyyy-MM-dd'), weight: formData.weight || 0 }]
         };
         await storage.insert('rabbits', user.id, newRabbitData);
-        toast.success('Rabbit added successfully');
+        showSuccess('Rabbit added successfully');
       }
 
       await loadData();
@@ -144,8 +146,7 @@ const Inventory = () => {
         health_status: 'Healthy'
       });
     } catch (error) {
-      console.error('Error saving rabbit:', error);
-      toast.error('Failed to save rabbit');
+      showError(error);
     }
   };
 
@@ -165,9 +166,9 @@ const Inventory = () => {
       await loadData();
       setIsWeightModalOpen(false);
       setSelectedRabbitForWeight(null);
-      toast.success('Weight updated successfully');
+      showSuccess('Weight updated successfully');
     } catch (error) {
-      toast.error('Failed to update weight');
+      showError(error);
     }
   };
 
@@ -177,9 +178,9 @@ const Inventory = () => {
       try {
         await storage.delete('rabbits', user.id, id);
         setRabbits(rabbits.filter(r => r.id !== id));
-        toast.error('Rabbit deleted');
+        showSuccess('Rabbit deleted');
       } catch (error) {
-        toast.error('Failed to delete rabbit');
+        showError(error);
       }
     }
   };

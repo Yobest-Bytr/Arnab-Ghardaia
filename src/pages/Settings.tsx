@@ -25,7 +25,7 @@ import {
   Heart
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
@@ -49,10 +49,14 @@ const Settings = () => {
   }, []);
 
   const handleSave = async () => {
-    await storage.saveSettings(settings);
-    setLanguage(settings.language);
-    setTheme(settings.theme);
-    toast.success('Settings saved successfully');
+    try {
+      await storage.saveSettings(settings);
+      setLanguage(settings.language);
+      setTheme(settings.theme);
+      showSuccess('Settings saved successfully');
+    } catch (error: any) {
+      showError(error);
+    }
   };
 
   return (

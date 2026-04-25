@@ -54,7 +54,7 @@ const ForgotPassword = () => {
       showSuccess('Password reset successfully.');
       navigate('/login');
     } catch (error: any) {
-      showError(error.message || 'Reset failed. Use 123456 for demo.');
+      showError(error);
     } finally {
       setLoading(false);
     }

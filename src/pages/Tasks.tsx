@@ -63,17 +63,25 @@ const Tasks = () => {
 
   const toggleTask = async (task: any) => {
     if (!user) return;
-    const updated = { ...task, completed: !task.completed };
-    await storage.update('tasks', user.id, task.id, updated);
-    setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
-    showSuccess(updated.completed ? "Task optimized." : "Task restored.");
+    try {
+      const updated = { ...task, completed: !task.completed };
+      await storage.update('tasks', user.id, task.id, updated);
+      setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
+      showSuccess(updated.completed ? "Task optimized." : "Task restored.");
+    } catch (err) {
+      showError(err);
+    }
   };
 
   const deleteTask = async (id: string) => {
     if (!user || !confirm("Terminate this task?")) return;
-    await storage.delete('tasks', user.id, id);
-    setTasks(prev => prev.filter(t => t.id !== id));
-    showSuccess("Task purged.");
+    try {
+      await storage.delete('tasks', user.id, id);
+      setTasks(prev => prev.filter(t => t.id !== id));
+      showSuccess("Task purged.");
+    } catch (err) {
+      showError(err);
+    }
   };
 
   const stats = useMemo(() => {

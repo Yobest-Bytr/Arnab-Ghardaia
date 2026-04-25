@@ -25,8 +25,12 @@ const QrManager = () => {
   }, [user]);
 
   const fetchRabbits = async () => {
-    const data = await storage.get('rabbits', user?.id || '');
-    setRabbits(data);
+    try {
+      const data = await storage.get('rabbits', user?.id || '');
+      setRabbits(data);
+    } catch (err) {
+      showError(err);
+    }
   };
 
   const toggleSelect = (id: string) => {

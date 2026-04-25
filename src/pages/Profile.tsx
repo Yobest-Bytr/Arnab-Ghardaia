@@ -46,11 +46,15 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     if (!user) return;
-    const profiles = await storage.get('profiles', user.id);
-    if (profiles && profiles.length > 0) {
-      setDisplayName(profiles[0].display_name || user.email?.split('@')[0] || '');
-    } else {
-      setDisplayName(user.email?.split('@')[0] || '');
+    try {
+      const profiles = await storage.get('profiles', user.id);
+      if (profiles && profiles.length > 0) {
+        setDisplayName(profiles[0].display_name || user.email?.split('@')[0] || '');
+      } else {
+        setDisplayName(user.email?.split('@')[0] || '');
+      }
+    } catch (err) {
+      showError(err);
     }
   };
 
@@ -73,7 +77,7 @@ const Profile = () => {
         }
         showSuccess(t('save'));
       } catch (err) {
-        showError('Failed to update profile.');
+        showError(err);
       } finally {
         setLoading(false);
       }

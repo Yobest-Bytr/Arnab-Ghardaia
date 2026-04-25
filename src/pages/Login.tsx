@@ -36,7 +36,7 @@ const Login = () => {
       showSuccess('Neural link established.');
       navigate('/dashboard');
     } catch (error: any) {
-      showError(error.message || 'Failed to log in');
+      showError(error);
     } finally {
       setLoading(false);
     }

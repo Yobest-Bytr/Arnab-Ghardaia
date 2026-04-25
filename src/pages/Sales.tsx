@@ -61,6 +61,8 @@ const Sales = () => {
       ]);
       setSales(salesData || []);
       setInventory((rabbitData || []).filter(r => r.status !== 'Sold'));
+    } catch (err) {
+      showError(err);
     } finally {
       setLoading(false);
     }
@@ -134,7 +136,7 @@ const Sales = () => {
       setFormData(prev => ({ ...prev, notes: response }));
       showSuccess("Neural suggestion applied.");
     } catch (err) {
-      showError("Neural link failed.");
+      showError(err);
     } finally {
       setIsGenerating(false);
     }
@@ -162,8 +164,7 @@ const Sales = () => {
       await fetchData();
       showSuccess(t('recordSale'));
     } catch (err) {
-      console.error('Error recording sale:', err);
-      showError("Failed to record sale.");
+      showError(err);
     }
   };
 

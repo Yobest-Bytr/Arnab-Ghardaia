@@ -23,9 +23,18 @@ const Statistics = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      setRabbits(await storage.getRabbits());
-      setBreeding(await storage.getBreedingRecords());
-      setLitters(await storage.getLitters());
+      try {
+        const [rabbitsData, breedingData, littersData] = await Promise.all([
+          storage.getRabbits(),
+          storage.getBreedingRecords(),
+          storage.getLitters()
+        ]);
+        setRabbits(rabbitsData);
+        setBreeding(breedingData);
+        setLitters(littersData);
+      } catch (err) {
+        console.error("Error fetching statistics:", err);
+      }
     };
     fetchData();
   }, []);

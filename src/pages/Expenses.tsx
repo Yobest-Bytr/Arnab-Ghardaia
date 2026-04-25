@@ -44,6 +44,8 @@ const Expenses = () => {
     try {
       const data = await storage.get('expenses', user?.id || '');
       setExpenses(data || []);
+    } catch (err) {
+      showError(err);
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ const Expenses = () => {
       fetchExpenses();
       showSuccess(t('save'));
     } catch (err) {
-      showError("Failed to record expense.");
+      showError(err);
     }
   };
 
@@ -78,7 +80,7 @@ const Expenses = () => {
       setExpenses(prev => prev.filter(e => e.id !== id));
       showSuccess("Expense removed.");
     } catch (err) {
-      showError("Failed to delete expense.");
+      showError(err);
     }
   };
 

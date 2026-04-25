@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/toast';
 import { format, addDays, isAfter, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -79,6 +79,8 @@ const Breeding = () => {
       setRecords(recordsData);
       setRabbits(rabbitsData);
       setLitters(littersData);
+    } catch (error) {
+      showError(error);
     } finally {
       setIsLoading(false);
     }
@@ -90,13 +92,12 @@ const Breeding = () => {
 
     try {
       await storage.insert('mating_history', user.id, formData);
-      toast.success('Breeding record added');
+      showSuccess('Breeding record added');
       await loadData();
       setIsAddModalOpen(false);
       setFormData({ buckId: '', doeId: '', date: format(new Date(), 'yyyy-MM-dd'), status: 'Mated' });
     } catch (error) {
-      console.error('Error adding breeding record:', error);
-      toast.error('Failed to add breeding record');
+      showError(error);
     }
   };
 
@@ -114,13 +115,12 @@ const Breeding = () => {
       await storage.insert('litters', user.id, newLitter);
       await storage.update('mating_history', user.id, selectedRecord.id, { status: 'Kindled' });
 
-      toast.success('Litter recorded successfully');
+      showSuccess('Litter recorded successfully');
       await loadData();
       setIsLitterModalOpen(false);
       setSelectedRecord(null);
     } catch (error) {
-      console.error('Error recording litter:', error);
-      toast.error('Failed to record litter');
+      showError(error);
     }
   };
 
@@ -129,9 +129,9 @@ const Breeding = () => {
     try {
       await storage.update('mating_history', user.id, id, { status });
       setRecords(records.map(r => r.id === id ? { ...r, status } : r));
-      toast.success(`Status updated to ${status}`);
+      showSuccess(`Status updated to ${status}`);
     } catch (error) {
-      toast.error('Failed to update status');
+      showError(error);
     }
   };
 
@@ -141,9 +141,9 @@ const Breeding = () => {
       try {
         await storage.delete('mating_history', user.id, id);
         setRecords(records.filter(r => r.id !== id));
-        toast.error('Record deleted');
+        showSuccess('Record deleted');
       } catch (error) {
-        toast.error('Failed to delete record');
+        showError(error);
       }
     }
   };

@@ -29,7 +29,7 @@ import { format, addDays, isBefore, isAfter, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/utils/toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,46 +50,51 @@ const Index = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const fetchedRabbits = await storage.getRabbits();
-      if (fetchedRabbits.length === 0 && user) {
-        const demoRabbits = [
-          { tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, weightHistory: [{date: '2023-05-10', weight: 4.2}], status: 'Active', cageId: 'c1' },
-          { tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, weightHistory: [{date: '2023-06-15', weight: 5.5}], status: 'Active', cageId: 'c2' },
-          { tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, weightHistory: [{date: '2023-08-20', weight: 3.8}], status: 'Active', cageId: 'c3' },
-        ];
-        for (const r of demoRabbits) {
-          await storage.insert('rabbits', user.id, r);
-        }
-        const newRabbits = await storage.getRabbits();
-        setRabbits(newRabbits);
-      } else {
-        setRabbits(fetchedRabbits);
-      }
-
-      const fetchedBreeding = await storage.getBreedingRecords();
-      if (fetchedBreeding.length === 0 && user) {
-        const currentRabbits = await storage.getRabbits();
-        const buck = currentRabbits.find(r => r.gender === 'Buck');
-        const doe = currentRabbits.find(r => r.gender === 'Doe');
-        
-        if (buck && doe) {
-          const demoBreeding = [
-            { buckId: buck.id, doeId: doe.id, date: format(addDays(new Date(), -15), 'yyyy-MM-dd'), status: 'Mated' },
-            { buckId: buck.id, doeId: doe.id, date: format(addDays(new Date(), -35), 'yyyy-MM-dd'), status: 'Kindled' },
+      try {
+        const fetchedRabbits = await storage.getRabbits();
+        if (fetchedRabbits.length === 0 && user) {
+          const demoRabbits = [
+            { tagId: 'D-001', name: 'Luna', breed: 'New Zealand White', gender: 'Doe', birthDate: '2023-05-10', weight: 4.2, weightHistory: [{date: '2023-05-10', weight: 4.2}], status: 'Active', cageId: 'c1' },
+            { tagId: 'B-001', name: 'Max', breed: 'Flemish Giant', gender: 'Buck', birthDate: '2023-06-15', weight: 5.5, weightHistory: [{date: '2023-06-15', weight: 5.5}], status: 'Active', cageId: 'c2' },
+            { tagId: 'D-002', name: 'Bella', breed: 'Rex', gender: 'Doe', birthDate: '2023-08-20', weight: 3.8, weightHistory: [{date: '2023-08-20', weight: 3.8}], status: 'Active', cageId: 'c3' },
           ];
-          for (const b of demoBreeding) {
-            await storage.insert('mating_history', user.id, b);
+          for (const r of demoRabbits) {
+            await storage.insert('rabbits', user.id, r);
           }
-          const newBreeding = await storage.getBreedingRecords();
-          setBreedingRecords(newBreeding);
+          const newRabbits = await storage.getRabbits();
+          setRabbits(newRabbits);
+        } else {
+          setRabbits(fetchedRabbits);
         }
-      } else {
-        setBreedingRecords(fetchedBreeding);
-      }
 
-      setTasks(await storage.getTasks());
-      setCages(await storage.getCages());
-      setLitters(await storage.getLitters());
+        const fetchedBreeding = await storage.getBreedingRecords();
+        if (fetchedBreeding.length === 0 && user) {
+          const currentRabbits = await storage.getRabbits();
+          const buck = currentRabbits.find(r => r.gender === 'Buck');
+          const doe = currentRabbits.find(r => r.gender === 'Doe');
+          
+          if (buck && doe) {
+            const demoBreeding = [
+              { buckId: buck.id, doeId: doe.id, date: format(addDays(new Date(), -15), 'yyyy-MM-dd'), status: 'Mated' },
+              { buckId: buck.id, doeId: doe.id, date: format(addDays(new Date(), -35), 'yyyy-MM-dd'), status: 'Kindled' },
+            ];
+            for (const b of demoBreeding) {
+              await storage.insert('mating_history', user.id, b);
+            }
+            const newBreeding = await storage.getBreedingRecords();
+            setBreedingRecords(newBreeding);
+          }
+        } else {
+          setBreedingRecords(fetchedBreeding);
+        }
+
+        setTasks(await storage.getTasks());
+        setCages(await storage.getCages());
+        setLitters(await storage.getLitters());
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        showError(error);
+      }
     };
 
     if (user) fetchData();
@@ -170,9 +175,9 @@ const Index = () => {
       await storage.saveLitters(updatedLitters);
       setLitters(updatedLitters);
       setEditingLitter(null);
-      toast.success("Litter updated successfully");
+      showSuccess("Litter updated successfully");
     } catch (error) {
-      toast.error("Failed to update litter");
+      showError(error);
     }
   };
 
