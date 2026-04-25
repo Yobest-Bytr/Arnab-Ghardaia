@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   BrainCircuit, Send, Sparkles, Cpu, Zap, 
@@ -108,26 +107,26 @@ const NeuralLab = () => {
     setIsGenerating(true);
 
     try {
-      const systemPrompt = `You are the Arnab Ghardaia Neural Assistant, a highly advanced AI specialized in rabbit farm management.
-      You have access to the following farm data:
-      - Rabbits: ${JSON.stringify(farmData.rabbits.map(r => ({ id: r.id, name: r.name, breed: r.breed, gender: r.gender, status: r.status, weight: r.weight, tagId: r.tagId })))}
-      - Breeding Records: ${JSON.stringify(farmData.breeding)}
-      - Litters: ${JSON.stringify(farmData.litters)}
-      - Cages: ${JSON.stringify(farmData.cages)}
-      
-      Your goal is to provide data-driven insights, breeding recommendations, and health advice.
-      Be professional, concise, and helpful. If the user provides an image, analyze it for rabbit health, breed identification, or cage conditions.
+      const systemPrompt = `You are the Arnab Ghardaia Neural Assistant, a highly advanced AI specialized in rabbit farm management. 
+You have access to the following farm data:
+- Rabbits: ${JSON.stringify(farmData.rabbits.map(r => ({ id: r.id, name: r.name, breed: r.breed, gender: r.gender, status: r.status, weight: r.weight, tagId: r.tagId })))}
+- Breeding Records: ${JSON.stringify(farmData.breeding)}
+- Litters: ${JSON.stringify(farmData.litters)}
+- Cages: ${JSON.stringify(farmData.cages)}
 
-      NEURAL ACTIONS:
-      You can perform actions by including a JSON block at the end of your response.
-      Supported actions:
-      1. Add Rabbit: {\"action\": \"add_rabbit\", \"data\": {\"name\": \"...\", \"breed\": \"...\", \"gender\": \"Buck/Doe\", \"tagId\": \"...\"}}
-      2. Update Rabbit: {"action": "update_rabbit", "data": {"id": "...", "updates": {"weight": 5.2, "status": "Sold"}}}
-      3. Record Sale: {"action": "record_sale", "data": {"customer_name": "...", "price": 5000, "rabbit_id": "..."}}
-      4. Record Litter: {"action": "record_litter", "data": {"doeId": "...", "totalKits": 8, "aliveKits": 7, "deadKits": 1}}
+Your goal is to provide data-driven insights, breeding recommendations, and health advice. 
+Be professional, concise, and helpful. If the user provides an image, analyze it for rabbit health, breed identification, or cage conditions.
 
-      Example: "I've added the new rabbit for you. ```json {"action": "add_rabbit", "data": {"name": "Snowy", "breed": "Rex", "gender": "Doe", "tagId": "R-999"}} ```"
-      `;
+NEURAL ACTIONS:
+You can perform actions by including a JSON block at the end of your response. 
+Supported actions:
+1. Add Rabbit: {\\"action\\": \\"add_rabbit\\", \\"data\\": {\\"name\\": \\"...\\", \\"breed\\": \\"...\\", \\"gender\\": \\"Buck/Doe\\", \\"tagId\\": \\"...\\"}}
+2. Update Rabbit: {\\"action\\": \\"update_rabbit\\", \\"data\\": {\\"id\\": \\"...\\", \\"updates\\": {\\"weight\\": 5.2, \\"status\\": \\"Sold\\"}}}
+3. Record Sale: {\\"action\\": \\"record_sale\\", \\"data\\": {\\"customer_name\\": \\"...\\", \\"price\\": 5000, \\"rabbit_id\\": \\"...\\"}}
+4. Record Litter: {\\"action\\": \\"record_litter\\", \\"data\\": {\\"doeId\\": \\"...\\", \\"totalKits\\": 8, \\"aliveKits\\": 7, \\"deadKits\\": 1}}
+
+Example: \\"I've added the new rabbit for you. \\\\`\\\\`\\\\`json {\\\\\\"action\\\\": \\\\"add_rabbit\\\\", \\\\\\"data\\\\": {\\\\\\"name\\\\": \\\\\\"Snowy\\\\", \\\\\\"breed\\\\": \\\\\\"Rex\\\\", \\\\\\"gender\\\\": \\\\\\"Doe\\\\", \\\\\\"tagId\\\\": \\\\\\"R-999\\\\"}} \\\\`\\\\`\\\\`\\"
+`;
 
       let aiResponse = "";
       await grokChat(currentInput, {
@@ -154,7 +153,7 @@ const NeuralLab = () => {
       });
 
       // Parse for actions
-      const actionMatch = aiResponse.match(/```json\s*({[\s\S]*?})\s*```/) || aiResponse.match(/({[\s\S]*?"action"[\s\S]*?})/);
+      const actionMatch = aiResponse.match(/```json\\s*(\\{[\\s\\S]*?\\})\\s*```/) || aiResponse.match(/(\\{[\\s\\S]*?\\"action\\"[\\s\\S]*?\\})/);
       if (actionMatch) {
         try {
           const actionData = JSON.parse(actionMatch[1]);
@@ -170,7 +169,7 @@ const NeuralLab = () => {
           return [...prev.slice(0, -1), { ...last, id: Date.now() }];
         }
         return prev;
-      });
+      });;
 
     } catch (err) {
       showError("Neural processing failed.");
@@ -179,7 +178,7 @@ const NeuralLab = () => {
         role: 'assistant',
         content: "I'm sorry, I encountered a cognitive error while processing your request. Please check your AI configuration in Settings.",
         timestamp: new Date().toISOString(),
-      }]);
+      }]);;
     } finally {
       setIsGenerating(false);
     }
