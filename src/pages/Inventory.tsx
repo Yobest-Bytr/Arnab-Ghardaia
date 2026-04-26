@@ -35,7 +35,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess, showError } from '@/utils/toast';
 import { QRCodeSVG } from 'qrcode.react';
-import { format, differenceInMonths, parseISO } from 'date-fns';
+import { format, differenceInMonths } from 'date-fns';
+import { safeParseISO } from '@/utils/date';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -171,7 +172,7 @@ const Inventory = () => {
       }
       
       // Sort history by date
-      updatedHistory.sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+      updatedHistory.sort((a, b) => safeParseISO(a.date).getTime() - safeParseISO(b.date).getTime());
       
       // Use the latest weight for the rabbit's main weight field
       const latestWeight = updatedHistory[updatedHistory.length - 1].weight;
@@ -235,7 +236,7 @@ const Inventory = () => {
         
         let matchesAge = true;
         if (filterAgeRange !== 'All') {
-          const ageInMonths = differenceInMonths(new Date(), parseISO(r.birthDate));
+          const ageInMonths = differenceInMonths(new Date(), safeParseISO(r.birthDate));
           const youngThreshold = settings?.youngAgeThreshold || 6;
           const adultThreshold = settings?.adultAgeThreshold || 6;
           
@@ -571,7 +572,7 @@ const Inventory = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {filteredRabbits.map((rabbit) => {
           const cage = cages.find(c => c.id === rabbit.cageId);
-          const ageInMonths = differenceInMonths(new Date(), parseISO(rabbit.birthDate));
+          const ageInMonths = differenceInMonths(new Date(), safeParseISO(rabbit.birthDate));
           
           return (
             <Card key={rabbit.id} className="group overflow-hidden border-2 rounded-[2.5rem] hover:border-primary/50 transition-all shadow-sm hover:shadow-xl bg-white dark:bg-slate-900">
@@ -680,7 +681,7 @@ const Inventory = () => {
                   </div>
                   <div className="flex items-center gap-1 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                     <Clock className="h-3 w-3" />
-                    {format(parseISO(rabbit.birthDate), 'MMM yyyy')}
+                    {format(safeParseISO(rabbit.birthDate), 'MMM yyyy')}
                   </div>
                 </div>
               </CardContent>
@@ -754,7 +755,7 @@ const Inventory = () => {
                 </div>
                 <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-transparent">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Age</p>
-                  <h4 className="text-3xl font-black text-primary">{differenceInMonths(new Date(), parseISO(selectedRabbitForReport.birthDate))} mo</h4>
+                  <h4 className="text-3xl font-black text-primary">{differenceInMonths(new Date(), safeParseISO(selectedRabbitForReport.birthDate))} mo</h4>
                 </div>
                 <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-transparent">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Health</p>
@@ -843,9 +844,9 @@ const Inventory = () => {
               <div className="p-8 bg-primary/5 rounded-[2.5rem] border-2 border-primary/10">
                 <h3 className="text-lg font-black mb-4">Neural Insights</h3>
                 <p className="text-sm font-medium leading-relaxed text-muted-foreground">
-                  Based on the growth velocity of <span className="text-primary font-black">{selectedRabbitForReport.name}</span>, 
-                  this rabbit is showing a <span className="text-emerald-600 font-black">healthy development curve</span>. 
-                  Current weight is optimal for its age group ({differenceInMonths(new Date(), parseISO(selectedRabbitForReport.birthDate))} months).
+                  Based on the growth velocity of <span className="text-primary font-black">{selectedRabbitForReport.name}</span>,
+                  this rabbit is showing a <span className="text-emerald-600 font-black">healthy development curve</span>.
+                  Current weight is optimal for its age group ({differenceInMonths(new Date(), safeParseISO(selectedRabbitForReport.birthDate))} months).
                 </p>
               </div>
             </div>

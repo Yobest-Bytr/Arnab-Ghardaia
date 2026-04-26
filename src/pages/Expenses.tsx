@@ -12,7 +12,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
-import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { safeParseISO } from '@/utils/date';
 
 const CATEGORIES = ['Food', 'Water', 'Medicine', 'Equipment', 'Losses', 'Other'];
 
@@ -100,7 +101,7 @@ const Expenses = () => {
           end = endOfMonth(subMonths(now, 1));
         }
         if (start && end) {
-          matchesDate = isWithinInterval(parseISO(e.date), { start, end });
+          matchesDate = isWithinInterval(safeParseISO(e.date), { start, end });
         }
       }
 

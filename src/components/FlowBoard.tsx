@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BreedingRecord, Rabbit } from '@/lib/db';
 import { format, differenceInDays, addDays } from 'date-fns';
+import { safeParseISO } from '@/utils/date';
 import { Calendar, Heart, Baby, Home, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface FlowBoardProps {
@@ -22,7 +23,7 @@ export const FlowBoard: React.FC<FlowBoardProps> = ({ records, rabbits }) => {
   ];
 
   const getStageRecords = (status: string) => {
-    return records.filter(r => r.status === status).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return records.filter(r => r.status === status).sort((a, b) => safeParseISO(a.date).getTime() - safeParseISO(b.date).getTime());
   };
 
   return (
@@ -48,7 +49,7 @@ export const FlowBoard: React.FC<FlowBoardProps> = ({ records, rabbits }) => {
                 </div>
               ) : (
                 stageRecords.map((record) => {
-                  const daysSince = differenceInDays(new Date(), new Date(record.date));
+                  const daysSince = differenceInDays(new Date(), safeParseISO(record.date));
                   const doeName = getRabbitName(record.doeId);
                   const buckName = getRabbitName(record.buckId);
 
@@ -58,7 +59,7 @@ export const FlowBoard: React.FC<FlowBoardProps> = ({ records, rabbits }) => {
                         <div className="flex justify-between items-start mb-2">
                           <div className="font-bold text-sm">{doeName} × {buckName}</div>
                           <Badge variant="outline" className="text-[10px]">
-                            {format(new Date(record.date), 'MMM d')}
+                            {format(safeParseISO(record.date), 'MMM d')}
                           </Badge>
                         </div>
                         
@@ -71,14 +72,14 @@ export const FlowBoard: React.FC<FlowBoardProps> = ({ records, rabbits }) => {
                           {record.status === 'Mated' && (
                             <div className="flex items-center gap-2 text-xs font-medium text-blue-600">
                               <AlertCircle className="h-3 w-3" />
-                              <span>Palpation due: {format(addDays(new Date(record.date), 14), 'MMM d')}</span>
+                              <span>Palpation due: {format(addDays(safeParseISO(record.date), 14), 'MMM d')}</span>
                             </div>
                           )}
 
                           {record.status === 'Confirmed' && (
                             <div className="flex items-center gap-2 text-xs font-medium text-orange-600">
                               <AlertCircle className="h-3 w-3" />
-                              <span>Kindling due: {format(addDays(new Date(record.date), 31), 'MMM d')}</span>
+                              <span>Kindling due: {format(addDays(safeParseISO(record.date), 31), 'MMM d')}</span>
                             </div>
                           )}
                         </div>

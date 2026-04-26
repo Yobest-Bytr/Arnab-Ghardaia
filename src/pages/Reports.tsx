@@ -20,7 +20,8 @@ import {
 } from 'recharts';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
-import { format, parseISO, differenceInMonths, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, differenceInMonths, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { safeParseISO } from '@/utils/date';
 import { Card, CardContent } from '@/components/ui/card';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
@@ -94,9 +95,9 @@ const Reports = () => {
 
       if (start && end) {
         const interval = { start, end };
-        filteredSales = filteredSales.filter(s => isWithinInterval(parseISO(s.sale_date), interval));
-        filteredExpenses = filteredExpenses.filter(e => isWithinInterval(parseISO(e.date), interval));
-        filteredLitters = filteredLitters.filter(l => isWithinInterval(parseISO(l.birthDate || l.actual_birth_date), interval));
+        filteredSales = filteredSales.filter(s => isWithinInterval(safeParseISO(s.sale_date), interval));
+        filteredExpenses = filteredExpenses.filter(e => isWithinInterval(safeParseISO(e.date), interval));
+        filteredLitters = filteredLitters.filter(l => isWithinInterval(safeParseISO(l.birthDate || l.actual_birth_date), interval));
       }
     }
 
@@ -108,7 +109,7 @@ const Reports = () => {
     // Age Group Filter
     if (filterAgeGroup !== 'All') {
       filteredRabbits = filteredRabbits.filter(r => {
-        const age = differenceInMonths(new Date(), parseISO(r.birthDate || r.birth_date));
+        const age = differenceInMonths(new Date(), safeParseISO(r.birthDate || r.birth_date));
         return filterAgeGroup === 'Young' ? age < 6 : age >= 6;
       });
     }
@@ -316,7 +317,7 @@ const Reports = () => {
                 { label: 'Total Sales', val: `${financialStats.revenue.toLocaleString()} DA`, icon: ShoppingBag, color: 'text-indigo-400' },
                 { label: 'Total Expenses', val: `${financialStats.expenses.toLocaleString()} DA`, icon: Wallet, color: 'text-rose-400' },
                 { label: 'Litter Count', val: filteredData.litters.length, icon: Baby, color: 'text-pink-400' },
-                { label: 'Avg. Age (Months)', val: filteredData.rabbits.length > 0 ? Math.round(filteredData.rabbits.reduce((acc, r) => acc + differenceInMonths(new Date(), parseISO(r.birthDate || r.birth_date)), 0) / filteredData.rabbits.length) : 0, icon: Clock, color: 'text-blue-400' },
+                { label: 'Avg. Age (Months)', val: filteredData.rabbits.length > 0 ? Math.round(filteredData.rabbits.reduce((acc, r) => acc + differenceInMonths(new Date(), safeParseISO(r.birthDate || r.birth_date)), 0) / filteredData.rabbits.length) : 0, icon: Clock, color: 'text-blue-400' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center justify-between p-6 bg-white/[0.03] rounded-2xl border border-white/5 hover:bg-white/5 transition-all">
                   <div className="flex items-center gap-4">

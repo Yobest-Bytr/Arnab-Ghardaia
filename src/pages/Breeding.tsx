@@ -28,7 +28,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess, showError } from '@/utils/toast';
-import { format, addDays, isAfter, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, addDays, isAfter, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { safeParseISO } from '@/utils/date';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -167,7 +168,7 @@ const Breeding = () => {
           end = endOfMonth(subMonths(now, 1));
         }
         if (start && end) {
-          matchesDate = isWithinInterval(parseISO(r.date), { start, end });
+          matchesDate = isWithinInterval(safeParseISO(r.date), { start, end });
         }
       }
 
@@ -329,8 +330,8 @@ const Breeding = () => {
               filteredRecords.map((record, i) => {
                 const doe = rabbits.find(r => r.id === record.doeId);
                 const buck = rabbits.find(r => r.id === record.buckId);
-                const expectedKindling = format(addDays(parseISO(record.date), 31), 'MMM dd, yyyy');
-                const isOverdue = isAfter(new Date(), addDays(parseISO(record.date), 32)) && record.status !== 'Kindled';
+                const expectedKindling = format(addDays(safeParseISO(record.date), 31), 'MMM dd, yyyy');
+                const isOverdue = isAfter(new Date(), addDays(safeParseISO(record.date), 32)) && record.status !== 'Kindled';
 
                 return (
                   <motion.div key={record.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
@@ -353,7 +354,7 @@ const Breeding = () => {
                                 <span className="font-black text-lg">{buck?.name || 'Unknown'}</span>
                               </div>
                               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 flex items-center gap-1">
-                                <Calendar className="h-3 w-3" /> Mated: {format(parseISO(record.date), 'MMM dd, yyyy')}
+                                <Calendar className="h-3 w-3" /> Mated: {format(safeParseISO(record.date), 'MMM dd, yyyy')}
                               </p>
                             </div>
                           </div>

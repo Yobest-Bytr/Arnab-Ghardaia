@@ -16,7 +16,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import { grokChat } from '@/lib/puter';
-import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { safeParseISO } from '@/utils/date';
 
 const Sales = () => {
   const { user } = useAuth();
@@ -185,7 +186,7 @@ const Sales = () => {
           end = endOfMonth(subMonths(now, 1));
         }
         if (start && end) {
-          matchesDate = isWithinInterval(parseISO(s.sale_date), { start, end });
+          matchesDate = isWithinInterval(safeParseISO(s.sale_date), { start, end });
         }
       }
 

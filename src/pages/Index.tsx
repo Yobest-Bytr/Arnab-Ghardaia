@@ -25,11 +25,13 @@ import {
 } from 'lucide-react';
 import { FlowBoard } from '@/components/FlowBoard';
 import { QRScanner } from '@/components/QrScanner';
-import { format, addDays, isBefore, isAfter, parseISO } from 'date-fns';
+import { format, addDays, isBefore, isAfter } from 'date-fns';
+import { safeParseISO } from '@/utils/date';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -119,7 +121,7 @@ const Index = () => {
     const today = new Date();
 
     breedingRecords.filter(r => r.status === 'Mated').forEach(record => {
-      const palpationDate = addDays(new Date(record.date), 14);
+      const palpationDate = addDays(safeParseISO(record.date), 14);
       if (isBefore(palpationDate, addDays(today, 2))) {
         insights.push({
           type: 'action',
@@ -131,7 +133,7 @@ const Index = () => {
     });
 
     breedingRecords.filter(r => r.status === 'Confirmed').forEach(record => {
-      const kindlingDate = addDays(new Date(record.date), 31);
+      const kindlingDate = addDays(safeParseISO(record.date), 31);
       if (isBefore(kindlingDate, addDays(today, 3))) {
         insights.push({
           type: 'alert',
@@ -143,7 +145,7 @@ const Index = () => {
     });
 
     litters.forEach(litter => {
-      const weaningDate = addDays(new Date(litter.birthDate), 30);
+      const weaningDate = addDays(safeParseISO(litter.birthDate), 30);
       if (isBefore(weaningDate, addDays(today, 2)) && !litter.weaningDate) {
         insights.push({
           type: 'action',

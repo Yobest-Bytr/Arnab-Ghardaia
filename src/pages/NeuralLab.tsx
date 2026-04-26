@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { grokChat } from '@/lib/puter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccess, showError } from '@/utils/toast';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const NeuralLab = () => {
   const [input, setInput] = useState('');
@@ -108,14 +110,24 @@ const NeuralLab = () => {
 
     try {
       const systemPrompt = `You are the Arnab Ghardaia Neural Assistant, a highly advanced AI specialized in rabbit farm management.
-You have access to the following farm data:
+You are professional, data-driven, and deeply knowledgeable about rabbit husbandry, genetics, and farm optimization.
+
+Your tone should be:
+- Professional yet encouraging.
+- Highly analytical (use the data provided).
+- Clear and structured (use markdown: bolding, lists, and headers).
+
+You have access to the following live farm data:
 - Rabbits: ${JSON.stringify(farmData.rabbits.map(r => ({ id: r.id, name: r.name, breed: r.breed, gender: r.gender, status: r.status, weight: r.weight, tagId: r.tagId })))}
 - Breeding Records: ${JSON.stringify(farmData.breeding)}
 - Litters: ${JSON.stringify(farmData.litters)}
 - Cages: ${JSON.stringify(farmData.cages)}
 
-Your goal is to provide data-driven insights, breeding recommendations, and health advice.
-Be professional, concise, and helpful. If the user provides an image, analyze it for rabbit health, breed identification, or cage conditions.
+When answering:
+1. **Analyze the Data**: If the user asks about breeding, look at the mating history and rabbit statuses.
+2. **Provide Actionable Advice**: Don't just state facts; suggest what the breeder should do next.
+3. **Use Formatting**: Use **bold** for emphasis, bullet points for lists, and ### for sections.
+4. **Image Analysis**: If an image is provided, focus on health indicators (eyes, ears, fur), breed characteristics, or cage hygiene.
 
 NEURAL ACTIONS:
 You can perform actions by including a JSON block at the end of your response.
@@ -367,7 +379,15 @@ Example: "I've added the new rabbit for you. \`\`\`json {"action": "add_rabbit",
                       <img src={msg.image} alt="Uploaded context" className="w-full max-h-64 object-cover" />
                     </div>
                   )}
-                  <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  <div className={cn(
+                    "text-sm md:text-base leading-relaxed prose prose-invert max-w-none",
+                    "prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:rounded-xl prose-code:text-indigo-300",
+                    msg.role === 'user' ? "prose-p:text-white" : "prose-p:text-white/90"
+                  )}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
                 <div className={cn(
                   "flex items-center gap-3 px-4",
